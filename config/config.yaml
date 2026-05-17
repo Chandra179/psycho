@@ -1,0 +1,11 @@
+example:
+  http:
+    port: "8080"
+    read_timeout_in_second: 5
+    write_timeout_in_second: 35
+    idle_timeout_in_second: 120
+
+middleware:
+  timeout_in_second: 30
+  logger:
+    level: dev  # dev | prod
