@@ -7,19 +7,22 @@ import (
 )
 
 type Config struct {
-	Example    ExampleConfig    `yaml:"example"`
+	App        AppConfig        `yaml:"app"`
 	Middleware MiddlewareConfig `yaml:"middleware"`
+	Ingest     IngestConfig     `yaml:"ingest"`
+	Analyze    AnalyzeConfig    `yaml:"analyze"`
+	Profile    ProfileConfig    `yaml:"profile"`
 }
 
-type ExampleConfig struct {
+type AppConfig struct {
 	HTTP HTTPConfig `yaml:"http"`
 }
 
 type HTTPConfig struct {
-	Port               string `yaml:"port"`
-	ReadTimeoutInSec   int    `yaml:"read_timeout_in_second"`
-	WriteTimeoutInSec  int    `yaml:"write_timeout_in_second"`
-	IdleTimeoutInSec   int    `yaml:"idle_timeout_in_second"`
+	Port              string `yaml:"port"`
+	ReadTimeoutInSec  int    `yaml:"read_timeout_in_second"`
+	WriteTimeoutInSec int    `yaml:"write_timeout_in_second"`
+	IdleTimeoutInSec  int    `yaml:"idle_timeout_in_second"`
 }
 
 type MiddlewareConfig struct {
@@ -29,6 +32,18 @@ type MiddlewareConfig struct {
 
 type LoggerConfig struct {
 	Level string `yaml:"level"`
+}
+
+type IngestConfig struct {
+	MaxTextSize int `yaml:"max_text_size"`
+}
+
+type AnalyzeConfig struct {
+	DictionaryPath string `yaml:"dictionary_path"`
+}
+
+type ProfileConfig struct {
+	DBPath string `yaml:"db_path"`
 }
 
 func Load(path string) (*Config, error) {

@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"brook/zlogger"
+	"psycho/zlogger"
 )
 
 type Dependencies struct {

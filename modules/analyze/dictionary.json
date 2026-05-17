@@ -1,0 +1,142 @@
+{
+  "positive_emotion": [
+    "love", "happy", "joy", "wonderful", "great", "excellent", "fantastic", "amazing", "beautiful", "good",
+    "best", "excited", "glad", "pleased", "delighted", "cheerful", "optimistic", "hopeful", "grateful", "proud",
+    "laugh", "smile", "fun", "enjoy", "blessed", "awesome", "perfect", "lovely", "nice", "sweet",
+    "brilliant", "superb", "marvelous", "fabulous", "terrific", "outstanding", "magnificent", "splendid", "incredible", "remarkable"
+  ],
+  "negative_emotion": [
+    "hate", "sad", "angry", "bad", "terrible", "awful", "horrible", "worst", "disgusting", "annoying",
+    "frustrated", "disappointed", "worried", "anxious", "depressed", "miserable", "upset", "mad", "furious", "hurt",
+    "pain", "suffering", "cry", "tears", "lonely", "bored", "tired", "exhausted", "stressed", "nervous",
+    "scared", "afraid", "fear", "panic", "shame", "guilt", "regret", "jealous", "envy", "bitter"
+  ],
+  "cognitive_process": [
+    "think", "know", "understand", "realize", "believe", "consider", "wonder", "question", "suppose", "assume",
+    "decide", "conclude", "determine", "evaluate", "analyze", "reason", "logic", "theory", "hypothesis", "idea",
+    "concept", "notion", "perception", "insight", "aware", "recognize", "remember", "recall", "learn", "discover",
+    "curious", "interested", "explore", "investigate", "examine", "reflect", "contemplate", "meditate", "philosophy", "wisdom"
+  ],
+  "tentative": [
+    "maybe", "perhaps", "possibly", "probably", "seem", "appear", "guess", "suppose", "assume", "might",
+    "could", "would", "should", "may", "uncertain", "unclear", "vague", "roughly", "approximately", "somewhat",
+    "kinda", "sorta", "almost", "nearly", "partly", "partially", "tend", "likely", "unlikely", "doubt"
+  ],
+  "certainty": [
+    "always", "never", "absolutely", "definitely", "certainly", "clearly", "obviously", "undoubtedly", "indeed", "sure",
+    "exactly", "precisely", "completely", "totally", "entirely", "fully", "perfectly", "correct", "true", "fact",
+    "prove", "confirm", "verify", "guarantee", "promise", "must", "will", "shall", "indeed", "actually"
+  ],
+  "pronoun": [
+    "i", "me", "my", "mine", "myself", "you", "your", "yours", "yourself", "he",
+    "him", "his", "himself", "she", "her", "hers", "herself", "we", "us", "our",
+    "ours", "ourselves", "they", "them", "their", "theirs", "themselves", "it", "its", "itself"
+  ],
+  "article": [
+    "a", "an", "the"
+  ],
+  "achievement": [
+    "win", "success", "achieve", "accomplish", "goal", "target", "victory", "triumph", "complete", "finish",
+    "master", "expert", "skill", "talent", "ability", "capable", "competent", "effective", "efficient", "productive",
+    "hardwork", "dedication", "discipline", "focus", "concentrate", "organize", "plan", "schedule", "priority", "task",
+    "project", "assignment", "career", "profession", "ambition", "aspiration", "motivation", "drive", "determination", "perseverance"
+  ],
+  "social": [
+    "friend", "family", "relationship", "conversation", "talk", "chat", "discuss", "meet", "gathering", "party",
+    "community", "group", "team", "colleague", "partner", "cooperate", "collaborate", "share", "help", "support",
+    "together", "join", "unite", "connect", "bond", "trust", "loyal", "honest", "kind", "generous",
+    "polite", "respect", "appreciate", "thank", "welcome", "invite", "visit", "call", "email", "message"
+  ],
+  "big_words": [
+    "accommodate", "acknowledge", "acquisition", "administration", "advantageous", "aesthetic", "ambiguity", "anticipate", "apprehension", "arbitrary",
+    "articulate", "assimilation", "asynchronous", "authenticity", "benevolent", "bureaucracy", "bureaucratic", "capitulate", "catastrophe", "circumstance",
+    "collaboration", "comprehensive", "conscientious", "consequential", "contemplation", "contemporary", "contradiction", "conventional", "cooperation", "correspondence",
+    "credibility", "cumulative", "declaration", "deduction", "demonstration", "disposition", "distinction", "divergence", "dominance", "elaboration",
+    "eligibility", "embarrassment", "empirical", "encounter", "endeavor", "enthusiasm", "equilibrium", "equivalent", "establishment", "evaluation",
+    "exaggeration", "examination", "expectation", "expenditure", "experience", "explanation", "exploration", "facilitation", "fundamental", "generation",
+    "hypothesis", "ideological", "imagination", "implementation", "implication", "impression", "improvement", "inclination", "incorporation", "indication",
+    "indifference", "individuality", "inevitable", "inheritance", "inhibition", "innovation", "inspiration", "installation", "institution", "instruction",
+    "integration", "intellectual", "intelligence", "interaction", "interference", "interpretation", "intervention", "investigation", "justification", "legislation",
+    "maintenance", "manifestation", "manipulation", "mathematics", "modification", "negotiation", "notification", "observation", "opportunity", "organization",
+    "participation", "perception", "performance", "phenomenon", "philosophy", "possibility", "preparation", "presentation", "preservation", "probabilistic",
+    "probability", "proclamation", "productivity", "professional", "pronunciation", "proposition", "psychological", "qualification", "realization", "recognition",
+    "recommendation", "reconciliation", "reflection", "regeneration", "regulation", "relationship", "representation", "reproduction", "requirement", "reservation",
+    "resolution", "restoration", "retaliation", "retrospective", "satisfaction", "significance", "simultaneous", "specification", "speculation", "stimulation",
+    "substantial", "substitution", "sufficient", "suggestion", "superintendent", "superiority", "susceptible", "synthesis", "technological", "transformation",
+    "transmission", "transportation", "understanding", "unemployment", "utilization", "vulnerability", "willingness", "withdrawal"
+  ],
+  "sensation": [
+    "feel", "feeling", "touch", "taste", "smell", "hear", "see", "look", "sound", "sight",
+    "texture", "temperature", "color", "bright", "dark", "loud", "quiet", "soft", "hard", "smooth",
+    "rough", "sweet", "sour", "bitter", "salty", "hot", "cold", "warm", "cool", "wet",
+    "dry", "heavy", "light", "sharp", "dull", "fast", "slow", "pain", "pleasure", "comfort"
+  ],
+  "time": [
+    "time", "year", "month", "week", "day", "hour", "minute", "second", "today", "tomorrow",
+    "yesterday", "morning", "afternoon", "evening", "night", "now", "then", "soon", "later", "early",
+    "late", "before", "after", "during", "while", "until", "since", "always", "never", "often",
+    "sometimes", "rarely", "frequently", "occasionally", "daily", "weekly", "monthly", "yearly", "annual", "past",
+    "present", "future", "moment", "period", "era", "age", "generation", "decade", "century", "millennium"
+  ],
+  "space": [
+    "space", "place", "location", "position", "area", "region", "zone", "territory", "environment", "setting",
+    "room", "house", "building", "street", "city", "town", "country", "world", "earth", "planet",
+    "universe", "direction", "north", "south", "east", "west", "up", "down", "left", "right",
+    "center", "middle", "edge", "corner", "boundary", "border", "inside", "outside", "within", "beyond",
+    "above", "below", "over", "under", "between", "among", "through", "across", "around", "near"
+  ],
+  "motion": [
+    "go", "come", "move", "walk", "run", "jump", "fly", "drive", "ride", "travel",
+    "journey", "trip", "visit", "arrive", "leave", "return", "approach", "follow", "lead", "guide",
+    "carry", "bring", "take", "send", "receive", "deliver", "transport", "transfer", "shift", "change",
+    "turn", "rotate", "spin", "roll", "slide", "slip", "fall", "rise", "climb", "descend",
+    "enter", "exit", "pass", "cross", "crossing", "path", "road", "way", "route", "track"
+  ],
+  "quantitative": [
+    "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
+    "first", "second", "third", "many", "much", "more", "most", "few", "several", "some",
+    "all", "none", "half", "whole", "part", "portion", "percent", "percentage", "number", "count",
+    "amount", "quantity", "measure", "size", "length", "width", "height", "depth", "weight", "volume",
+    "area", "distance", "rate", "ratio", "proportion", "average", "total", "sum", "difference", "increase"
+  ],
+  "cause": [
+    "because", "since", "as", "therefore", "thus", "hence", "consequently", "accordingly", "so", "result",
+    "effect", "affect", "influence", "impact", "lead", "cause", "reason", "factor", "condition", "circumstance",
+    "purpose", "intent", "aim", "goal", "objective", "motivation", "incentive", "stimulus", "trigger", "prompt",
+    "provoke", "induce", "generate", "produce", "create", "make", "force", "compel", "drive", "push",
+    "origin", "source", "root", "basis", "foundation", "ground", "reason", "explanation", "justification", "rationale"
+  ],
+  "inclusive": [
+    "and", "with", "plus", "also", "too", "including", "include", "addition", "furthermore", "moreover",
+    "additionally", "besides", "along", "together", "joint", "combined", "collective", "aggregate", "total", "overall",
+    "comprehensive", "complete", "full", "entire", "whole", "all", "every", "each", "both", "either",
+    "neither", "nor", "as well as", "in addition to", "along with", "coupled with", "together with", "accompanied by", "plus", "and"
+  ],
+  "exclusive": [
+    "but", "except", "excluding", "exclude", "without", "apart", "separate", "alone", "only", "solely",
+    "merely", "just", "purely", "simply", "rather", "instead", "alternative", "otherwise", "else", "different",
+    "distinct", "unique", "individual", "personal", "private", "own", "exclusive", "selective", "restricted", "limited",
+    "particular", "specific", "certain", "special", "especially", "particularly", "not", "no", "none", "never"
+  ],
+  "past_focus": [
+    "was", "were", "had", "did", "went", "came", "said", "got", "made", "took",
+    "saw", "knew", "thought", "felt", "found", "gave", "told", "asked", "worked", "seemed",
+    "left", "put", "meant", "kept", "let", "began", "seemed", "helped", "showed", "heard",
+    "played", "ran", "moved", "lived", "believed", "brought", "wrote", "provided", "lost", "added",
+    "earlier", "before", "previously", "formerly", "once", "ago", "back then", "in the past", "used to", "had been"
+  ],
+  "present_focus": [
+    "is", "am", "are", "has", "have", "do", "does", "go", "come", "say",
+    "get", "make", "take", "see", "know", "think", "feel", "find", "give", "tell",
+    "ask", "work", "seem", "leave", "put", "mean", "keep", "let", "begin", "seem",
+    "help", "show", "hear", "play", "run", "move", "live", "believe", "bring", "write",
+    "provide", "lose", "add", "now", "today", "currently", "at present", "right now", "these days", "nowadays"
+  ],
+  "future_focus": [
+    "will", "shall", "would", "could", "should", "may", "might", "can", "going to", "plan",
+    "expect", "anticipate", "predict", "forecast", "project", "envision", "imagine", "hope", "wish", "want",
+    "desire", "intend", "aim", "goal", "target", "objective", "aspiration", "ambition", "dream", "vision",
+    "tomorrow", "next", "upcoming", "coming", "approaching", "imminent", "pending", "prospective", "potential", "future",
+    "eventually", "soon", "later", "afterward", "thereafter", "subsequently", "in the future", "down the road", "ahead", "forward"
+  ]
+}

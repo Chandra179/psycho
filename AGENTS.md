@@ -1,55 +1,57 @@
-# Brook — Agent Guide
+# Psycho — agent instructions
 
-Go skeleton for evolutionary architecture. Module `brook`, Go 1.26.1.
+## Project
 
-## Layout (current — docs are stale)
+Go module `psycho` (Go 1.26.3) — psychological profiling from text. Early stage.
 
-| What | Old path (in docs) | Actual path |
-|------|-------------------|-------------|
-| entrypoint | `cmd/http/main.go`, `cmd/grpc/main.go` | `cmd/order/main.go` |
-| business logic | `internal/modules/<name>/` | `modules/<name>/` |
-| middleware | `internal/middleware/` | `middleware/` |
+## Build & verify
 
-README documents old structure. Trust filesystem.
-
-## Commands
-
-```bash
-make vendor          # go mod tidy && go mod vendor
-go run cmd/order/main.go
+```
 go build ./...
 ```
 
-No test/lint/CI infrastructure. No `golangci-lint`, no pre-commit hooks.
+No tests exist yet. `go test ./...` produces nothing.
 
-## Module pattern (`modules/<name>/`)
+## Project layout
 
-Flat Go package. Required: `dependencies.go` (DI wireup), `types.go` (domain types).
-Optional: `http.go`/`grpc.go`/`cron.go` entrypoint, `<action>.go` per handler.
-See `modules/README.md` for details.
-
-## Middleware (`middleware/`)
-
-```go
-type Middleware func(http.Handler) http.Handler
-// Chain(handler, Recovery, RequestID, Timeout) — outermost first
+```
+cmd/example/main.go        # entrypoint: calls example.RunHttpServer()
+modules/<name>/            # one flat Go package per domain module
+  config.go                # YAML config structs
+  dependencies.go          # wire deps, load config, construct services
+  http.go                  # transport layer (could be grpc.go, cron.go, etc.)
+  <action>.go              # one file per handler/operation
+middleware/                # stdlib middleware stack (http.Handler adapter)
+  chain.go                 # middleware.Chain(handler, Recovery, RequestID, ...)
+  request_id.go            # RequestID, GetRequestID, RequestIDUnaryInterceptor (gRPC)
+  timeout.go               # Timeout(TimeoutConfig{Duration})
+  recovery.go              # d.Recovery() — depends on *zlogger.Logger
+  request_validation.go    # DecodeAndValidate[T](r) — go-playground/validator tags
+  dependencies.go          # Dependencies struct (holds logger)
+config/
+  config.go                # top-level Load(path string) (*Config, error)
+  config.yaml              # default config
+zlogger/
+  zlogger.go               # wrapper around go.uber.org/zap
+scripts/
+  rename-module.sh         # renames Go module (old="brook" is hardcoded — update if used)
 ```
 
-Stateless middleware = plain constructors. Logger-dependent middleware = methods on `*Dependencies`.
-`middleware.Dependencies` wraps shared state (logger from `github.com/Chandra179/gosdk`).
-gRPC interceptor `RequestIDUnaryInterceptor` lives alongside HTTP middleware in same package.
+## Key conventions
 
-## Config
+- **No `internal/` packages** — modules stay flat.
+- **No global state** — deps passed via closure or struct field.
+- **Config** is YAML (`gopkg.in/yaml.v3`), loaded once per module in `dependencies.go` or the entrypoint file.
+- **Logger**: `zlogger.New(level)` — `"dev"` = debug level, anything else = info. Console encoding. Usage: `logger.Info(ctx, msg, zlogger.Field{Key: "k", Value: "v"}, ...)`.
+- **Middleware order** (outermost first): Recovery → RequestID → Timeout → Logger → Auth → RateLimit (see `middleware/chain.go`).
+- **Validation**: `middleware.DecodeAndValidate[T](r)` — call inside handlers, uses `validate:"required,min=3"` struct tags.
 
-YAML at `config/config.yaml`, loaded by `config.Load("config/config.yaml")`.
-Fields: `http.addr`, `http.*_timeout`, `grpc.addr`, `middleware.timeout`, `middleware.logger.level`.
+## Docker
 
-## Validation
+Multi-stage build, `CGO_ENABLED=0`, distilled Alpine runtime. Run: `make up` (docker-compose, currently empty) or `docker build .`
 
-`middleware.DecodeAndValidate[T](r)` — decodes JSON + validates `go-playground/validator` struct tags.
-Call inside handlers, not as middleware.
+## Infrastructure
 
-## State
-
-Repo is mid-restructure: old `internal/` files deleted on disk, new flat files untracked.
-No tests exist. No vendor in git (`.gitignore` has `vendor`).
+- `.env` is gitignored.
+- `vendor/` is gitignored. Use `make vendor` when adding deps.
+- Single commit so far.
