@@ -1,4 +1,4 @@
-package main
+package analyze
 
 import (
 	"encoding/json"
@@ -6,13 +6,10 @@ import (
 	"net/http"
 
 	"psycho/middleware"
-	"psycho/modules/analyze"
 	"psycho/modules/ingest"
-	"psycho/modules/profile"
 	"psycho/zlogger"
 )
 
-// AnalyzeRequest is the payload for POST /analyze.
 type AnalyzeRequest struct {
 	Text       string `json:"text" validate:"omitempty"`
 	SourceType string `json:"source_type" validate:"required,oneof=blog chat email paste file url"`
@@ -20,20 +17,21 @@ type AnalyzeRequest struct {
 	SourceURL  string `json:"source_url" validate:"omitempty,url"`
 }
 
-// AnalyzeResponse is the JSON output.
 type AnalyzeResponse struct {
-	AnalysisID         string                        `json:"analysis_id"`
-	WordCount          int                           `json:"word_count"`
-	DictionaryCoverage float64                       `json:"dictionary_coverage"`
-	ConfidenceFlag     string                        `json:"confidence_flag"`
-	Traits             map[string]profile.TraitResult `json:"traits"`
+	AnalysisID         string         `json:"analysis_id"`
+	WordCount          int            `json:"word_count"`
+	DictionaryCoverage float64        `json:"dictionary_coverage"`
+	ConfidenceFlag     string         `json:"confidence_flag"`
+	Traits             map[string]any `json:"traits"`
 }
 
-func makeHandleAnalyze(
+type SaveAnalyzeFunc func(sourceType string, wordCount int, coverage float64, features FeatureVector, scores BigFiveScores) (analysisID string, traits map[string]any, confidenceFlag string, err error)
+
+func MakeHandleAnalyze(
 	cfg ingest.Config,
 	logger *zlogger.Logger,
-	analyzer *analyze.Dependencies,
-	profiler *profile.Dependencies,
+	analyzer *Dependencies,
+	saveFn SaveAnalyzeFunc,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		req, err := middleware.DecodeAndValidate[AnalyzeRequest](r)
@@ -73,9 +71,8 @@ func makeHandleAnalyze(
 
 		features, coverage := analyzer.Extractor.Extract(doc)
 		scores := analyzer.Model.Infer(features)
-		prof := profiler.Aggregator.Aggregate(scores, doc.WordCount, coverage)
 
-		analysisID, err := profiler.Storage.SaveAnalysis(req.SourceType, doc.WordCount, coverage, features, prof)
+		analysisID, traits, confidenceFlag, err := saveFn(req.SourceType, doc.WordCount, coverage, features, scores)
 		if err != nil {
 			logger.Error(r.Context(), "failed to save analysis", zlogger.Field{Key: "error", Value: err.Error()})
 			http.Error(w, "internal error", http.StatusInternalServerError)
@@ -86,8 +83,8 @@ func makeHandleAnalyze(
 			AnalysisID:         analysisID,
 			WordCount:          doc.WordCount,
 			DictionaryCoverage: coverage,
-			ConfidenceFlag:     prof.ConfidenceFlag,
-			Traits:             prof.Traits,
+			ConfidenceFlag:     confidenceFlag,
+			Traits:             traits,
 		}
 
 		w.Header().Set("Content-Type", "application/json")

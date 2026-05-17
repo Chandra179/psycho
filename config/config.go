@@ -35,7 +35,8 @@ type LoggerConfig struct {
 }
 
 type IngestConfig struct {
-	MaxTextSize int `yaml:"max_text_size"`
+	MaxTextSize int    `yaml:"max_text_size"`
+	DirPath     string `yaml:"dir_path"`
 }
 
 type AnalyzeConfig struct {

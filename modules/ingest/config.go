@@ -1,5 +1,6 @@
 package ingest
 
 type Config struct {
-	MaxTextSize int `yaml:"max_text_size"`
+	MaxTextSize int    `yaml:"max_text_size"`
+	DirPath     string `yaml:"dir_path"`
 }
