@@ -35,11 +35,13 @@ func (sa *ScoreAggregator) Aggregate(scores analyze.BigFiveScores, wordCount int
 	ciWidth := computeCIWidth(wordCount, coverage)
 
 	traits := map[string]TraitResult{
-		"openness":          makeTraitResult(scores.Openness, ciWidth),
-		"conscientiousness": makeTraitResult(scores.Conscientiousness, ciWidth),
-		"extraversion":      makeTraitResult(scores.Extraversion, ciWidth),
-		"agreeableness":     makeTraitResult(scores.Agreeableness, ciWidth),
-		"neuroticism":       makeTraitResult(scores.Neuroticism, ciWidth),
+		"openness":           makeTraitResult(scores.Openness, ciWidth),
+		"conscientiousness":  makeTraitResult(scores.Conscientiousness, ciWidth),
+		"extraversion":       makeTraitResult(scores.Extraversion, ciWidth),
+		"agreeableness":      makeTraitResult(scores.Agreeableness, ciWidth),
+		"neuroticism":        makeTraitResult(scores.Neuroticism, ciWidth),
+		"regulatory_focus":   makeTraitResult(scores.RegulatoryFocus, ciWidth),
+		"need_for_cognition": makeTraitResult(scores.NeedForCognition, ciWidth),
 	}
 
 	return Profile{

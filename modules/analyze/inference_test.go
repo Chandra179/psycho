@@ -107,3 +107,83 @@ func TestBigFiveModelHighExtraversion(t *testing.T) {
 		t.Errorf("expected elevated Extraversion, got %f", scores.Extraversion)
 	}
 }
+
+func TestComputeRegulatoryFocusPromotion(t *testing.T) {
+	fv := FeatureVector{
+		CategoryPercents: map[Category]float64{
+			"promotion_focus":  15.0,
+			"prevention_focus": 2.0,
+		},
+	}
+	score := ComputeRegulatoryFocus(fv)
+	if score < 0.55 {
+		t.Errorf("expected elevated promotion focus, got %f", score)
+	}
+	label := ComputeRegulatoryFocusLabel(score)
+	if label != "promotion_focus" {
+		t.Errorf("expected promotion_focus label, got %s", label)
+	}
+}
+
+func TestComputeRegulatoryFocusPrevention(t *testing.T) {
+	fv := FeatureVector{
+		CategoryPercents: map[Category]float64{
+			"promotion_focus":  1.0,
+			"prevention_focus": 12.0,
+		},
+	}
+	score := ComputeRegulatoryFocus(fv)
+	if score > 0.45 {
+		t.Errorf("expected low promotion focus, got %f", score)
+	}
+	label := ComputeRegulatoryFocusLabel(score)
+	if label != "prevention_focus" {
+		t.Errorf("expected prevention_focus label, got %s", label)
+	}
+}
+
+func TestComputeRegulatoryFocusBalanced(t *testing.T) {
+	fv := FeatureVector{CategoryPercents: map[Category]float64{}}
+	score := ComputeRegulatoryFocus(fv)
+	if score != 0.50 {
+		t.Errorf("expected balanced 0.50, got %f", score)
+	}
+	label := ComputeRegulatoryFocusLabel(score)
+	if label != "balanced" {
+		t.Errorf("expected balanced label, got %s", label)
+	}
+}
+
+func TestComputeNeedForCognitionHigh(t *testing.T) {
+	fv := FeatureVector{
+		CategoryPercents: map[Category]float64{
+			"analytic_thinking":  20.0,
+			"intuitive_thinking": 2.0,
+		},
+	}
+	score := ComputeNeedForCognition(fv)
+	if score < 0.55 {
+		t.Errorf("expected high need for cognition, got %f", score)
+	}
+	label := ComputeNeedForCognitionLabel(score)
+	if label != "high" {
+		t.Errorf("expected high label, got %s", label)
+	}
+}
+
+func TestComputeNeedForCognitionLow(t *testing.T) {
+	fv := FeatureVector{
+		CategoryPercents: map[Category]float64{
+			"analytic_thinking":  1.0,
+			"intuitive_thinking": 15.0,
+		},
+	}
+	score := ComputeNeedForCognition(fv)
+	if score > 0.45 {
+		t.Errorf("expected low need for cognition, got %f", score)
+	}
+	label := ComputeNeedForCognitionLabel(score)
+	if label != "low" {
+		t.Errorf("expected low label, got %s", label)
+	}
+}

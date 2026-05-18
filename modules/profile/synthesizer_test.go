@@ -50,8 +50,8 @@ func TestScoreAggregator(t *testing.T) {
 	if profile.ConfidenceFlag != "high" {
 		t.Errorf("ConfidenceFlag = %q; want high", profile.ConfidenceFlag)
 	}
-	if len(profile.Traits) != 5 {
-		t.Errorf("len(Traits) = %d; want 5", len(profile.Traits))
+	if len(profile.Traits) != 7 {
+		t.Errorf("len(Traits) = %d; want 7", len(profile.Traits))
 	}
 
 	openness := profile.Traits["openness"]

@@ -55,6 +55,8 @@ func NewHandler(cfg *config.Config, logger *zlogger.Logger) (http.Handler, error
 			doc := normalizer.Normalize(text)
 			features, coverage := analyzeDeps.Extractor.Extract(doc)
 			scores := analyzeDeps.Model.Infer(features)
+			scores.RegulatoryFocus = analyze.ComputeRegulatoryFocus(features)
+			scores.NeedForCognition = analyze.ComputeNeedForCognition(features)
 			prof := profileDeps.Aggregator.Aggregate(scores, doc.WordCount, coverage)
 			analysisID, err := profileDeps.Storage.SaveAnalysis(sourceType, doc.WordCount, coverage, features, prof)
 			if err != nil {

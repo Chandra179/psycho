@@ -71,6 +71,8 @@ func MakeHandleAnalyze(
 
 		features, coverage := analyzer.Extractor.Extract(doc)
 		scores := analyzer.Model.Infer(features)
+		scores.RegulatoryFocus = ComputeRegulatoryFocus(features)
+		scores.NeedForCognition = ComputeNeedForCognition(features)
 
 		analysisID, traits, confidenceFlag, err := saveFn(req.SourceType, doc.WordCount, coverage, features, scores)
 		if err != nil {

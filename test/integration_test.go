@@ -117,8 +117,8 @@ func TestFullPipeline(t *testing.T) {
 	if result.ConfidenceFlag == "" {
 		t.Error("ConfidenceFlag is empty")
 	}
-	if len(result.Traits) != 5 {
-		t.Errorf("len(Traits) = %d; want 5", len(result.Traits))
+	if len(result.Traits) != 7 {
+		t.Errorf("len(Traits) = %d; want 7", len(result.Traits))
 	}
 
 	for traitName, traitAny := range result.Traits {
@@ -174,6 +174,8 @@ func TestFullPipelineAnalyzeDir(t *testing.T) {
 			doc := normalizer.Normalize(text)
 			features, coverage := analyzeDeps.Extractor.Extract(doc)
 			scores := analyzeDeps.Model.Infer(features)
+			scores.RegulatoryFocus = analyze.ComputeRegulatoryFocus(features)
+			scores.NeedForCognition = analyze.ComputeNeedForCognition(features)
 			prof := profileDeps.Aggregator.Aggregate(scores, doc.WordCount, coverage)
 			analysisID, err := profileDeps.Storage.SaveAnalysis(sourceType, doc.WordCount, coverage, features, prof)
 			if err != nil {
@@ -225,8 +227,8 @@ func TestFullPipelineAnalyzeDir(t *testing.T) {
 	if result.FilesRead != 2 {
 		t.Errorf("FilesRead = %d; want 2", result.FilesRead)
 	}
-	if len(result.Traits) != 5 {
-		t.Errorf("len(Traits) = %d; want 5", len(result.Traits))
+	if len(result.Traits) != 7 {
+		t.Errorf("len(Traits) = %d; want 7", len(result.Traits))
 	}
 }
 
@@ -243,7 +245,7 @@ func TestAnalyzeDirWithDataSamples(t *testing.T) {
 		t.Fatalf("init analyze: %v", err)
 	}
 
-	samplesDir := "../data/samples"
+	samplesDir := "../samples"
 	ingestCfg := ingest.Config{MaxTextSize: 1_000_000, DirPath: samplesDir}
 
 	handler := ingest.MakeHandleAnalyzeDir(ingestCfg, logger,
@@ -252,6 +254,8 @@ func TestAnalyzeDirWithDataSamples(t *testing.T) {
 			doc := normalizer.Normalize(text)
 			features, coverage := analyzeDeps.Extractor.Extract(doc)
 			scores := analyzeDeps.Model.Infer(features)
+			scores.RegulatoryFocus = analyze.ComputeRegulatoryFocus(features)
+			scores.NeedForCognition = analyze.ComputeNeedForCognition(features)
 			prof := profileDeps.Aggregator.Aggregate(scores, doc.WordCount, coverage)
 			analysisID, err := profileDeps.Storage.SaveAnalysis(sourceType, doc.WordCount, coverage, features, prof)
 			if err != nil {
@@ -303,8 +307,8 @@ func TestAnalyzeDirWithDataSamples(t *testing.T) {
 	if result.FilesRead != 4 {
 		t.Errorf("FilesRead = %d; want 4", result.FilesRead)
 	}
-	if len(result.Traits) != 5 {
-		t.Errorf("len(Traits) = %d; want 5", len(result.Traits))
+	if len(result.Traits) != 7 {
+		t.Errorf("len(Traits) = %d; want 7", len(result.Traits))
 	}
 
 	outPath := "../testresults/genz-job-struggles/integration-output.json"

@@ -1,12 +1,14 @@
 package analyze
 
-// BigFiveScores holds the raw regression output for OCEAN.
+// BigFiveScores holds the raw regression output for all dimensions.
 type BigFiveScores struct {
 	Openness          float64
 	Conscientiousness float64
 	Extraversion      float64
 	Agreeableness     float64
 	Neuroticism       float64
+	RegulatoryFocus   float64
+	NeedForCognition  float64
 }
 
 // TraitModel is the interface for personality inference.

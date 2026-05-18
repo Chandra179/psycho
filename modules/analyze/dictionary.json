@@ -137,6 +137,52 @@
     "expect", "anticipate", "predict", "forecast", "project", "envision", "imagine", "hope", "wish", "want",
     "desire", "intend", "aim", "goal", "target", "objective", "aspiration", "ambition", "dream", "vision",
     "tomorrow", "next", "upcoming", "coming", "approaching", "imminent", "pending", "prospective", "potential", "future",
-    "eventually", "soon", "later", "afterward", "thereafter", "subsequently", "in the future", "down the road", "ahead", "forward"
+    "eventually", "soon", "later", "afterward", "thereafter", "subsequently", "down the road", "ahead", "forward"
+  ],
+  "promotion_focus": [
+    "aspire", "aspiration", "dream", "hope", "wish", "desire", "want",
+    "gain", "advance", "advancement", "improve", "improvement", "growth",
+    "opportunity", "opportunities", "ideal", "pursue", "pursuit",
+    "attain", "attainment", "fulfill", "fulfillment", "accomplish",
+    "accomplishment", "progress", "succeed", "success", "successful",
+    "win", "winner", "goal", "goals", "ambition", "ambitious",
+    "eager", "enthusiastic", "enthusiasm", "promote", "promotion",
+    "enhance", "maximize", "optimize", "strive", "thrive", "flourish",
+    "achieve", "achievement", "rise", "raise", "elevate", "upward"
+  ],
+  "prevention_focus": [
+    "safe", "safety", "secure", "security", "protect", "protection",
+    "prevent", "prevention", "avoid", "avoidance", "danger", "dangerous",
+    "threat", "threaten", "risk", "risky", "careful", "caution",
+    "cautious", "duty", "duties", "obligation", "obligations",
+    "responsible", "responsibility", "should", "must", "need",
+    "guarantee", "ensure", "guard", "shield", "defend", "defense",
+    "preserve", "shelter", "vigilant", "vigilance", "warn", "warning",
+    "harm", "harmful", "loss", "lose", "lost", "miss", "missing",
+    "mistake", "mistakes", "error", "errors", "wrong", "failure", "fail"
+  ],
+  "analytic_thinking": [
+    "analyze", "analysis", "reason", "reasoning", "logic", "logical",
+    "therefore", "thus", "hence", "because", "cause", "effect",
+    "investigate", "investigation", "examine", "examination",
+    "evaluate", "evaluation", "deliberate", "deliberation",
+    "systematic", "comprehensive", "thorough", "thoroughly",
+    "contemplate", "contemplation", "reflect", "reflection",
+    "hypothesis", "evidence", "conclude", "conclusion",
+    "infer", "inference", "justify", "justification", "explain",
+    "explanation", "interpret", "interpretation", "critique",
+    "critical", "rational", "rationale", "theory",
+    "theoretical", "conceptual", "abstract", "complex", "complexity",
+    "elaborate", "elaboration", "compare", "contrast", "distinction",
+    "differentiate", "perspective", "dimension", "variable"
+  ],
+  "intuitive_thinking": [
+    "feel", "feeling", "gut", "instinct", "instinctive",
+    "intuition", "intuitive", "impulse", "impulsive", "spontaneous",
+    "hunch", "sense", "natural", "naturally",
+    "automatic", "automatically", "simple", "simply", "simplicity",
+    "obvious", "obviously", "clear", "clearly", "easy", "easily",
+    "basic", "straightforward", "trust", "faith",
+    "belief", "practical"
   ]
 }
