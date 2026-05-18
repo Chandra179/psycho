@@ -58,8 +58,8 @@ func TestScoreAggregator(t *testing.T) {
 	if openness.Score != 0.75 {
 		t.Errorf("Openness score = %f; want 0.75", openness.Score)
 	}
-	if openness.Percentile != 75 {
-		t.Errorf("Openness percentile = %d; want 75", openness.Percentile)
+	if openness.Percentile != 98 {
+		t.Errorf("Openness percentile = %d; want 98 (z=%.3f)", openness.Percentile, (0.75-0.50)/0.12)
 	}
 	if len(openness.ConfidenceInterval) != 2 {
 		t.Errorf("Openness CI length = %d; want 2", len(openness.ConfidenceInterval))

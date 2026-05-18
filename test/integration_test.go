@@ -230,6 +230,95 @@ func TestFullPipelineAnalyzeDir(t *testing.T) {
 	}
 }
 
+func TestAnalyzeDirWithDataSamples(t *testing.T) {
+	logger := zlogger.New("dev")
+
+	profileDeps, err := profile.NewDependencies(profile.Config{DBPath: ":memory:"}, logger)
+	if err != nil {
+		t.Fatalf("init profile: %v", err)
+	}
+
+	analyzeDeps, err := analyze.NewDependencies(analyze.Config{DictionaryPath: "../modules/analyze/dictionary.json"}, logger)
+	if err != nil {
+		t.Fatalf("init analyze: %v", err)
+	}
+
+	samplesDir := "../data/samples"
+	ingestCfg := ingest.Config{MaxTextSize: 1_000_000, DirPath: samplesDir}
+
+	handler := ingest.MakeHandleAnalyzeDir(ingestCfg, logger,
+		func(text string, sourceType string) (string, int, float64, string, map[string]any, error) {
+			normalizer := ingest.NewNormalizer()
+			doc := normalizer.Normalize(text)
+			features, coverage := analyzeDeps.Extractor.Extract(doc)
+			scores := analyzeDeps.Model.Infer(features)
+			prof := profileDeps.Aggregator.Aggregate(scores, doc.WordCount, coverage)
+			analysisID, err := profileDeps.Storage.SaveAnalysis(sourceType, doc.WordCount, coverage, features, prof)
+			if err != nil {
+				return "", 0, 0, "", nil, err
+			}
+			traits := make(map[string]any, len(prof.Traits))
+			for k, v := range prof.Traits {
+				traits[k] = v
+			}
+			return analysisID, doc.WordCount, coverage, prof.ConfidenceFlag, traits, nil
+		},
+	)
+	mux := http.NewServeMux()
+	mux.HandleFunc("POST /analyze-dir", handler)
+	chain := middleware.Chain(mux, middleware.RequestID)
+	server := httptest.NewServer(chain)
+	defer server.Close()
+
+	payload := map[string]string{
+		"source_type": "file",
+		"source_date": "2025-05-17",
+	}
+	body, _ := json.Marshal(payload)
+
+	resp, err := http.Post(fmt.Sprintf("%s/analyze-dir", server.URL), "application/json", bytes.NewReader(body))
+	if err != nil {
+		t.Fatalf("POST /analyze-dir: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", resp.StatusCode)
+	}
+
+	var result ingest.AnalyzeDirResponse
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+
+	if result.AnalysisID == "" {
+		t.Error("AnalysisID is empty")
+	}
+	if result.WordCount < 3000 {
+		t.Errorf("WordCount = %d; expected >= 3000 for 4 articles", result.WordCount)
+	}
+	if result.DictionaryCoverage <= 0 {
+		t.Errorf("DictionaryCoverage = %f; expected > 0", result.DictionaryCoverage)
+	}
+	if result.FilesRead != 4 {
+		t.Errorf("FilesRead = %d; want 4", result.FilesRead)
+	}
+	if len(result.Traits) != 5 {
+		t.Errorf("len(Traits) = %d; want 5", len(result.Traits))
+	}
+
+	outPath := "../testresults/genz-job-struggles/integration-output.json"
+	outDir := filepath.Dir(outPath)
+	if err := os.MkdirAll(outDir, 0755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	out, _ := json.MarshalIndent(result, "", "  ")
+	if err := os.WriteFile(outPath, out, 0644); err != nil {
+		t.Fatalf("write output: %v", err)
+	}
+	t.Logf("output written to %s", outPath)
+}
+
 func writeFile(t *testing.T, path, content string) {
 	t.Helper()
 	if err := os.WriteFile(path, []byte(content), 0644); err != nil {

@@ -60,9 +60,31 @@ func makeTraitResult(score, ciWidth float64) TraitResult {
 	}
 	return TraitResult{
 		Score:              math.Round(score*100) / 100,
-		Percentile:         int(math.Round(score * 100)),
+		Percentile:         scoreToPercentile(score),
 		ConfidenceInterval: []float64{math.Round(low*100) / 100, math.Round(high*100) / 100},
 	}
+}
+
+// scoreToPercentile converts a [0,1] trait score to a population percentile
+// assuming a normal distribution with mean 0.50 and SD 0.12.
+func scoreToPercentile(score float64) int {
+	mean := 0.50
+	sd := 0.12
+	z := (score - mean) / sd
+	p := normalCDF(z)
+	pct := int(math.Round(p * 100))
+	if pct < 1 {
+		return 1
+	}
+	if pct > 99 {
+		return 99
+	}
+	return pct
+}
+
+// normalCDF computes the standard normal CDF using the error function.
+func normalCDF(z float64) float64 {
+	return 0.5 * (1 + math.Erf(z/math.Sqrt2))
 }
 
 func computeConfidenceFlag(wordCount int, coverage float64) string {
@@ -79,18 +101,22 @@ func computeConfidenceFlag(wordCount int, coverage float64) string {
 }
 
 func computeCIWidth(wordCount int, coverage float64) float64 {
-	// Base width decreases with word count and increases with poor coverage.
-	base := 0.15
-	if wordCount > 0 {
-		base = base / math.Sqrt(float64(wordCount)/100)
-	}
+	// 95% CI width based on standard error of measurement.
+	// SE = baseSE / sqrt(n/1000) where baseSE ≈ 0.08 for a 1000-word text
+	// at typical LIWC-based prediction accuracy. CI = 1.96 × SE.
+	baseSE := 0.08
+	se := baseSE / math.Sqrt(float64(wordCount)/1000)
+	width := 1.96 * se
 	if coverage < 0.5 {
-		base *= 1.5
+		width *= 1.5
 	} else if coverage < 0.7 {
-		base *= 1.2
+		width *= 1.2
 	}
-	if base > 0.25 {
-		base = 0.25
+	if width > 0.25 {
+		width = 0.25
 	}
-	return math.Round(base*100) / 100
+	if width < 0.02 {
+		width = 0.02
+	}
+	return math.Round(width*100) / 100
 }

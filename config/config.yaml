@@ -12,7 +12,7 @@ middleware:
 
 ingest:
   max_text_size: 1000000  # ~1 MB of text
-  dir_path: "./data/samples"  # directory read by /analyze-dir
+  dir_path: "samples"  # directory read by /analyze-dir
 
 analyze:
   dictionary_path: "modules/analyze/dictionary.json"

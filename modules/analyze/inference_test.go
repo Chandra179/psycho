@@ -13,6 +13,9 @@ func TestBigFiveModelInfer(t *testing.T) {
 			"tentative":         10.0,
 			"negative_emotion":  12.0,
 			"pronoun":           8.0,
+			"article":           5.0,
+			"inclusive":         3.0,
+			"achievement":       4.0,
 		},
 		TypeTokenRatio: 0.7,
 		BigWordRatio:   0.15,
@@ -42,10 +45,8 @@ func TestBigFiveModelHighOpenness(t *testing.T) {
 	model := NewBigFiveModel()
 	fv := FeatureVector{
 		CategoryPercents: map[Category]float64{
-			"cognitive_process": 20.0,
-			"big_words":         15.0,
-			"space":             10.0,
-			"future_focus":      10.0,
+			"article":   20.0,
+			"inclusive": 15.0,
 		},
 	}
 	scores := model.Infer(fv)
@@ -58,11 +59,7 @@ func TestBigFiveModelHighConscientiousness(t *testing.T) {
 	model := NewBigFiveModel()
 	fv := FeatureVector{
 		CategoryPercents: map[Category]float64{
-			"achievement":  18.0,
-			"certainty":    12.0,
-			"article":      10.0,
-			"quantitative": 10.0,
-			"future_focus": 10.0,
+			"achievement": 30.0,
 		},
 	}
 	scores := model.Infer(fv)
@@ -75,8 +72,8 @@ func TestBigFiveModelLowWordCount(t *testing.T) {
 	model := NewBigFiveModel()
 	fv := FeatureVector{CategoryPercents: map[Category]float64{}}
 	scores := model.Infer(fv)
-	if scores.Openness < 0.5 || scores.Openness > 0.6 {
-		t.Errorf("baseline Openness = %f; expected near 0.55", scores.Openness)
+	if scores.Openness != 0.50 {
+		t.Errorf("baseline Openness = %f; expected 0.50", scores.Openness)
 	}
 }
 
@@ -87,6 +84,7 @@ func TestBigFiveModelHighNeuroticism(t *testing.T) {
 			"negative_emotion": 25.0,
 			"pronoun":          20.0,
 			"tentative":        15.0,
+			"cognitive_process": 10.0,
 		},
 	}
 	scores := model.Infer(fv)

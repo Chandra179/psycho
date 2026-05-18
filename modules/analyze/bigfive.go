@@ -14,14 +14,12 @@ func (m *bigFiveModel) Infer(fv FeatureVector) BigFiveScores {
 
 	for catName, weights := range coefficients {
 		cat := Category(catName)
-		pct := fv.CategoryPercents[cat] // percentage of words in this category
-		// scale pct: 1 percentage point -> weight * 0.01
-		scale := pct * 0.01
-		s.Openness += weights.Openness * scale
-		s.Conscientiousness += weights.Conscientiousness * scale
-		s.Extraversion += weights.Extraversion * scale
-		s.Agreeableness += weights.Agreeableness * scale
-		s.Neuroticism += weights.Neuroticism * scale
+		pct := fv.CategoryPercents[cat]
+		s.Openness += weights.Openness * pct
+		s.Conscientiousness += weights.Conscientiousness * pct
+		s.Extraversion += weights.Extraversion * pct
+		s.Agreeableness += weights.Agreeableness * pct
+		s.Neuroticism += weights.Neuroticism * pct
 	}
 
 	// Clamp to [0, 1]
