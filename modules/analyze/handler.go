@@ -18,11 +18,12 @@ type AnalyzeRequest struct {
 }
 
 type AnalyzeResponse struct {
-	AnalysisID         string         `json:"analysis_id"`
-	WordCount          int            `json:"word_count"`
-	DictionaryCoverage float64        `json:"dictionary_coverage"`
-	ConfidenceFlag     string         `json:"confidence_flag"`
-	Traits             map[string]any `json:"traits"`
+	AnalysisID         string                  `json:"analysis_id"`
+	WordCount          int                     `json:"word_count"`
+	DictionaryCoverage float64                 `json:"dictionary_coverage"`
+	ConfidenceFlag     string                  `json:"confidence_flag"`
+	Traits             map[string]any          `json:"traits"`
+	Summary            SummaryVariables        `json:"summary"`
 }
 
 type SaveAnalyzeFunc func(sourceType string, wordCount int, coverage float64, features FeatureVector, scores BigFiveScores) (analysisID string, traits map[string]any, confidenceFlag string, err error)
@@ -74,6 +75,8 @@ func MakeHandleAnalyze(
 		scores.RegulatoryFocus = ComputeRegulatoryFocus(features)
 		scores.NeedForCognition = ComputeNeedForCognition(features)
 
+		summary := ComputeSummaryVariables(features)
+
 		analysisID, traits, confidenceFlag, err := saveFn(req.SourceType, doc.WordCount, coverage, features, scores)
 		if err != nil {
 			logger.Error(r.Context(), "failed to save analysis", zlogger.Field{Key: "error", Value: err.Error()})
@@ -87,6 +90,7 @@ func MakeHandleAnalyze(
 			DictionaryCoverage: coverage,
 			ConfidenceFlag:     confidenceFlag,
 			Traits:             traits,
+			Summary:            summary,
 		}
 
 		w.Header().Set("Content-Type", "application/json")

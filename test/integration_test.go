@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"psycho/middleware"
@@ -34,7 +35,7 @@ func TestFullPipeline(t *testing.T) {
 
 	handler := analyze.MakeHandleAnalyze(ingestCfg, logger, analyzeDeps,
 		func(sourceType string, wordCount int, coverage float64, features analyze.FeatureVector, scores analyze.BigFiveScores) (string, map[string]any, string, error) {
-			prof := profileDeps.Aggregator.Aggregate(scores, wordCount, coverage)
+			prof := profileDeps.Aggregator.Aggregate(scores, features, wordCount, coverage)
 			analysisID, err := profileDeps.Storage.SaveAnalysis(sourceType, wordCount, coverage, features, prof)
 			if err != nil {
 				return "", nil, "", err
@@ -121,6 +122,10 @@ func TestFullPipeline(t *testing.T) {
 		t.Errorf("len(Traits) = %d; want 7", len(result.Traits))
 	}
 
+	if result.Summary == (analyze.SummaryVariables{}) {
+		t.Error("Summary is zero; expected computed summary variables")
+	}
+
 	for traitName, traitAny := range result.Traits {
 		trait := traitAny.(map[string]any)
 		score := trait["score"].(float64)
@@ -169,23 +174,23 @@ func TestFullPipelineAnalyzeDir(t *testing.T) {
 	ingestCfg := ingest.Config{MaxTextSize: 1_000_000, DirPath: tmpDir}
 
 	handler := ingest.MakeHandleAnalyzeDir(ingestCfg, logger,
-		func(text string, sourceType string) (string, int, float64, string, map[string]any, error) {
+		func(text string, sourceType string) (string, int, float64, string, map[string]any, any, error) {
 			normalizer := ingest.NewNormalizer()
 			doc := normalizer.Normalize(text)
 			features, coverage := analyzeDeps.Extractor.Extract(doc)
 			scores := analyzeDeps.Model.Infer(features)
 			scores.RegulatoryFocus = analyze.ComputeRegulatoryFocus(features)
 			scores.NeedForCognition = analyze.ComputeNeedForCognition(features)
-			prof := profileDeps.Aggregator.Aggregate(scores, doc.WordCount, coverage)
+			prof := profileDeps.Aggregator.Aggregate(scores, features, doc.WordCount, coverage)
 			analysisID, err := profileDeps.Storage.SaveAnalysis(sourceType, doc.WordCount, coverage, features, prof)
 			if err != nil {
-				return "", 0, 0, "", nil, err
+				return "", 0, 0, "", nil, nil, err
 			}
 			traits := make(map[string]any, len(prof.Traits))
 			for k, v := range prof.Traits {
 				traits[k] = v
 			}
-			return analysisID, doc.WordCount, coverage, prof.ConfidenceFlag, traits, nil
+			return analysisID, doc.WordCount, coverage, prof.ConfidenceFlag, traits, prof.Summary, nil
 		},
 	)
 	mux := http.NewServeMux()
@@ -249,23 +254,23 @@ func TestAnalyzeDirWithDataSamples(t *testing.T) {
 	ingestCfg := ingest.Config{MaxTextSize: 1_000_000, DirPath: samplesDir}
 
 	handler := ingest.MakeHandleAnalyzeDir(ingestCfg, logger,
-		func(text string, sourceType string) (string, int, float64, string, map[string]any, error) {
+		func(text string, sourceType string) (string, int, float64, string, map[string]any, any, error) {
 			normalizer := ingest.NewNormalizer()
 			doc := normalizer.Normalize(text)
 			features, coverage := analyzeDeps.Extractor.Extract(doc)
 			scores := analyzeDeps.Model.Infer(features)
 			scores.RegulatoryFocus = analyze.ComputeRegulatoryFocus(features)
 			scores.NeedForCognition = analyze.ComputeNeedForCognition(features)
-			prof := profileDeps.Aggregator.Aggregate(scores, doc.WordCount, coverage)
+			prof := profileDeps.Aggregator.Aggregate(scores, features, doc.WordCount, coverage)
 			analysisID, err := profileDeps.Storage.SaveAnalysis(sourceType, doc.WordCount, coverage, features, prof)
 			if err != nil {
-				return "", 0, 0, "", nil, err
+				return "", 0, 0, "", nil, nil, err
 			}
 			traits := make(map[string]any, len(prof.Traits))
 			for k, v := range prof.Traits {
 				traits[k] = v
 			}
-			return analysisID, doc.WordCount, coverage, prof.ConfidenceFlag, traits, nil
+			return analysisID, doc.WordCount, coverage, prof.ConfidenceFlag, traits, prof.Summary, nil
 		},
 	)
 	mux := http.NewServeMux()
@@ -304,8 +309,8 @@ func TestAnalyzeDirWithDataSamples(t *testing.T) {
 	if result.DictionaryCoverage <= 0 {
 		t.Errorf("DictionaryCoverage = %f; expected > 0", result.DictionaryCoverage)
 	}
-	if result.FilesRead != 4 {
-		t.Errorf("FilesRead = %d; want 4", result.FilesRead)
+	if result.FilesRead != 8 {
+		t.Errorf("FilesRead = %d; want 8", result.FilesRead)
 	}
 	if len(result.Traits) != 7 {
 		t.Errorf("len(Traits) = %d; want 7", len(result.Traits))
@@ -327,5 +332,144 @@ func writeFile(t *testing.T, path, content string) {
 	t.Helper()
 	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
 		t.Fatalf("writeFile %s: %v", path, err)
+	}
+}
+
+func TestIndividualSamples(t *testing.T) {
+	logger := zlogger.New("dev")
+
+	profileDeps, err := profile.NewDependencies(profile.Config{DBPath: ":memory:"}, logger)
+	if err != nil {
+		t.Fatalf("init profile: %v", err)
+	}
+
+	analyzeDeps, err := analyze.NewDependencies(analyze.Config{DictionaryPath: "../modules/analyze/dictionary.json"}, logger)
+	if err != nil {
+		t.Fatalf("init analyze: %v", err)
+	}
+
+	ingestCfg := ingest.Config{MaxTextSize: 1_000_000}
+
+	handler := analyze.MakeHandleAnalyze(ingestCfg, logger, analyzeDeps,
+		func(sourceType string, wordCount int, coverage float64, features analyze.FeatureVector, scores analyze.BigFiveScores) (string, map[string]any, string, error) {
+			prof := profileDeps.Aggregator.Aggregate(scores, features, wordCount, coverage)
+			analysisID, err := profileDeps.Storage.SaveAnalysis(sourceType, wordCount, coverage, features, prof)
+			if err != nil {
+				return "", nil, "", err
+			}
+			traits := make(map[string]any, len(prof.Traits))
+			for k, v := range prof.Traits {
+				traits[k] = v
+			}
+			return analysisID, traits, prof.ConfidenceFlag, nil
+		},
+	)
+	mux := http.NewServeMux()
+	mux.HandleFunc("POST /analyze", handler)
+	chain := middleware.Chain(mux, middleware.RequestID)
+	server := httptest.NewServer(chain)
+	defer server.Close()
+
+	samples := map[string]struct {
+		desc           string
+		minAuthenticity float64
+		maxClout       float64
+		minAnalytic    float64
+		emotionalLow   bool
+		lowConfidence  bool
+	}{
+		"tweet-thread.txt": {
+			desc:          "casual social media — low confidence (<500 words), low analytical thinking, low clout, high authenticity",
+			minAuthenticity: 0.70,
+			maxClout:       0.50,
+			lowConfidence:  true,
+		},
+		"angry-review.txt": {
+			desc:          "consumer rant — low confidence, low emotional tone (high negative emotion), low clout, high authenticity",
+			minAuthenticity: 0.50,
+			maxClout:       0.45,
+			emotionalLow:   true,
+			lowConfidence:  true,
+		},
+		"diary-entry.txt": {
+			desc:          "personal confessional — near-zero analytical thinking, near-zero clout, max authenticity, negative emotional tone",
+			minAuthenticity: 0.75,
+			maxClout:       0.15,
+			emotionalLow:   true,
+		},
+		"research-abstract.txt": {
+			desc:          "formal academic paper — highest analytical thinking among samples, moderate authenticity, moderate clout",
+			minAnalytic:    0.48,
+			minAuthenticity: 0.20,
+			maxClout:       0.70,
+		},
+	}
+
+	entries, err := os.ReadDir("../samples")
+	if err != nil {
+		t.Fatalf("read samples dir: %v", err)
+	}
+
+	var failures []string
+	for _, e := range entries {
+		name := e.Name()
+		if !strings.HasSuffix(name, ".txt") {
+			continue
+		}
+		text, err := os.ReadFile(filepath.Join("../samples", name))
+		if err != nil {
+			t.Fatalf("read %s: %v", name, err)
+		}
+
+		payload := map[string]string{
+			"text":        string(text),
+			"source_type": "file",
+		}
+		body, _ := json.Marshal(payload)
+		resp, err := http.Post(fmt.Sprintf("%s/analyze", server.URL), "application/json", bytes.NewReader(body))
+		if err != nil {
+			t.Fatalf("POST /analyze %s: %v", name, err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			t.Fatalf("%s: expected 200, got %d", name, resp.StatusCode)
+		}
+
+		var result analyze.AnalyzeResponse
+		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+			t.Fatalf("decode %s: %v", name, err)
+		}
+
+		s := result.Summary
+		expect, hasExpect := samples[name]
+
+		t.Logf("%-28s w=%4d cov=%.2f conf=%s | AT=%.2f CL=%.2f AU=%.2f ET=%.2f | %s",
+			name, result.WordCount, result.DictionaryCoverage, result.ConfidenceFlag,
+			s.AnalyticalThinking, s.Clout, s.Authenticity, s.EmotionalTone, expect.desc)
+
+		if !hasExpect {
+			continue
+		}
+
+		if expect.lowConfidence && result.ConfidenceFlag != "low" {
+			failures = append(failures, fmt.Sprintf("%s: confidence=%s; want low", name, result.ConfidenceFlag))
+		}
+		if expect.minAuthenticity > 0 && s.Authenticity < expect.minAuthenticity {
+			failures = append(failures, fmt.Sprintf("%s: authenticity=%.2f; want >=%.2f", name, s.Authenticity, expect.minAuthenticity))
+		}
+		if expect.maxClout > 0 && s.Clout > expect.maxClout {
+			failures = append(failures, fmt.Sprintf("%s: clout=%.2f; want <=%.2f", name, s.Clout, expect.maxClout))
+		}
+		if expect.minAnalytic > 0 && s.AnalyticalThinking < expect.minAnalytic {
+			failures = append(failures, fmt.Sprintf("%s: analytical_thinking=%.2f; want >=%.2f", name, s.AnalyticalThinking, expect.minAnalytic))
+		}
+		if expect.emotionalLow && s.EmotionalTone >= 0.5 {
+			failures = append(failures, fmt.Sprintf("%s: emotional_tone=%.2f; want <0.5", name, s.EmotionalTone))
+		}
+	}
+
+	if len(failures) > 0 {
+		t.Errorf("%d assertion failures:\n%s", len(failures), strings.Join(failures, "\n"))
 	}
 }

@@ -43,15 +43,15 @@ func (s *Storage) SaveAnalysis(sourceType string, wordCount int, coverage float6
 	if err != nil {
 		return "", fmt.Errorf("marshal features: %w", err)
 	}
-	scoresJSON, err := json.Marshal(profile.Traits)
+	profileJSON, err := json.Marshal(profile)
 	if err != nil {
-		return "", fmt.Errorf("marshal scores: %w", err)
+		return "", fmt.Errorf("marshal profile: %w", err)
 	}
 
 	_, err = s.db.Exec(
 		`INSERT INTO analyses (id, source_type, word_count, dictionary_coverage, features_json, scores_json, confidence_flag)
 		 VALUES (?, ?, ?, ?, ?, ?, ?)`,
-		profile.AnalysisID, sourceType, wordCount, coverage, string(featuresJSON), string(scoresJSON), profile.ConfidenceFlag,
+		profile.AnalysisID, sourceType, wordCount, coverage, string(featuresJSON), string(profileJSON), profile.ConfidenceFlag,
 	)
 	if err != nil {
 		return "", fmt.Errorf("insert analysis: %w", err)
@@ -73,9 +73,12 @@ func (s *Storage) GetAnalysis(id string) (*SavedAnalysis, error) {
 	if err := json.Unmarshal([]byte(featuresJSON), &a.Features); err != nil {
 		return nil, fmt.Errorf("unmarshal features: %w", err)
 	}
-	if err := json.Unmarshal([]byte(scoresJSON), &a.Scores); err != nil {
-		return nil, fmt.Errorf("unmarshal scores: %w", err)
+	var prof Profile
+	if err := json.Unmarshal([]byte(scoresJSON), &prof); err != nil {
+		return nil, fmt.Errorf("unmarshal profile: %w", err)
 	}
+	a.Scores = prof.Traits
+	a.Summary = prof.Summary
 	return &a, nil
 }
 
@@ -87,6 +90,7 @@ type SavedAnalysis struct {
 	Coverage        float64
 	Features        map[string]float64
 	Scores          map[string]TraitResult
+	Summary         analyze.SummaryVariables
 	ConfidenceFlag  string
 	CreatedAt       string
 }

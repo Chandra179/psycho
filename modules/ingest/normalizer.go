@@ -47,14 +47,15 @@ func (n *Normalizer) Normalize(raw string) Document {
 }
 
 func stripHTMLTags(s string) string {
+	runes := []rune(s)
 	var result strings.Builder
 	inTag := false
-	for _, r := range s {
-		if r == '<' {
+	for i, r := range runes {
+		if r == '<' && i+1 < len(runes) && (unicode.IsLetter(runes[i+1]) || runes[i+1] == '/') {
 			inTag = true
 			continue
 		}
-		if r == '>' {
+		if r == '>' && inTag {
 			inTag = false
 			continue
 		}

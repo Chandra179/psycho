@@ -25,9 +25,10 @@ type AnalyzeDirResponse struct {
 	ConfidenceFlag     string         `json:"confidence_flag"`
 	Traits             map[string]any `json:"traits"`
 	FilesRead          int            `json:"files_read"`
+	Summary            any            `json:"summary"`
 }
 
-type AnalyzeDirFunc func(text string, sourceType string) (analysisID string, wordCount int, coverage float64, confidenceFlag string, traits map[string]any, err error)
+type AnalyzeDirFunc func(text string, sourceType string) (analysisID string, wordCount int, coverage float64, confidenceFlag string, traits map[string]any, summary any, err error)
 
 func MakeHandleAnalyzeDir(
 	cfg Config,
@@ -68,7 +69,7 @@ func MakeHandleAnalyzeDir(
 			return
 		}
 
-		analysisID, wordCount, coverage, confidenceFlag, traits, err := analyzeFn(text, sourceType)
+		analysisID, wordCount, coverage, confidenceFlag, traits, summary, err := analyzeFn(text, sourceType)
 		if err != nil {
 			logger.Error(r.Context(), "analysis failed", zlogger.Field{Key: "error", Value: err.Error()})
 			http.Error(w, "internal error", http.StatusInternalServerError)
@@ -82,6 +83,7 @@ func MakeHandleAnalyzeDir(
 			ConfidenceFlag:     confidenceFlag,
 			Traits:             traits,
 			FilesRead:          filesRead,
+			Summary:            summary,
 		}
 
 		w.Header().Set("Content-Type", "application/json")

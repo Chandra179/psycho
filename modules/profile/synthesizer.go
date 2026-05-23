@@ -13,6 +13,7 @@ type Profile struct {
 	AnalysisID     string
 	ConfidenceFlag string
 	Traits         map[string]TraitResult
+	Summary        analyze.SummaryVariables
 }
 
 // TraitResult holds one Big Five trait output.
@@ -30,7 +31,7 @@ func NewScoreAggregator() *ScoreAggregator {
 }
 
 // Aggregate converts raw BigFiveScores into a Profile with confidence intervals.
-func (sa *ScoreAggregator) Aggregate(scores analyze.BigFiveScores, wordCount int, coverage float64) Profile {
+func (sa *ScoreAggregator) Aggregate(scores analyze.BigFiveScores, fv analyze.FeatureVector, wordCount int, coverage float64) Profile {
 	confidence := computeConfidenceFlag(wordCount, coverage)
 	ciWidth := computeCIWidth(wordCount, coverage)
 
@@ -48,6 +49,7 @@ func (sa *ScoreAggregator) Aggregate(scores analyze.BigFiveScores, wordCount int
 		AnalysisID:     uuid.New().String(),
 		ConfidenceFlag: confidence,
 		Traits:         traits,
+		Summary:        analyze.ComputeSummaryVariables(fv),
 	}
 }
 

@@ -34,7 +34,7 @@ func NewHandler(cfg *config.Config, logger *zlogger.Logger) (http.Handler, error
 		logger,
 		analyzeDeps,
 		func(sourceType string, wordCount int, coverage float64, features analyze.FeatureVector, scores analyze.BigFiveScores) (string, map[string]any, string, error) {
-			prof := profileDeps.Aggregator.Aggregate(scores, wordCount, coverage)
+			prof := profileDeps.Aggregator.Aggregate(scores, features, wordCount, coverage)
 			analysisID, err := profileDeps.Storage.SaveAnalysis(sourceType, wordCount, coverage, features, prof)
 			if err != nil {
 				return "", nil, "", err
@@ -50,23 +50,23 @@ func NewHandler(cfg *config.Config, logger *zlogger.Logger) (http.Handler, error
 	mux.HandleFunc("POST /analyze-dir", ingest.MakeHandleAnalyzeDir(
 		ingestDeps.Config,
 		logger,
-		func(text string, sourceType string) (string, int, float64, string, map[string]any, error) {
+		func(text string, sourceType string) (string, int, float64, string, map[string]any, any, error) {
 			normalizer := ingest.NewNormalizer()
 			doc := normalizer.Normalize(text)
 			features, coverage := analyzeDeps.Extractor.Extract(doc)
 			scores := analyzeDeps.Model.Infer(features)
 			scores.RegulatoryFocus = analyze.ComputeRegulatoryFocus(features)
 			scores.NeedForCognition = analyze.ComputeNeedForCognition(features)
-			prof := profileDeps.Aggregator.Aggregate(scores, doc.WordCount, coverage)
+			prof := profileDeps.Aggregator.Aggregate(scores, features, doc.WordCount, coverage)
 			analysisID, err := profileDeps.Storage.SaveAnalysis(sourceType, doc.WordCount, coverage, features, prof)
 			if err != nil {
-				return "", 0, 0, "", nil, err
+				return "", 0, 0, "", nil, nil, err
 			}
 			traits := make(map[string]any, len(prof.Traits))
 			for k, v := range prof.Traits {
 				traits[k] = v
 			}
-			return analysisID, doc.WordCount, coverage, prof.ConfidenceFlag, traits, nil
+			return analysisID, doc.WordCount, coverage, prof.ConfidenceFlag, traits, prof.Summary, nil
 		},
 	))
 

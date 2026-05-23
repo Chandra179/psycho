@@ -42,7 +42,7 @@ func TestScoreAggregator(t *testing.T) {
 		Agreeableness:     0.55,
 		Neuroticism:       0.30,
 	}
-	profile := sa.Aggregate(scores, 1200, 0.75)
+	profile := sa.Aggregate(scores, analyze.FeatureVector{}, 1200, 0.75)
 
 	if profile.AnalysisID == "" {
 		t.Error("AnalysisID is empty")
@@ -63,5 +63,9 @@ func TestScoreAggregator(t *testing.T) {
 	}
 	if len(openness.ConfidenceInterval) != 2 {
 		t.Errorf("Openness CI length = %d; want 2", len(openness.ConfidenceInterval))
+	}
+
+	if profile.Summary == (analyze.SummaryVariables{}) {
+		t.Error("SummaryVariables is zero; expected computed values")
 	}
 }
