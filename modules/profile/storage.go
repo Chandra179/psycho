@@ -59,6 +59,22 @@ func (s *Storage) SaveAnalysis(sourceType string, wordCount int, coverage float6
 	return profile.AnalysisID, nil
 }
 
+// GetProfile retrieves a full Profile from storage by analysis ID.
+func (s *Storage) GetProfile(id string) (Profile, error) {
+	var scoresJSON string
+	err := s.db.QueryRow(
+		`SELECT scores_json FROM analyses WHERE id = ?`, id,
+	).Scan(&scoresJSON)
+	if err != nil {
+		return Profile{}, err
+	}
+	var prof Profile
+	if err := json.Unmarshal([]byte(scoresJSON), &prof); err != nil {
+		return Profile{}, fmt.Errorf("unmarshal profile: %w", err)
+	}
+	return prof, nil
+}
+
 // GetAnalysis retrieves a saved analysis by ID.
 func (s *Storage) GetAnalysis(id string) (*SavedAnalysis, error) {
 	var a SavedAnalysis

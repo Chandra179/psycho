@@ -15,6 +15,7 @@ type Profile struct {
 	Traits         map[string]TraitResult
 	Values         map[string]float64
 	Summary        analyze.SummaryVariables
+	Narrative      string
 }
 
 // TraitResult holds one Big Five trait output.

@@ -14,7 +14,8 @@ type Dependencies struct {
 	Logger              *zlogger.Logger
 	Aggregator          *ScoreAggregator
 	Storage             *Storage
-	NarrativeGenerator NarrativeGenerator
+	NarrativeGenerator  NarrativeGenerator
+	PDFGenerator        ProfilePDFGenerator
 }
 
 func NewDependencies(cfg Config, logger *zlogger.Logger) (*Dependencies, error) {
@@ -31,11 +32,18 @@ func NewDependencies(cfg Config, logger *zlogger.Logger) (*Dependencies, error) 
 		return nil, fmt.Errorf("migrate db: %w", err)
 	}
 
+	var pdfGen ProfilePDFGenerator
+	switch cfg.PDFBackend {
+	default:
+		pdfGen = NewMarotoPDFGenerator()
+	}
+
 	return &Dependencies{
 		Config:              cfg,
 		Logger:              logger,
 		Aggregator:          NewScoreAggregator(),
 		Storage:             storage,
-		NarrativeGenerator: NewTemplateNarrativeGenerator(),
+		NarrativeGenerator:  NewTemplateNarrativeGenerator(),
+		PDFGenerator:        pdfGen,
 	}, nil
 }

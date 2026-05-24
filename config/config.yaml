@@ -19,3 +19,4 @@ analyze:
 
 profile:
   db_path: "psycho.db"
+  pdf_backend: "maroto"

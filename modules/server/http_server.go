@@ -13,7 +13,7 @@ import (
 )
 
 func NewHandler(cfg *config.Config, logger *zlogger.Logger) (http.Handler, error) {
-	profileDeps, err := profile.NewDependencies(profile.Config{DBPath: cfg.Profile.DBPath}, logger)
+	profileDeps, err := profile.NewDependencies(profile.Config{DBPath: cfg.Profile.DBPath, PDFBackend: cfg.Profile.PDFBackend}, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -29,12 +29,15 @@ func NewHandler(cfg *config.Config, logger *zlogger.Logger) (http.Handler, error
 
 	mux := http.NewServeMux()
 
+	mux.HandleFunc("GET /analysis/{id}/pdf", profile.MakeHandleExportPDF(profileDeps.Storage, profileDeps.PDFGenerator, logger))
+
 	mux.HandleFunc("POST /analyze", analyze.MakeHandleAnalyze(
 		ingestDeps.Config,
 		logger,
 		analyzeDeps,
 		func(sourceType string, wordCount int, coverage float64, features analyze.FeatureVector, scores analyze.BigFiveScores) (string, map[string]any, string, string, error) {
 			prof := profileDeps.Aggregator.Aggregate(scores, features, wordCount, coverage)
+			prof.Narrative = profileDeps.NarrativeGenerator.GenerateSynthesis(prof)
 			analysisID, err := profileDeps.Storage.SaveAnalysis(sourceType, wordCount, coverage, features, prof)
 			if err != nil {
 				return "", nil, "", "", err
@@ -43,8 +46,7 @@ func NewHandler(cfg *config.Config, logger *zlogger.Logger) (http.Handler, error
 			for k, v := range prof.Traits {
 				traits[k] = v
 			}
-			narrative := profileDeps.NarrativeGenerator.GenerateSynthesis(prof)
-			return analysisID, traits, prof.ConfidenceFlag, narrative, nil
+			return analysisID, traits, prof.ConfidenceFlag, prof.Narrative, nil
 		},
 	))
 
@@ -62,6 +64,7 @@ func NewHandler(cfg *config.Config, logger *zlogger.Logger) (http.Handler, error
 			scores.NeedForClosure = analyze.ComputeNeedForClosure(features)
 			scores.Values = analyze.ComputeSchwartzValues(features)
 			prof := profileDeps.Aggregator.Aggregate(scores, features, doc.WordCount, coverage)
+			prof.Narrative = profileDeps.NarrativeGenerator.GenerateSynthesis(prof)
 			analysisID, err := profileDeps.Storage.SaveAnalysis(sourceType, doc.WordCount, coverage, features, prof)
 			if err != nil {
 				return "", 0, 0, "", nil, nil, nil, "", err
@@ -70,8 +73,7 @@ func NewHandler(cfg *config.Config, logger *zlogger.Logger) (http.Handler, error
 			for k, v := range prof.Traits {
 				traits[k] = v
 			}
-			narrative := profileDeps.NarrativeGenerator.GenerateSynthesis(prof)
-			return analysisID, doc.WordCount, coverage, prof.ConfidenceFlag, traits, prof.Values, prof.Summary, narrative, nil
+			return analysisID, doc.WordCount, coverage, prof.ConfidenceFlag, traits, prof.Values, prof.Summary, prof.Narrative, nil
 		},
 	))
 

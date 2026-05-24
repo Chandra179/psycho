@@ -44,7 +44,8 @@ type AnalyzeConfig struct {
 }
 
 type ProfileConfig struct {
-	DBPath string `yaml:"db_path"`
+	DBPath     string `yaml:"db_path"`
+	PDFBackend string `yaml:"pdf_backend"`
 }
 
 func Load(path string) (*Config, error) {
