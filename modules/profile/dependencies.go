@@ -10,10 +10,11 @@ import (
 )
 
 type Dependencies struct {
-	Config     Config
-	Logger     *zlogger.Logger
-	Aggregator *ScoreAggregator
-	Storage    *Storage
+	Config              Config
+	Logger              *zlogger.Logger
+	Aggregator          *ScoreAggregator
+	Storage             *Storage
+	NarrativeGenerator NarrativeGenerator
 }
 
 func NewDependencies(cfg Config, logger *zlogger.Logger) (*Dependencies, error) {
@@ -31,9 +32,10 @@ func NewDependencies(cfg Config, logger *zlogger.Logger) (*Dependencies, error) 
 	}
 
 	return &Dependencies{
-		Config:     cfg,
-		Logger:     logger,
-		Aggregator: NewScoreAggregator(),
-		Storage:    storage,
+		Config:              cfg,
+		Logger:              logger,
+		Aggregator:          NewScoreAggregator(),
+		Storage:             storage,
+		NarrativeGenerator: NewTemplateNarrativeGenerator(),
 	}, nil
 }

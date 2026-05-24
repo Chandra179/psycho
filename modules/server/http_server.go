@@ -33,24 +33,25 @@ func NewHandler(cfg *config.Config, logger *zlogger.Logger) (http.Handler, error
 		ingestDeps.Config,
 		logger,
 		analyzeDeps,
-		func(sourceType string, wordCount int, coverage float64, features analyze.FeatureVector, scores analyze.BigFiveScores) (string, map[string]any, string, error) {
+		func(sourceType string, wordCount int, coverage float64, features analyze.FeatureVector, scores analyze.BigFiveScores) (string, map[string]any, string, string, error) {
 			prof := profileDeps.Aggregator.Aggregate(scores, features, wordCount, coverage)
 			analysisID, err := profileDeps.Storage.SaveAnalysis(sourceType, wordCount, coverage, features, prof)
 			if err != nil {
-				return "", nil, "", err
+				return "", nil, "", "", err
 			}
 			traits := make(map[string]any, len(prof.Traits))
 			for k, v := range prof.Traits {
 				traits[k] = v
 			}
-			return analysisID, traits, prof.ConfidenceFlag, nil
+			narrative := profileDeps.NarrativeGenerator.GenerateSynthesis(prof)
+			return analysisID, traits, prof.ConfidenceFlag, narrative, nil
 		},
 	))
 
 	mux.HandleFunc("POST /analyze-dir", ingest.MakeHandleAnalyzeDir(
 		ingestDeps.Config,
 		logger,
-		func(text string, sourceType string) (string, int, float64, string, map[string]any, any, error) {
+		func(text string, sourceType string) (string, int, float64, string, map[string]any, any, string, error) {
 			normalizer := ingest.NewNormalizer()
 			doc := normalizer.Normalize(text)
 			features, coverage := analyzeDeps.Extractor.Extract(doc)
@@ -60,13 +61,14 @@ func NewHandler(cfg *config.Config, logger *zlogger.Logger) (http.Handler, error
 			prof := profileDeps.Aggregator.Aggregate(scores, features, doc.WordCount, coverage)
 			analysisID, err := profileDeps.Storage.SaveAnalysis(sourceType, doc.WordCount, coverage, features, prof)
 			if err != nil {
-				return "", 0, 0, "", nil, nil, err
+				return "", 0, 0, "", nil, nil, "", err
 			}
 			traits := make(map[string]any, len(prof.Traits))
 			for k, v := range prof.Traits {
 				traits[k] = v
 			}
-			return analysisID, doc.WordCount, coverage, prof.ConfidenceFlag, traits, prof.Summary, nil
+			narrative := profileDeps.NarrativeGenerator.GenerateSynthesis(prof)
+			return analysisID, doc.WordCount, coverage, prof.ConfidenceFlag, traits, prof.Summary, narrative, nil
 		},
 	))
 

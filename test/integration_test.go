@@ -34,17 +34,17 @@ func TestFullPipeline(t *testing.T) {
 	ingestCfg := ingest.Config{MaxTextSize: 1_000_000}
 
 	handler := analyze.MakeHandleAnalyze(ingestCfg, logger, analyzeDeps,
-		func(sourceType string, wordCount int, coverage float64, features analyze.FeatureVector, scores analyze.BigFiveScores) (string, map[string]any, string, error) {
+		func(sourceType string, wordCount int, coverage float64, features analyze.FeatureVector, scores analyze.BigFiveScores) (string, map[string]any, string, string, error) {
 			prof := profileDeps.Aggregator.Aggregate(scores, features, wordCount, coverage)
 			analysisID, err := profileDeps.Storage.SaveAnalysis(sourceType, wordCount, coverage, features, prof)
 			if err != nil {
-				return "", nil, "", err
+				return "", nil, "", "", err
 			}
 			traits := make(map[string]any, len(prof.Traits))
 			for k, v := range prof.Traits {
 				traits[k] = v
 			}
-			return analysisID, traits, prof.ConfidenceFlag, nil
+			return analysisID, traits, prof.ConfidenceFlag, profileDeps.NarrativeGenerator.GenerateSynthesis(prof), nil
 		},
 	)
 	mux := http.NewServeMux()
@@ -126,6 +126,10 @@ func TestFullPipeline(t *testing.T) {
 		t.Error("Summary is zero; expected computed summary variables")
 	}
 
+	if result.Narrative == "" {
+		t.Error("Narrative is empty; expected generated narrative")
+	}
+
 	for traitName, traitAny := range result.Traits {
 		trait := traitAny.(map[string]any)
 		score := trait["score"].(float64)
@@ -174,7 +178,7 @@ func TestFullPipelineAnalyzeDir(t *testing.T) {
 	ingestCfg := ingest.Config{MaxTextSize: 1_000_000, DirPath: tmpDir}
 
 	handler := ingest.MakeHandleAnalyzeDir(ingestCfg, logger,
-		func(text string, sourceType string) (string, int, float64, string, map[string]any, any, error) {
+		func(text string, sourceType string) (string, int, float64, string, map[string]any, any, string, error) {
 			normalizer := ingest.NewNormalizer()
 			doc := normalizer.Normalize(text)
 			features, coverage := analyzeDeps.Extractor.Extract(doc)
@@ -184,13 +188,13 @@ func TestFullPipelineAnalyzeDir(t *testing.T) {
 			prof := profileDeps.Aggregator.Aggregate(scores, features, doc.WordCount, coverage)
 			analysisID, err := profileDeps.Storage.SaveAnalysis(sourceType, doc.WordCount, coverage, features, prof)
 			if err != nil {
-				return "", 0, 0, "", nil, nil, err
+				return "", 0, 0, "", nil, nil, "", err
 			}
 			traits := make(map[string]any, len(prof.Traits))
 			for k, v := range prof.Traits {
 				traits[k] = v
 			}
-			return analysisID, doc.WordCount, coverage, prof.ConfidenceFlag, traits, prof.Summary, nil
+			return analysisID, doc.WordCount, coverage, prof.ConfidenceFlag, traits, prof.Summary, profileDeps.NarrativeGenerator.GenerateSynthesis(prof), nil
 		},
 	)
 	mux := http.NewServeMux()
@@ -254,7 +258,7 @@ func TestAnalyzeDirWithDataSamples(t *testing.T) {
 	ingestCfg := ingest.Config{MaxTextSize: 1_000_000, DirPath: samplesDir}
 
 	handler := ingest.MakeHandleAnalyzeDir(ingestCfg, logger,
-		func(text string, sourceType string) (string, int, float64, string, map[string]any, any, error) {
+		func(text string, sourceType string) (string, int, float64, string, map[string]any, any, string, error) {
 			normalizer := ingest.NewNormalizer()
 			doc := normalizer.Normalize(text)
 			features, coverage := analyzeDeps.Extractor.Extract(doc)
@@ -264,13 +268,13 @@ func TestAnalyzeDirWithDataSamples(t *testing.T) {
 			prof := profileDeps.Aggregator.Aggregate(scores, features, doc.WordCount, coverage)
 			analysisID, err := profileDeps.Storage.SaveAnalysis(sourceType, doc.WordCount, coverage, features, prof)
 			if err != nil {
-				return "", 0, 0, "", nil, nil, err
+				return "", 0, 0, "", nil, nil, "", err
 			}
 			traits := make(map[string]any, len(prof.Traits))
 			for k, v := range prof.Traits {
 				traits[k] = v
 			}
-			return analysisID, doc.WordCount, coverage, prof.ConfidenceFlag, traits, prof.Summary, nil
+			return analysisID, doc.WordCount, coverage, prof.ConfidenceFlag, traits, prof.Summary, profileDeps.NarrativeGenerator.GenerateSynthesis(prof), nil
 		},
 	)
 	mux := http.NewServeMux()
@@ -351,17 +355,17 @@ func TestIndividualSamples(t *testing.T) {
 	ingestCfg := ingest.Config{MaxTextSize: 1_000_000}
 
 	handler := analyze.MakeHandleAnalyze(ingestCfg, logger, analyzeDeps,
-		func(sourceType string, wordCount int, coverage float64, features analyze.FeatureVector, scores analyze.BigFiveScores) (string, map[string]any, string, error) {
+		func(sourceType string, wordCount int, coverage float64, features analyze.FeatureVector, scores analyze.BigFiveScores) (string, map[string]any, string, string, error) {
 			prof := profileDeps.Aggregator.Aggregate(scores, features, wordCount, coverage)
 			analysisID, err := profileDeps.Storage.SaveAnalysis(sourceType, wordCount, coverage, features, prof)
 			if err != nil {
-				return "", nil, "", err
+				return "", nil, "", "", err
 			}
 			traits := make(map[string]any, len(prof.Traits))
 			for k, v := range prof.Traits {
 				traits[k] = v
 			}
-			return analysisID, traits, prof.ConfidenceFlag, nil
+			return analysisID, traits, prof.ConfidenceFlag, profileDeps.NarrativeGenerator.GenerateSynthesis(prof), nil
 		},
 	)
 	mux := http.NewServeMux()

@@ -24,9 +24,10 @@ type AnalyzeResponse struct {
 	ConfidenceFlag     string                  `json:"confidence_flag"`
 	Traits             map[string]any          `json:"traits"`
 	Summary            SummaryVariables        `json:"summary"`
+	Narrative          string                  `json:"narrative"`
 }
 
-type SaveAnalyzeFunc func(sourceType string, wordCount int, coverage float64, features FeatureVector, scores BigFiveScores) (analysisID string, traits map[string]any, confidenceFlag string, err error)
+type SaveAnalyzeFunc func(sourceType string, wordCount int, coverage float64, features FeatureVector, scores BigFiveScores) (analysisID string, traits map[string]any, confidenceFlag string, narrative string, err error)
 
 func MakeHandleAnalyze(
 	cfg ingest.Config,
@@ -77,7 +78,7 @@ func MakeHandleAnalyze(
 
 		summary := ComputeSummaryVariables(features)
 
-		analysisID, traits, confidenceFlag, err := saveFn(req.SourceType, doc.WordCount, coverage, features, scores)
+		analysisID, traits, confidenceFlag, narrative, err := saveFn(req.SourceType, doc.WordCount, coverage, features, scores)
 		if err != nil {
 			logger.Error(r.Context(), "failed to save analysis", zlogger.Field{Key: "error", Value: err.Error()})
 			http.Error(w, "internal error", http.StatusInternalServerError)
@@ -91,6 +92,7 @@ func MakeHandleAnalyze(
 			ConfidenceFlag:     confidenceFlag,
 			Traits:             traits,
 			Summary:            summary,
+			Narrative:          narrative,
 		}
 
 		w.Header().Set("Content-Type", "application/json")
