@@ -51,24 +51,27 @@ func NewHandler(cfg *config.Config, logger *zlogger.Logger) (http.Handler, error
 	mux.HandleFunc("POST /analyze-dir", ingest.MakeHandleAnalyzeDir(
 		ingestDeps.Config,
 		logger,
-		func(text string, sourceType string) (string, int, float64, string, map[string]any, any, string, error) {
+		func(text string, sourceType string) (string, int, float64, string, map[string]any, map[string]float64, any, string, error) {
 			normalizer := ingest.NewNormalizer()
 			doc := normalizer.Normalize(text)
 			features, coverage := analyzeDeps.Extractor.Extract(doc)
 			scores := analyzeDeps.Model.Infer(features)
 			scores.RegulatoryFocus = analyze.ComputeRegulatoryFocus(features)
 			scores.NeedForCognition = analyze.ComputeNeedForCognition(features)
+			scores.CognitiveStyle = analyze.ComputeCognitiveStyle(features)
+			scores.NeedForClosure = analyze.ComputeNeedForClosure(features)
+			scores.Values = analyze.ComputeSchwartzValues(features)
 			prof := profileDeps.Aggregator.Aggregate(scores, features, doc.WordCount, coverage)
 			analysisID, err := profileDeps.Storage.SaveAnalysis(sourceType, doc.WordCount, coverage, features, prof)
 			if err != nil {
-				return "", 0, 0, "", nil, nil, "", err
+				return "", 0, 0, "", nil, nil, nil, "", err
 			}
 			traits := make(map[string]any, len(prof.Traits))
 			for k, v := range prof.Traits {
 				traits[k] = v
 			}
 			narrative := profileDeps.NarrativeGenerator.GenerateSynthesis(prof)
-			return analysisID, doc.WordCount, coverage, prof.ConfidenceFlag, traits, prof.Summary, narrative, nil
+			return analysisID, doc.WordCount, coverage, prof.ConfidenceFlag, traits, prof.Values, prof.Summary, narrative, nil
 		},
 	))
 

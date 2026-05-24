@@ -33,6 +33,8 @@ func TestTemplateNarrativeGenerator_GeneratesAllSections(t *testing.T) {
 			"neuroticism":        {Score: 0.30, Percentile: 5, ConfidenceInterval: []float64{0.20, 0.40}},
 			"regulatory_focus":   {Score: 0.70, Percentile: 95, ConfidenceInterval: []float64{0.60, 0.80}},
 			"need_for_cognition": {Score: 0.82, Percentile: 99, ConfidenceInterval: []float64{0.72, 0.92}},
+			"cognitive_style":    {Score: 0.68, Percentile: 93, ConfidenceInterval: []float64{0.58, 0.78}},
+			"need_for_closure":   {Score: 0.35, Percentile: 11, ConfidenceInterval: []float64{0.25, 0.45}},
 		},
 		Summary: sv,
 	}
@@ -49,6 +51,8 @@ func TestTemplateNarrativeGenerator_GeneratesAllSections(t *testing.T) {
 		"Neuroticism",
 		"Regulatory Focus",
 		"Need for Cognition",
+		"Cognitive Style",
+		"Need for Closure",
 		"Analytical Thinking",
 		"Clout",
 		"Authenticity",
@@ -79,6 +83,8 @@ func TestTemplateNarrativeGenerator_LowConfidence(t *testing.T) {
 			"neuroticism":        {Score: 0.50, Percentile: 50, ConfidenceInterval: []float64{0.30, 0.70}},
 			"regulatory_focus":   {Score: 0.50, Percentile: 50, ConfidenceInterval: []float64{0.30, 0.70}},
 			"need_for_cognition": {Score: 0.50, Percentile: 50, ConfidenceInterval: []float64{0.30, 0.70}},
+			"cognitive_style":    {Score: 0.50, Percentile: 50, ConfidenceInterval: []float64{0.30, 0.70}},
+			"need_for_closure":   {Score: 0.50, Percentile: 50, ConfidenceInterval: []float64{0.30, 0.70}},
 		},
 	}
 
@@ -101,6 +107,8 @@ func TestTemplateNarrativeGenerator_EdgeScores(t *testing.T) {
 			"neuroticism":        {Score: 0.50, Percentile: 50, ConfidenceInterval: []float64{0.40, 0.60}},
 			"regulatory_focus":   {Score: 0.20, Percentile: 1, ConfidenceInterval: []float64{0.10, 0.30}},
 			"need_for_cognition": {Score: 0.30, Percentile: 5, ConfidenceInterval: []float64{0.20, 0.40}},
+			"cognitive_style":    {Score: 0.50, Percentile: 50, ConfidenceInterval: []float64{0.40, 0.60}},
+			"need_for_closure":   {Score: 0.50, Percentile: 50, ConfidenceInterval: []float64{0.40, 0.60}},
 		},
 	}
 
@@ -126,6 +134,8 @@ func TestTraitDisplayName(t *testing.T) {
 		{"neuroticism", "Neuroticism"},
 		{"regulatory_focus", "Regulatory Focus"},
 		{"need_for_cognition", "Need for Cognition"},
+		{"cognitive_style", "Cognitive Style"},
+		{"need_for_closure", "Need for Closure"},
 		{"unknown", "unknown"},
 	}
 	for _, c := range cases {

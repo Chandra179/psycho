@@ -2,6 +2,7 @@ package profile
 
 import (
 	"fmt"
+	"sort"
 
 	"psycho/modules/analyze"
 )
@@ -39,6 +40,33 @@ func (g *TemplateNarrativeGenerator) GenerateSynthesis(profile Profile) string {
 	out += fmt.Sprintf("**Need for Cognition:** %.2f (%s) — %dth percentile (95%% CI: %.2f–%.2f)\n\n",
 		nc.Score, traitLabel("need_for_cognition", nc.Score), nc.Percentile, nc.ConfidenceInterval[0], nc.ConfidenceInterval[1])
 
+	out += "### Cognitive Style\n\n"
+	cs := profile.Traits["cognitive_style"]
+	out += fmt.Sprintf("**Cognitive Style:** %.2f (%s) — %dth percentile (95%% CI: %.2f–%.2f)\n\n",
+		cs.Score, traitLabel("cognitive_style", cs.Score), cs.Percentile, cs.ConfidenceInterval[0], cs.ConfidenceInterval[1])
+
+	out += "### Need for Closure\n\n"
+	ncl := profile.Traits["need_for_closure"]
+	out += fmt.Sprintf("**Need for Closure:** %.2f (%s) — %dth percentile (95%% CI: %.2f–%.2f)\n\n",
+		ncl.Score, traitLabel("need_for_closure", ncl.Score), ncl.Percentile, ncl.ConfidenceInterval[0], ncl.ConfidenceInterval[1])
+
+	if len(profile.Values) > 0 {
+		out += "### Schwartz Value Orientation\n\n"
+		keys := make([]string, 0, len(profile.Values))
+		for k := range profile.Values {
+			keys = append(keys, k)
+		}
+		sort.Slice(keys, func(i, j int) bool {
+			return profile.Values[keys[i]] > profile.Values[keys[j]]
+		})
+		for _, k := range keys {
+			pct := profile.Values[k]
+			dn := analyze.ValueDisplayName(analyze.ValueCategory(k))
+			out += fmt.Sprintf("- **%s:** %.2f%% of words\n", dn, pct)
+		}
+		out += "\n"
+	}
+
 	out += "### Summary Variables\n\n"
 	sv := profile.Summary
 	out += fmt.Sprintf("- **Analytical Thinking:** %.2f — %s\n", sv.AnalyticalThinking, summaryLabel(sv.AnalyticalThinking, "highly analytical", "intuitive"))
@@ -60,6 +88,8 @@ func traitDisplayName(key string) string {
 		"neuroticism":        "Neuroticism",
 		"regulatory_focus":   "Regulatory Focus",
 		"need_for_cognition": "Need for Cognition",
+		"cognitive_style":    "Cognitive Style",
+		"need_for_closure":   "Need for Closure",
 	}
 	if n, ok := names[key]; ok {
 		return n
@@ -73,6 +103,12 @@ func traitLabel(name string, score float64) string {
 	}
 	if name == "need_for_cognition" {
 		return analyze.ComputeNeedForCognitionLabel(score)
+	}
+	if name == "cognitive_style" {
+		return analyze.ComputeCognitiveStyleLabel(score)
+	}
+	if name == "need_for_closure" {
+		return analyze.ComputeNeedForClosureLabel(score)
 	}
 	if score >= 0.65 {
 		return "high"

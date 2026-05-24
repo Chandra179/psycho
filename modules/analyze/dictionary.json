@@ -184,5 +184,105 @@
     "obvious", "obviously", "clear", "clearly", "easy", "easily",
     "basic", "straightforward", "trust", "faith",
     "belief", "practical"
+  ],
+  "value_self_direction": [
+    "freedom", "freely", "independent", "independence", "choose", "choice",
+    "curious", "curiosity", "explore", "exploration", "original", "originality",
+    "autonomous", "autonomy", "self-reliant", "individual", "unique",
+    "invent", "invention", "discover", "discovery", "imagination",
+    "imaginative", "personal", "decide", "decision", "preference",
+    "liberty", "spontaneous", "spontaneity", "unconventional",
+    "self-sufficient", "self-directed", "own path", "create", "creative",
+    "creativity", "experiment", "experimental"
+  ],
+  "value_stimulation": [
+    "exciting", "excitement", "daring", "thrilling", "thrill",
+    "adventure", "adventurous", "novel", "novelty", "bold",
+    "intense", "intensity", "exhilarating", "exhilaration", "passionate",
+    "challenge", "challenging", "varied", "variety", "extraordinary",
+    "risk", "risky", "daring", "courage", "courageous",
+    "stimulating", "stimulation", "energetic", "vibrant", "lively",
+    "active", "action", "fast-paced", "explore", "frontier"
+  ],
+  "value_hedonism": [
+    "pleasure", "pleasurable", "enjoy", "enjoyment", "fun",
+    "indulge", "indulgence", "gratification", "sensual", "sensuous",
+    "luxury", "luxurious", "decadent", "decadence", "satisfaction",
+    "satisfy", "content", "contentment", "leisure", "play",
+    "party", "celebrate", "celebration", "festive", "delight",
+    "delightful", "bliss", "blissful", "comfort", "comfortable",
+    "pamper", "treat", "spoiled", "hedonistic", "voluptuous",
+    "relax", "relaxation", "recreation", "entertain", "entertainment"
+  ],
+  "value_achievement": [
+    "success", "successful", "succeed", "accomplish", "accomplishment",
+    "achieve", "achievement", "ambition", "ambitious", "aspire",
+    "aspiration", "career", "excel", "excellence", "expert",
+    "expertise", "master", "mastery", "competent", "competence",
+    "capable", "productive", "productivity", "effective", "effectiveness",
+    "efficient", "efficiency", "outperform", "surpass", "triumph",
+    "victory", "win", "winner", "champion", "recognition",
+    "prestige", "merit", "deserve", "drive", "determination"
+  ],
+  "value_power": [
+    "wealth", "wealthy", "rich", "status", "power", "powerful",
+    "control", "dominate", "dominance", "dominant", "authority",
+    "authoritative", "influence", "influential", "lead", "leader",
+    "leadership", "command", "superior", "superiority",
+    "competitive", "competition", "contest", "win", "winner",
+    "fame", "reputation", "recognition", "importance", "important",
+    "privilege", "privileged", "elite", "rank", "position",
+    "authority", "rule", "ruler", "govern", "governance"
+  ],
+  "value_security": [
+    "safe", "safety", "secure", "security", "protect", "protection",
+    "stable", "stability", "order", "orderly", "predictable",
+    "predictability", "certain", "certainty", "harmony", "peaceful",
+    "peace", "calm", "calmness", "steady", "reliable",
+    "reliability", "dependable", "trustworthy", "trust",
+    "familiar", "routine", "tradition", "traditional", "conservative",
+    "cautious", "caution", "risk-free", "insurance", "guarantee"
+  ],
+  "value_conformity": [
+    "obey", "obedience", "conform", "conformity", "polite", "politeness",
+    "respect", "respectful", "proper", "propriety", "appropriate",
+    "correct", "decent", "decency", "modest", "modesty",
+    "well-behaved", "manners", "etiquette", "courteous",
+    "compliant", "compliance", "rule", "rules", "follow",
+    "dutiful", "duty", "obligation", "obliged", "responsible",
+    "responsibility", "agreeable", "agree", "accept", "acceptance",
+    "discipline", "orderly", "restraint", "self-control", "humble"
+  ],
+  "value_tradition": [
+    "tradition", "traditional", "custom", "customary", "heritage",
+    "ritual", "rituals", "conservative", "convention", "conventional",
+    "heritage", "legacy", "ancestors", "ancestral", "old-fashioned",
+    "classic", "classical", "historic", "historical", "time-honored",
+    "established", "rooted", "age-old", "folk", "folklore",
+    "cultural", "culture", "values", "virtue", "virtues",
+    "piety", "devout", "faith", "faithful", "reverence",
+    "respect", "honor", "loyalty", "loyal", "devotion"
+  ],
+  "value_benevolence": [
+    "help", "helpful", "caring", "care", "kind", "kindness",
+    "generous", "generosity", "compassion", "compassionate",
+    "support", "supportive", "assist", "assistance", "nurture",
+    "nurturing", "forgive", "forgiveness", "understanding",
+    "empathy", "empathetic", "sympathy", "sympathetic", "charity",
+    "charitable", "friend", "friendship", "loyal", "loyalty",
+    "devoted", "devotion", "trustworthy", "altruistic", "altruism",
+    "selfless", "thoughtful", "considerate", "warm", "warmth",
+    "tender", "tenderness", "gentle", "gentleness"
+  ],
+  "value_universalism": [
+    "justice", "just", "fair", "fairness", "equality", "equal",
+    "peace", "peaceful", "nature", "natural", "environment",
+    "environmental", "tolerant", "tolerance", "diverse", "diversity",
+    "inclusive", "inclusion", "broad-minded", "open-minded",
+    "social justice", "human rights", "rights", "freedom",
+    "liberty", "harmony", "unity", "global", "world",
+    "planet", "earth", "ecological", "sustainable", "sustainability",
+    "protect", "preserve", "conservation", "beauty", "artistic",
+    "wisdom", "mature", "spiritual", "inner peace"
   ]
 }

@@ -187,3 +187,111 @@ func TestComputeNeedForCognitionLow(t *testing.T) {
 		t.Errorf("expected low label, got %s", label)
 	}
 }
+
+func TestComputeCognitiveStyleSystematic(t *testing.T) {
+	fv := FeatureVector{
+		CategoryPercents: map[Category]float64{
+			"cognitive_process":  15.0,
+			"cause":              12.0,
+			"certainty":          10.0,
+			"big_words":           8.0,
+			"analytic_thinking":  12.0,
+			"sensation":           3.0,
+			"pronoun":             8.0,
+			"present_focus":       5.0,
+			"intuitive_thinking":  2.0,
+			"tentative":           4.0,
+		},
+	}
+	score := ComputeCognitiveStyle(fv)
+	if score < 0.55 {
+		t.Errorf("expected systematic style (score >= 0.55), got %f", score)
+	}
+	label := ComputeCognitiveStyleLabel(score)
+	if label != "systematic" {
+		t.Errorf("expected systematic label, got %s", label)
+	}
+}
+
+func TestComputeCognitiveStyleIntuitive(t *testing.T) {
+	fv := FeatureVector{
+		CategoryPercents: map[Category]float64{
+			"cognitive_process":  3.0,
+			"cause":              4.0,
+			"certainty":          3.0,
+			"big_words":          1.0,
+			"analytic_thinking":  2.0,
+			"sensation":          12.0,
+			"pronoun":            18.0,
+			"present_focus":      15.0,
+			"intuitive_thinking": 12.0,
+			"tentative":          10.0,
+		},
+	}
+	score := ComputeCognitiveStyle(fv)
+	if score > 0.45 {
+		t.Errorf("expected intuitive style (score <= 0.45), got %f", score)
+	}
+	label := ComputeCognitiveStyleLabel(score)
+	if label != "intuitive" {
+		t.Errorf("expected intuitive label, got %s", label)
+	}
+}
+
+func TestComputeCognitiveStyleMixed(t *testing.T) {
+	fv := FeatureVector{CategoryPercents: map[Category]float64{}}
+	score := ComputeCognitiveStyle(fv)
+	if score != 0.50 {
+		t.Errorf("expected mixed 0.50, got %f", score)
+	}
+	label := ComputeCognitiveStyleLabel(score)
+	if label != "mixed" {
+		t.Errorf("expected mixed label, got %s", label)
+	}
+}
+
+func TestComputeNeedForClosureHigh(t *testing.T) {
+	fv := FeatureVector{
+		CategoryPercents: map[Category]float64{
+			"certainty": 20.0,
+			"tentative": 2.0,
+		},
+	}
+	score := ComputeNeedForClosure(fv)
+	if score < 0.55 {
+		t.Errorf("expected high need for closure, got %f", score)
+	}
+	label := ComputeNeedForClosureLabel(score)
+	if label != "high" {
+		t.Errorf("expected high label, got %s", label)
+	}
+}
+
+func TestComputeNeedForClosureLow(t *testing.T) {
+	fv := FeatureVector{
+		CategoryPercents: map[Category]float64{
+			"certainty": 1.0,
+			"tentative": 20.0,
+		},
+	}
+	score := ComputeNeedForClosure(fv)
+	if score > 0.45 {
+		t.Errorf("expected low need for closure, got %f", score)
+	}
+	label := ComputeNeedForClosureLabel(score)
+	if label != "low" {
+		t.Errorf("expected low label, got %s", label)
+	}
+}
+
+func TestComputeNeedForClosureModerate(t *testing.T) {
+	fv := FeatureVector{CategoryPercents: map[Category]float64{}}
+	score := ComputeNeedForClosure(fv)
+	if score != 0.50 {
+		t.Errorf("expected moderate 0.50, got %f", score)
+	}
+	label := ComputeNeedForClosureLabel(score)
+	if label != "moderate" {
+		t.Errorf("expected moderate label, got %s", label)
+	}
+}

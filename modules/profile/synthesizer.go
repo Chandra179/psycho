@@ -13,6 +13,7 @@ type Profile struct {
 	AnalysisID     string
 	ConfidenceFlag string
 	Traits         map[string]TraitResult
+	Values         map[string]float64
 	Summary        analyze.SummaryVariables
 }
 
@@ -43,12 +44,15 @@ func (sa *ScoreAggregator) Aggregate(scores analyze.BigFiveScores, fv analyze.Fe
 		"neuroticism":        makeTraitResult(scores.Neuroticism, ciWidth),
 		"regulatory_focus":   makeTraitResult(scores.RegulatoryFocus, ciWidth),
 		"need_for_cognition": makeTraitResult(scores.NeedForCognition, ciWidth),
+		"cognitive_style":    makeTraitResult(scores.CognitiveStyle, ciWidth),
+		"need_for_closure":   makeTraitResult(scores.NeedForClosure, ciWidth),
 	}
 
 	return Profile{
 		AnalysisID:     uuid.New().String(),
 		ConfidenceFlag: confidence,
 		Traits:         traits,
+		Values:         scores.Values,
 		Summary:        analyze.ComputeSummaryVariables(fv),
 	}
 }

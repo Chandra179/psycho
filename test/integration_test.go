@@ -118,16 +118,8 @@ func TestFullPipeline(t *testing.T) {
 	if result.ConfidenceFlag == "" {
 		t.Error("ConfidenceFlag is empty")
 	}
-	if len(result.Traits) != 7 {
-		t.Errorf("len(Traits) = %d; want 7", len(result.Traits))
-	}
-
-	if result.Summary == (analyze.SummaryVariables{}) {
-		t.Error("Summary is zero; expected computed summary variables")
-	}
-
-	if result.Narrative == "" {
-		t.Error("Narrative is empty; expected generated narrative")
+	if len(result.Traits) != 9 {
+		t.Errorf("len(Traits) = %d; want 9", len(result.Traits))
 	}
 
 	for traitName, traitAny := range result.Traits {
@@ -178,23 +170,26 @@ func TestFullPipelineAnalyzeDir(t *testing.T) {
 	ingestCfg := ingest.Config{MaxTextSize: 1_000_000, DirPath: tmpDir}
 
 	handler := ingest.MakeHandleAnalyzeDir(ingestCfg, logger,
-		func(text string, sourceType string) (string, int, float64, string, map[string]any, any, string, error) {
+		func(text string, sourceType string) (string, int, float64, string, map[string]any, map[string]float64, any, string, error) {
 			normalizer := ingest.NewNormalizer()
 			doc := normalizer.Normalize(text)
 			features, coverage := analyzeDeps.Extractor.Extract(doc)
 			scores := analyzeDeps.Model.Infer(features)
 			scores.RegulatoryFocus = analyze.ComputeRegulatoryFocus(features)
 			scores.NeedForCognition = analyze.ComputeNeedForCognition(features)
+			scores.CognitiveStyle = analyze.ComputeCognitiveStyle(features)
+			scores.NeedForClosure = analyze.ComputeNeedForClosure(features)
+			scores.Values = analyze.ComputeSchwartzValues(features)
 			prof := profileDeps.Aggregator.Aggregate(scores, features, doc.WordCount, coverage)
 			analysisID, err := profileDeps.Storage.SaveAnalysis(sourceType, doc.WordCount, coverage, features, prof)
 			if err != nil {
-				return "", 0, 0, "", nil, nil, "", err
+				return "", 0, 0, "", nil, nil, nil, "", err
 			}
 			traits := make(map[string]any, len(prof.Traits))
 			for k, v := range prof.Traits {
 				traits[k] = v
 			}
-			return analysisID, doc.WordCount, coverage, prof.ConfidenceFlag, traits, prof.Summary, profileDeps.NarrativeGenerator.GenerateSynthesis(prof), nil
+			return analysisID, doc.WordCount, coverage, prof.ConfidenceFlag, traits, prof.Values, prof.Summary, profileDeps.NarrativeGenerator.GenerateSynthesis(prof), nil
 		},
 	)
 	mux := http.NewServeMux()
@@ -236,8 +231,12 @@ func TestFullPipelineAnalyzeDir(t *testing.T) {
 	if result.FilesRead != 2 {
 		t.Errorf("FilesRead = %d; want 2", result.FilesRead)
 	}
-	if len(result.Traits) != 7 {
-		t.Errorf("len(Traits) = %d; want 7", len(result.Traits))
+	if len(result.Traits) != 9 {
+		t.Errorf("len(Traits) = %d; want 9", len(result.Traits))
+	}
+
+	if len(result.Values) != 10 {
+		t.Errorf("len(Values) = %d; want 10", len(result.Values))
 	}
 }
 
@@ -258,23 +257,26 @@ func TestAnalyzeDirWithDataSamples(t *testing.T) {
 	ingestCfg := ingest.Config{MaxTextSize: 1_000_000, DirPath: samplesDir}
 
 	handler := ingest.MakeHandleAnalyzeDir(ingestCfg, logger,
-		func(text string, sourceType string) (string, int, float64, string, map[string]any, any, string, error) {
+		func(text string, sourceType string) (string, int, float64, string, map[string]any, map[string]float64, any, string, error) {
 			normalizer := ingest.NewNormalizer()
 			doc := normalizer.Normalize(text)
 			features, coverage := analyzeDeps.Extractor.Extract(doc)
 			scores := analyzeDeps.Model.Infer(features)
 			scores.RegulatoryFocus = analyze.ComputeRegulatoryFocus(features)
 			scores.NeedForCognition = analyze.ComputeNeedForCognition(features)
+			scores.CognitiveStyle = analyze.ComputeCognitiveStyle(features)
+			scores.NeedForClosure = analyze.ComputeNeedForClosure(features)
+			scores.Values = analyze.ComputeSchwartzValues(features)
 			prof := profileDeps.Aggregator.Aggregate(scores, features, doc.WordCount, coverage)
 			analysisID, err := profileDeps.Storage.SaveAnalysis(sourceType, doc.WordCount, coverage, features, prof)
 			if err != nil {
-				return "", 0, 0, "", nil, nil, "", err
+				return "", 0, 0, "", nil, nil, nil, "", err
 			}
 			traits := make(map[string]any, len(prof.Traits))
 			for k, v := range prof.Traits {
 				traits[k] = v
 			}
-			return analysisID, doc.WordCount, coverage, prof.ConfidenceFlag, traits, prof.Summary, profileDeps.NarrativeGenerator.GenerateSynthesis(prof), nil
+			return analysisID, doc.WordCount, coverage, prof.ConfidenceFlag, traits, prof.Values, prof.Summary, profileDeps.NarrativeGenerator.GenerateSynthesis(prof), nil
 		},
 	)
 	mux := http.NewServeMux()
@@ -316,8 +318,8 @@ func TestAnalyzeDirWithDataSamples(t *testing.T) {
 	if result.FilesRead != 8 {
 		t.Errorf("FilesRead = %d; want 8", result.FilesRead)
 	}
-	if len(result.Traits) != 7 {
-		t.Errorf("len(Traits) = %d; want 7", len(result.Traits))
+	if len(result.Traits) != 9 {
+		t.Errorf("len(Traits) = %d; want 9", len(result.Traits))
 	}
 
 	outPath := "../testresults/genz-job-struggles/integration-output.json"

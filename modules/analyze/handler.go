@@ -23,6 +23,7 @@ type AnalyzeResponse struct {
 	DictionaryCoverage float64                 `json:"dictionary_coverage"`
 	ConfidenceFlag     string                  `json:"confidence_flag"`
 	Traits             map[string]any          `json:"traits"`
+	Values             map[string]float64      `json:"values"`
 	Summary            SummaryVariables        `json:"summary"`
 	Narrative          string                  `json:"narrative"`
 }
@@ -75,6 +76,9 @@ func MakeHandleAnalyze(
 		scores := analyzer.Model.Infer(features)
 		scores.RegulatoryFocus = ComputeRegulatoryFocus(features)
 		scores.NeedForCognition = ComputeNeedForCognition(features)
+		scores.CognitiveStyle = ComputeCognitiveStyle(features)
+		scores.NeedForClosure = ComputeNeedForClosure(features)
+		scores.Values = ComputeSchwartzValues(features)
 
 		summary := ComputeSummaryVariables(features)
 
@@ -91,6 +95,7 @@ func MakeHandleAnalyze(
 			DictionaryCoverage: coverage,
 			ConfidenceFlag:     confidenceFlag,
 			Traits:             traits,
+			Values:             scores.Values,
 			Summary:            summary,
 			Narrative:          narrative,
 		}

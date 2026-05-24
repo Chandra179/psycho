@@ -19,17 +19,18 @@ type AnalyzeDirRequest struct {
 }
 
 type AnalyzeDirResponse struct {
-	AnalysisID         string         `json:"analysis_id"`
-	WordCount          int            `json:"word_count"`
-	DictionaryCoverage float64        `json:"dictionary_coverage"`
-	ConfidenceFlag     string         `json:"confidence_flag"`
-	Traits             map[string]any `json:"traits"`
-	FilesRead          int            `json:"files_read"`
-	Summary            any            `json:"summary"`
-	Narrative          string         `json:"narrative"`
+	AnalysisID         string             `json:"analysis_id"`
+	WordCount          int                `json:"word_count"`
+	DictionaryCoverage float64            `json:"dictionary_coverage"`
+	ConfidenceFlag     string             `json:"confidence_flag"`
+	Traits             map[string]any     `json:"traits"`
+	Values             map[string]float64 `json:"values"`
+	FilesRead          int                `json:"files_read"`
+	Summary            any                `json:"summary"`
+	Narrative          string             `json:"narrative"`
 }
 
-type AnalyzeDirFunc func(text string, sourceType string) (analysisID string, wordCount int, coverage float64, confidenceFlag string, traits map[string]any, summary any, narrative string, err error)
+type AnalyzeDirFunc func(text string, sourceType string) (analysisID string, wordCount int, coverage float64, confidenceFlag string, traits map[string]any, values map[string]float64, summary any, narrative string, err error)
 
 func MakeHandleAnalyzeDir(
 	cfg Config,
@@ -70,7 +71,7 @@ func MakeHandleAnalyzeDir(
 			return
 		}
 
-		analysisID, wordCount, coverage, confidenceFlag, traits, summary, narrative, err := analyzeFn(text, sourceType)
+		analysisID, wordCount, coverage, confidenceFlag, traits, values, summary, narrative, err := analyzeFn(text, sourceType)
 		if err != nil {
 			logger.Error(r.Context(), "analysis failed", zlogger.Field{Key: "error", Value: err.Error()})
 			http.Error(w, "internal error", http.StatusInternalServerError)
@@ -83,6 +84,7 @@ func MakeHandleAnalyzeDir(
 			DictionaryCoverage: coverage,
 			ConfidenceFlag:     confidenceFlag,
 			Traits:             traits,
+			Values:             values,
 			FilesRead:          filesRead,
 			Summary:            summary,
 			Narrative:          narrative,
