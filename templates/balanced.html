@@ -1,0 +1,220 @@
+<!--
+  Template: BALANCED
+  Audience: engaged non-expert — wants more than a one-line label per trait
+  but no CI/statistical jargon. Percentile kept (reads intuitively as
+  "higher than X% of people"), CI dropped, clean card/grid layout.
+
+  Expected data (ReportView):
+
+  type ReportView struct {
+      AnalysisID     string
+      GeneratedAt    string
+      ReadingQuality string      // "Medium" — friendly label, see general.html discussion
+      Traits         []TraitView
+      Values         []ValueView   // pre-sorted descending by Percent
+      Summary        []TraitView
+  }
+  type TraitView struct {
+      Name       string
+      Score100   int      // 53
+      Label      string   // "moderate"
+      Percentile int      // 60
+      Blurb      string    // one-line takeaway, e.g. "Slightly above average curiosity for new ideas."
+  }
+  type ValueView struct {
+      Rank    int
+      Name    string
+      Percent float64
+  }
+-->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Psychological Profile</title>
+<style>
+  @page { size: A4; margin: 20mm 16mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Helvetica Neue", Arial, sans-serif;
+    color: #1f2430;
+    background: #fff;
+    margin: 0;
+    font-size: 10.5pt;
+    line-height: 1.5;
+  }
+  .wrap { max-width: 780px; margin: 0 auto; padding: 30px 26px; }
+
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 16px;
+    border-bottom: 3px solid #2f6f5e;
+    margin-bottom: 20px;
+  }
+  header h1 { font-size: 19pt; margin: 0; color: #1f2430; }
+  header .badge {
+    background: #eaf4f0;
+    color: #2f6f5e;
+    font-size: 9pt;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 20px;
+  }
+
+  section { margin-bottom: 26px; }
+  h2 {
+    font-size: 12.5pt;
+    color: #2f6f5e;
+    margin-bottom: 12px;
+  }
+
+  .trait-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .trait-card {
+    border: 1px solid #e2e8e5;
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .trait-card .row1 {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 6px;
+  }
+  .trait-card .name { font-weight: 700; font-size: 11pt; }
+  .trait-card .label {
+    font-size: 8.5pt;
+    color: #2f6f5e;
+    background: #eaf4f0;
+    padding: 2px 8px;
+    border-radius: 10px;
+    text-transform: capitalize;
+  }
+  .trait-card .pct { font-size: 8.5pt; color: #8a93a3; margin-bottom: 8px; }
+  .bar-track {
+    position: relative;
+    height: 7px;
+    background: #eef1f0;
+    border-radius: 4px;
+    margin-bottom: 8px;
+  }
+  .bar-fill {
+    position: absolute; top: 0; left: 0; height: 100%;
+    background: #2f6f5e;
+    border-radius: 4px;
+  }
+  .trait-card .blurb { font-size: 9.3pt; color: #4a5160; }
+
+  .values-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .value-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #f4f6f5;
+    border: 1px solid #e2e8e5;
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 9pt;
+  }
+  .value-chip .rank {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: #2f6f5e;
+    color: #fff;
+    font-size: 7.5pt;
+  }
+
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+  .summary-card {
+    text-align: center;
+    border: 1px solid #e2e8e5;
+    border-radius: 10px;
+    padding: 12px 8px;
+  }
+  .summary-card .v { font-size: 11.5pt; font-weight: 700; color: #2f6f5e; }
+  .summary-card .k { font-size: 8pt; color: #8a93a3; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.3px; }
+
+  footer {
+    margin-top: 30px;
+    padding-top: 12px;
+    border-top: 1px solid #e2e8e5;
+    text-align: center;
+    font-size: 8pt;
+    color: #8a93a3;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Psychological Profile</h1>
+    <span class="badge">Reading quality: {{.ReadingQuality}}</span>
+  </header>
+
+  <section>
+    <h2>Traits</h2>
+    <div class="trait-grid">
+      {{range .Traits}}
+      <div class="trait-card">
+        <div class="row1">
+          <span class="name">{{.Name}}</span>
+          <span class="label">{{.Label}}</span>
+        </div>
+        <div class="pct">Higher than {{.Percentile}}% of people</div>
+        <div class="bar-track"><div class="bar-fill" style="width: {{.Score100}}%;"></div></div>
+        <div class="blurb">{{.Blurb}}</div>
+      </div>
+      {{end}}
+    </div>
+  </section>
+
+  {{if .Values}}
+  <section>
+    <h2>Top Values</h2>
+    <div class="values-row">
+      {{range .Values}}
+      <div class="value-chip">
+        <span class="rank">{{.Rank}}</span>
+        <span>{{.Name}}</span>
+      </div>
+      {{end}}
+    </div>
+  </section>
+  {{end}}
+
+  <section>
+    <h2>Summary Variables</h2>
+    <div class="summary-grid">
+      {{range .Summary}}
+      <div class="summary-card">
+        <div class="v">{{.Label}}</div>
+        <div class="k">{{.Name}}</div>
+      </div>
+      {{end}}
+    </div>
+  </section>
+
+  <footer>
+    Generated by Psycho — template-based synthesis. Not a clinical assessment. · {{.AnalysisID}}
+  </footer>
+
+</div>
+</body>
+</html>

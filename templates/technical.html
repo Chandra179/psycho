@@ -1,0 +1,233 @@
+<!--
+  Template: TECHNICAL
+  Audience: analyst / researcher / power user — full statistical detail,
+  raw scores, percentiles, 95% CI, dictionary coverage, word count.
+
+  Expected data (ReportView, built from Profile + the ingest-time
+  wordCount/coverage that Aggregate() already receives — currently
+  discarded after computing ConfidenceFlag, would need to be threaded
+  through to the view model):
+
+  type ReportView struct {
+      AnalysisID       string
+      GeneratedAt      string
+      ConfidenceFlag   string   // raw: "low" | "medium" | "high"
+      WordCount        int
+      Coverage         float64  // 0-1, dictionary match rate
+      Traits           []TraitView
+      Values           []ValueView   // pre-sorted descending by Percent
+      Summary          []TraitView
+  }
+  type TraitView struct {
+      Key         string   // "openness" (machine key, shown for traceability)
+      Name        string   // "Openness"
+      Score       float64  // 0.53 (raw, not x100)
+      Label       string
+      Percentile  int
+      CILow       float64
+      CIHigh      float64
+  }
+  type ValueView struct {
+      Rank    int
+      Name    string
+      Percent float64
+  }
+-->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Psychological Profile — Technical Report</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "IBM Plex Mono", "SF Mono", "Consolas", monospace;
+    color: #1a1d21;
+    background: #ffffff;
+    margin: 0;
+    font-size: 9.5pt;
+    line-height: 1.45;
+  }
+  .wrap { max-width: 800px; margin: 0 auto; padding: 24px 20px; }
+
+  header {
+    border-bottom: 2px solid #1a1d21;
+    padding-bottom: 10px;
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+  header h1 { font-size: 14pt; margin: 0; letter-spacing: -0.2px; }
+  header .meta { text-align: right; font-size: 8pt; color: #555; }
+
+  .meta-bar {
+    display: flex;
+    gap: 18px;
+    font-size: 8pt;
+    color: #333;
+    background: #f2f3f5;
+    border: 1px solid #d8dbe0;
+    padding: 8px 12px;
+    margin: 14px 0 22px;
+  }
+  .meta-bar div span.k { color: #777; margin-right: 4px; }
+  .meta-bar div span.v { font-weight: 700; }
+
+  section { margin-bottom: 24px; }
+  h2 {
+    font-size: 10.5pt;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: #1a1d21;
+    border-bottom: 1px solid #1a1d21;
+    padding-bottom: 4px;
+    margin-bottom: 10px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 8.7pt;
+  }
+  thead th {
+    text-align: left;
+    background: #1a1d21;
+    color: #fff;
+    padding: 5px 8px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+  }
+  tbody td {
+    padding: 5px 8px;
+    border-bottom: 1px solid #e2e4e8;
+  }
+  tbody tr:nth-child(even) { background: #f7f8fa; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td.key { color: #888; font-size: 7.8pt; }
+
+  .ci-bar {
+    display: inline-block;
+    position: relative;
+    width: 90px;
+    height: 6px;
+    background: #e2e4e8;
+    vertical-align: middle;
+  }
+  .ci-bar .range {
+    position: absolute; top: 0; height: 100%;
+    background: #9aa5b1;
+  }
+  .ci-bar .point {
+    position: absolute; top: -2px; width: 2px; height: 10px;
+    background: #1a1d21;
+  }
+
+  .footnote {
+    font-size: 7.8pt;
+    color: #777;
+    margin-top: 6px;
+  }
+
+  footer {
+    margin-top: 26px;
+    border-top: 1px solid #1a1d21;
+    padding-top: 8px;
+    font-size: 7.8pt;
+    color: #777;
+    display: flex;
+    justify-content: space-between;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>PSYCHOLOGICAL PROFILE — TECHNICAL REPORT</h1>
+    <div class="meta">
+      analysis_id: {{.AnalysisID}}<br>
+      generated: {{.GeneratedAt}}
+    </div>
+  </header>
+
+  <div class="meta-bar">
+    <div><span class="k">confidence_flag</span><span class="v">{{.ConfidenceFlag}}</span></div>
+    <div><span class="k">word_count</span><span class="v">{{.WordCount}}</span></div>
+    <div><span class="k">dict_coverage</span><span class="v">{{.Coverage}}</span></div>
+    <div><span class="k">model</span><span class="v">dictionary-based (LIWC-style)</span></div>
+  </div>
+
+  <section>
+    <h2>Big Five &amp; Derived Traits</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Trait</th>
+          <th>Key</th>
+          <th class="num">Score</th>
+          <th>Label</th>
+          <th class="num">Percentile</th>
+          <th>95% CI</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Traits}}
+        <tr>
+          <td>{{.Name}}</td>
+          <td class="key">{{.Key}}</td>
+          <td class="num">{{.Score}}</td>
+          <td>{{.Label}}</td>
+          <td class="num">{{.Percentile}}</td>
+          <td>
+            <span class="ci-bar">
+              <span class="range" style="left: {{.CILow}}%; width: calc({{.CIHigh}}% - {{.CILow}}%);"></span>
+              <span class="point" style="left: calc({{.Score}}% - 1px);"></span>
+            </span>
+            {{.CILow}}–{{.CIHigh}}
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    <div class="footnote">
+      Percentile relative to reference sample (see README §References). CI width derives from
+      SE ≈ 0.08/√(n/1000), widened when dictionary coverage &lt; 0.5. See synthesizer.go:computeCIWidth.
+    </div>
+  </section>
+
+  {{if .Values}}
+  <section>
+    <h2>Schwartz Value Orientation</h2>
+    <table>
+      <thead><tr><th class="num">Rank</th><th>Category</th><th class="num">% of words</th></tr></thead>
+      <tbody>
+        {{range .Values}}
+        <tr><td class="num">{{.Rank}}</td><td>{{.Name}}</td><td class="num">{{.Percent}}%</td></tr>
+        {{end}}
+      </tbody>
+    </table>
+  </section>
+  {{end}}
+
+  <section>
+    <h2>Summary Variables (LIWC-derived)</h2>
+    <table>
+      <thead><tr><th>Variable</th><th class="num">Score</th><th>Interpretation</th></tr></thead>
+      <tbody>
+        {{range .Summary}}
+        <tr><td>{{.Name}}</td><td class="num">{{.Score}}</td><td>{{.Label}}</td></tr>
+        {{end}}
+      </tbody>
+    </table>
+  </section>
+
+  <footer>
+    <span>psycho — template-based synthesis, no LLM in inference path</span>
+    <span>not a clinical or diagnostic instrument</span>
+  </footer>
+
+</div>
+</body>
+</html>
