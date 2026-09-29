@@ -35,3 +35,6 @@ vendor
 
 # Generated test output
 testresults/
+
+# ZCode session state
+.zcode/

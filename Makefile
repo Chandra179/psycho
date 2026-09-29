@@ -48,5 +48,12 @@ test-pdf:
 	rm $$TMP; \
 	echo "--> wrote profile-general.html, profile-technical.html, profile-balanced.html"
 
-up:
-	docker compose up -d
+image:
+	podman build -t psycho .
+
+up: image
+	podman run -d --name psycho -p 8080:8080 psycho
+
+down:
+	-podman stop psycho
+	-podman rm psycho

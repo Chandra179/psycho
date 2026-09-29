@@ -2,7 +2,7 @@
 
 ## Project
 
-Go module `psycho` (Go 1.26.3) — psychological profiling from text. Early stage.
+Go module `psycho` (Go 1.27) — psychological profiling from text. Early stage.
 
 ## Build & verify
 
@@ -10,12 +10,12 @@ Go module `psycho` (Go 1.26.3) — psychological profiling from text. Early stag
 go build ./...
 ```
 
-No tests exist yet. `go test ./...` produces nothing.
+Run `go test ./...` for the unit and integration tests (under `modules/` and `test/`).
 
 ## Project layout
 
 ```
-cmd/example/main.go        # entrypoint: calls example.RunHttpServer()
+cmd/psycho/main.go         # entrypoint — starts HTTP server
 modules/<name>/            # one flat Go package per domain module
   config.go                # YAML config structs
   dependencies.go          # wire deps, load config, construct services
@@ -46,9 +46,9 @@ scripts/
 - **Middleware order** (outermost first): Recovery → RequestID → Timeout → Logger → Auth → RateLimit (see `middleware/chain.go`).
 - **Validation**: `middleware.DecodeAndValidate[T](r)` — call inside handlers, uses `validate:"required,min=3"` struct tags.
 
-## Docker
+## Container (Podman)
 
-Multi-stage build, `CGO_ENABLED=0`, distilled Alpine runtime. Run: `make up` (docker-compose, currently empty) or `docker build .`
+Multi-stage `Containerfile`, `CGO_ENABLED=0`, Alpine runtime. Run: `make up` (podman build + run) or `podman build .`
 
 ## Infrastructure
 

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-Psycho is a local-first Go service that extracts a psychological profile (Big Five/OCEAN, Regulatory Focus, Need for Cognition, cognitive style, Need for Closure, Schwartz values) from submitted text, using dictionary-based (LIWC-style) feature extraction — no LLM in the core inference path. Single-user, no auth, everything runs in one process against a local SQLite DB. See `README.md` for the full product spec (goals, non-goals, references to the psychology literature each inference is based on).
+Psycho is a local-first Go service that extracts a psychological profile (Big Five/OCEAN, Regulatory Focus, Need for Cognition, cognitive style, Need for Closure, Schwartz values) from submitted text, using dictionary-based (LIWC-style) feature extraction — no LLM in the core inference path. Single-user, no auth, everything runs in one process against a local SQLite DB. See `docs/prd.md` for the full product spec (goals, non-goals) and `docs/system-design.md` for the references to the psychology literature each inference is based on.
 
 ## Build & run
 
@@ -45,7 +45,7 @@ Wiring happens one level up in `modules/server/http_server.go`: `NewHandler` bui
 
 Middleware (`middleware/chain.go`, applied outermost-first): `Recovery` → `RequestID` → `Timeout`. Request bodies are decoded and validated together via `middleware.DecodeAndValidate[T](r)`, which uses `go-playground/validator` struct tags (see `ingest.AnalyzeDirRequest` for the pattern).
 
-Every inference function is meant to be traceable to a cited source — check `README.md`'s References section and the comment at the top of the relevant file (`coefficients.go`, `regfocus.go`, `needcog.go`, etc.) before changing scoring logic.
+Every inference function is meant to be traceable to a cited source — check the References section in `docs/system-design.md` and the comment at the top of the relevant file (`coefficients.go`, `regfocus.go`, `needcog.go`, etc.) before changing scoring logic.
 
 ## Conventions
 
