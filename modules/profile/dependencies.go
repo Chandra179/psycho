@@ -10,12 +10,12 @@ import (
 )
 
 type Dependencies struct {
-	Config              Config
-	Logger              *zlogger.Logger
-	Aggregator          *ScoreAggregator
-	Storage             *Storage
-	NarrativeGenerator  NarrativeGenerator
-	PDFGenerator        ProfilePDFGenerator
+	Config             Config
+	Logger             *zlogger.Logger
+	Aggregator         *ScoreAggregator
+	Storage            *Storage
+	NarrativeGenerator NarrativeGenerator
+	PDFGenerator       ProfilePDFGenerator
 }
 
 func NewDependencies(cfg Config, logger *zlogger.Logger) (*Dependencies, error) {
@@ -34,16 +34,18 @@ func NewDependencies(cfg Config, logger *zlogger.Logger) (*Dependencies, error) 
 
 	var pdfGen ProfilePDFGenerator
 	switch cfg.PDFBackend {
-	default:
+	case "", "maroto":
 		pdfGen = NewMarotoPDFGenerator()
+	default:
+		return nil, fmt.Errorf("unknown pdf_backend %q (supported: maroto)", cfg.PDFBackend)
 	}
 
 	return &Dependencies{
-		Config:              cfg,
-		Logger:              logger,
-		Aggregator:          NewScoreAggregator(),
-		Storage:             storage,
-		NarrativeGenerator:  NewTemplateNarrativeGenerator(),
-		PDFGenerator:        pdfGen,
+		Config:             cfg,
+		Logger:             logger,
+		Aggregator:         NewScoreAggregator(),
+		Storage:            storage,
+		NarrativeGenerator: NewTemplateNarrativeGenerator(),
+		PDFGenerator:       pdfGen,
 	}, nil
 }

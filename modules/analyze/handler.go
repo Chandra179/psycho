@@ -18,23 +18,23 @@ type AnalyzeRequest struct {
 }
 
 type AnalyzeResponse struct {
-	AnalysisID         string                  `json:"analysis_id"`
-	WordCount          int                     `json:"word_count"`
-	DictionaryCoverage float64                 `json:"dictionary_coverage"`
-	ConfidenceFlag     string                  `json:"confidence_flag"`
-	Traits             map[string]any          `json:"traits"`
-	Values             map[string]float64      `json:"values"`
-	Summary            SummaryVariables        `json:"summary"`
-	Narrative          string                  `json:"narrative"`
+	AnalysisID         string             `json:"analysis_id"`
+	WordCount          int                `json:"word_count"`
+	DictionaryCoverage float64            `json:"dictionary_coverage"`
+	ConfidenceFlag     string             `json:"confidence_flag"`
+	Traits             map[string]any     `json:"traits"`
+	Values             map[string]float64 `json:"values"`
+	Summary            SummaryVariables   `json:"summary"`
+	Narrative          string             `json:"narrative"`
 }
 
-type SaveAnalyzeFunc func(sourceType string, wordCount int, coverage float64, features FeatureVector, scores BigFiveScores) (analysisID string, traits map[string]any, confidenceFlag string, narrative string, err error)
-
+// MakeHandleAnalyze builds the POST /analyze handler. The analysis itself is
+// delegated to analyzeFn (the composed pipeline); this handler only handles
+// transport: decode, URL fetch, size limits, response shaping.
 func MakeHandleAnalyze(
-	cfg ingest.Config,
+	maxTextSize int,
 	logger *zlogger.Logger,
-	analyzer *Dependencies,
-	saveFn SaveAnalyzeFunc,
+	analyzeFn ingest.AnalyzeFunc,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		req, err := middleware.DecodeAndValidate[AnalyzeRequest](r)
@@ -50,7 +50,7 @@ func MakeHandleAnalyze(
 				http.Error(w, "source_url is required when source_type=url", http.StatusBadRequest)
 				return
 			}
-			fetched, err := ingest.FetchURLText(req.SourceURL)
+			fetched, err := ingest.FetchURLText(req.SourceURL, maxTextSize)
 			if err != nil {
 				logger.Error(r.Context(), "url fetch failed", zlogger.Field{Key: "error", Value: err.Error()})
 				http.Error(w, fmt.Sprintf("failed to fetch URL: %v", err), http.StatusBadGateway)
@@ -64,40 +64,29 @@ func MakeHandleAnalyze(
 			return
 		}
 
-		if cfg.MaxTextSize > 0 && len(text) > cfg.MaxTextSize {
+		if maxTextSize > 0 && len(text) > maxTextSize {
 			http.Error(w, "text exceeds max size", http.StatusBadRequest)
 			return
 		}
 
-		normalizer := ingest.NewNormalizer()
-		doc := normalizer.Normalize(text)
-
-		features, coverage := analyzer.Extractor.Extract(doc)
-		scores := analyzer.Model.Infer(features)
-		scores.RegulatoryFocus = ComputeRegulatoryFocus(features)
-		scores.NeedForCognition = ComputeNeedForCognition(features)
-		scores.CognitiveStyle = ComputeCognitiveStyle(features)
-		scores.NeedForClosure = ComputeNeedForClosure(features)
-		scores.Values = ComputeSchwartzValues(features)
-
-		summary := ComputeSummaryVariables(features)
-
-		analysisID, traits, confidenceFlag, narrative, err := saveFn(req.SourceType, doc.WordCount, coverage, features, scores)
+		out, err := analyzeFn(r.Context(), req.SourceType, req.SourceDate, text)
 		if err != nil {
-			logger.Error(r.Context(), "failed to save analysis", zlogger.Field{Key: "error", Value: err.Error()})
+			logger.Error(r.Context(), "analysis failed", zlogger.Field{Key: "error", Value: err.Error()})
 			http.Error(w, "internal error", http.StatusInternalServerError)
 			return
 		}
 
+		summary, _ := out.Summary.(SummaryVariables)
+
 		resp := AnalyzeResponse{
-			AnalysisID:         analysisID,
-			WordCount:          doc.WordCount,
-			DictionaryCoverage: coverage,
-			ConfidenceFlag:     confidenceFlag,
-			Traits:             traits,
-			Values:             scores.Values,
+			AnalysisID:         out.AnalysisID,
+			WordCount:          out.WordCount,
+			DictionaryCoverage: out.DictionaryCoverage,
+			ConfidenceFlag:     out.ConfidenceFlag,
+			Traits:             out.Traits,
+			Values:             out.Values,
 			Summary:            summary,
-			Narrative:          narrative,
+			Narrative:          out.Narrative,
 		}
 
 		w.Header().Set("Content-Type", "application/json")

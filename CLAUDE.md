@@ -32,7 +32,7 @@ make pdf ID=<analysis_id> # downloads the PDF for a saved analysis
 - `handler.go` — HTTP transport; handlers are constructed as closures via `MakeHandleX(...)` factory functions that take dependencies/callback functions as arguments, not a receiver struct
 - one file per domain concern (e.g. `bigfive.go`, `regfocus.go`, `storage.go`, `narrative.go`)
 
-Wiring happens one level up in `modules/server/http_server.go`: `NewHandler` builds each module's `Dependencies`, then registers routes on a stdlib `http.ServeMux`, threading cross-module glue through closures passed into `MakeHandleX` (e.g. the `/analyze` handler's callback takes `analyze` output and calls into `profileDeps.Aggregator`/`Storage`/`NarrativeGenerator` — modules never import each other's handler package directly for business logic, only `server` composes them).
+Wiring happens one level up in `modules/server/http_server.go`: `NewHandler` builds each module's `Dependencies`, composes them into a `modules/pipeline.Pipeline` (which owns the full normalize→extract→infer→aggregate→narrate→persist flow and returns an `ingest.AnalysisOutput` struct), and passes `pipe.Run` into the `MakeHandleX` factories as the `ingest.AnalyzeFunc` seam — modules never import each other's handler package directly for business logic; only `server` (and `pipeline`) compose them.
 
 **Request flow** (`POST /analyze-dir`, the primary path — reads `.txt` files from a configured directory rather than accepting arbitrary uploads; `source_type` deliberately accepts blog|chat|email|paste|file|url — broader than the PRD's "max 3" example, keeping its bounded-taxonomy intent):
 1. `ingest` reads and concatenates files (`ReadDir`), enforces min/max size.

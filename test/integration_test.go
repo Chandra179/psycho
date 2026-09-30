@@ -14,11 +14,16 @@ import (
 	"psycho/middleware"
 	"psycho/modules/analyze"
 	"psycho/modules/ingest"
+	"psycho/modules/pipeline"
 	"psycho/modules/profile"
 	"psycho/zlogger"
 )
 
-func TestFullPipeline(t *testing.T) {
+// newTestPipeline wires the real modules against the real dictionary with an
+// in-memory database — the same composition the server performs. It returns
+// the profile dependencies too, for tests that assert on persisted state.
+func newTestPipeline(t *testing.T) (*pipeline.Pipeline, *profile.Dependencies) {
+	t.Helper()
 	logger := zlogger.New("dev")
 
 	profileDeps, err := profile.NewDependencies(profile.Config{DBPath: ":memory:"}, logger)
@@ -31,22 +36,22 @@ func TestFullPipeline(t *testing.T) {
 		t.Fatalf("init analyze: %v", err)
 	}
 
-	ingestCfg := ingest.Config{MaxTextSize: 1_000_000}
-
-	handler := analyze.MakeHandleAnalyze(ingestCfg, logger, analyzeDeps,
-		func(sourceType string, wordCount int, coverage float64, features analyze.FeatureVector, scores analyze.BigFiveScores) (string, map[string]any, string, string, error) {
-			prof := profileDeps.Aggregator.Aggregate(scores, features, wordCount, coverage)
-			analysisID, err := profileDeps.Storage.SaveAnalysis(sourceType, wordCount, coverage, features, prof)
-			if err != nil {
-				return "", nil, "", "", err
-			}
-			traits := make(map[string]any, len(prof.Traits))
-			for k, v := range prof.Traits {
-				traits[k] = v
-			}
-			return analysisID, traits, prof.ConfidenceFlag, profileDeps.NarrativeGenerator.GenerateSynthesis(prof), nil
-		},
+	pipe := pipeline.New(
+		analyzeDeps.Extractor,
+		analyzeDeps.Model,
+		profileDeps.Aggregator,
+		profileDeps.NarrativeGenerator,
+		profileDeps.Storage,
 	)
+	return pipe, profileDeps
+}
+
+func TestFullPipeline(t *testing.T) {
+	logger := zlogger.New("dev")
+
+	pipe, profileDeps := newTestPipeline(t)
+
+	handler := analyze.MakeHandleAnalyze(1_000_000, logger, pipe.Run)
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /analyze", handler)
 	chain := middleware.Chain(mux, middleware.RequestID)
@@ -150,15 +155,7 @@ func TestFullPipeline(t *testing.T) {
 func TestFullPipelineAnalyzeDir(t *testing.T) {
 	logger := zlogger.New("dev")
 
-	profileDeps, err := profile.NewDependencies(profile.Config{DBPath: ":memory:"}, logger)
-	if err != nil {
-		t.Fatalf("init profile: %v", err)
-	}
-
-	analyzeDeps, err := analyze.NewDependencies(analyze.Config{DictionaryPath: "../modules/analyze/dictionary.json"}, logger)
-	if err != nil {
-		t.Fatalf("init analyze: %v", err)
-	}
+	pipe, _ := newTestPipeline(t)
 
 	// Create temp dir with .txt files
 	tmpDir := t.TempDir()
@@ -169,29 +166,7 @@ func TestFullPipelineAnalyzeDir(t *testing.T) {
 
 	ingestCfg := ingest.Config{MaxTextSize: 1_000_000, DirPath: tmpDir}
 
-	handler := ingest.MakeHandleAnalyzeDir(ingestCfg, logger,
-		func(text string, sourceType string) (string, int, float64, string, map[string]any, map[string]float64, any, string, error) {
-			normalizer := ingest.NewNormalizer()
-			doc := normalizer.Normalize(text)
-			features, coverage := analyzeDeps.Extractor.Extract(doc)
-			scores := analyzeDeps.Model.Infer(features)
-			scores.RegulatoryFocus = analyze.ComputeRegulatoryFocus(features)
-			scores.NeedForCognition = analyze.ComputeNeedForCognition(features)
-			scores.CognitiveStyle = analyze.ComputeCognitiveStyle(features)
-			scores.NeedForClosure = analyze.ComputeNeedForClosure(features)
-			scores.Values = analyze.ComputeSchwartzValues(features)
-			prof := profileDeps.Aggregator.Aggregate(scores, features, doc.WordCount, coverage)
-			analysisID, err := profileDeps.Storage.SaveAnalysis(sourceType, doc.WordCount, coverage, features, prof)
-			if err != nil {
-				return "", 0, 0, "", nil, nil, nil, "", err
-			}
-			traits := make(map[string]any, len(prof.Traits))
-			for k, v := range prof.Traits {
-				traits[k] = v
-			}
-			return analysisID, doc.WordCount, coverage, prof.ConfidenceFlag, traits, prof.Values, prof.Summary, profileDeps.NarrativeGenerator.GenerateSynthesis(prof), nil
-		},
-	)
+	handler := ingest.MakeHandleAnalyzeDir(ingestCfg, logger, pipe.Run)
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /analyze-dir", handler)
 	chain := middleware.Chain(mux, middleware.RequestID)
@@ -243,42 +218,12 @@ func TestFullPipelineAnalyzeDir(t *testing.T) {
 func TestAnalyzeDirWithDataSamples(t *testing.T) {
 	logger := zlogger.New("dev")
 
-	profileDeps, err := profile.NewDependencies(profile.Config{DBPath: ":memory:"}, logger)
-	if err != nil {
-		t.Fatalf("init profile: %v", err)
-	}
-
-	analyzeDeps, err := analyze.NewDependencies(analyze.Config{DictionaryPath: "../modules/analyze/dictionary.json"}, logger)
-	if err != nil {
-		t.Fatalf("init analyze: %v", err)
-	}
+	pipe, _ := newTestPipeline(t)
 
 	samplesDir := "../samples"
 	ingestCfg := ingest.Config{MaxTextSize: 1_000_000, DirPath: samplesDir}
 
-	handler := ingest.MakeHandleAnalyzeDir(ingestCfg, logger,
-		func(text string, sourceType string) (string, int, float64, string, map[string]any, map[string]float64, any, string, error) {
-			normalizer := ingest.NewNormalizer()
-			doc := normalizer.Normalize(text)
-			features, coverage := analyzeDeps.Extractor.Extract(doc)
-			scores := analyzeDeps.Model.Infer(features)
-			scores.RegulatoryFocus = analyze.ComputeRegulatoryFocus(features)
-			scores.NeedForCognition = analyze.ComputeNeedForCognition(features)
-			scores.CognitiveStyle = analyze.ComputeCognitiveStyle(features)
-			scores.NeedForClosure = analyze.ComputeNeedForClosure(features)
-			scores.Values = analyze.ComputeSchwartzValues(features)
-			prof := profileDeps.Aggregator.Aggregate(scores, features, doc.WordCount, coverage)
-			analysisID, err := profileDeps.Storage.SaveAnalysis(sourceType, doc.WordCount, coverage, features, prof)
-			if err != nil {
-				return "", 0, 0, "", nil, nil, nil, "", err
-			}
-			traits := make(map[string]any, len(prof.Traits))
-			for k, v := range prof.Traits {
-				traits[k] = v
-			}
-			return analysisID, doc.WordCount, coverage, prof.ConfidenceFlag, traits, prof.Values, prof.Summary, profileDeps.NarrativeGenerator.GenerateSynthesis(prof), nil
-		},
-	)
+	handler := ingest.MakeHandleAnalyzeDir(ingestCfg, logger, pipe.Run)
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /analyze-dir", handler)
 	chain := middleware.Chain(mux, middleware.RequestID)
@@ -344,32 +289,9 @@ func writeFile(t *testing.T, path, content string) {
 func TestIndividualSamples(t *testing.T) {
 	logger := zlogger.New("dev")
 
-	profileDeps, err := profile.NewDependencies(profile.Config{DBPath: ":memory:"}, logger)
-	if err != nil {
-		t.Fatalf("init profile: %v", err)
-	}
+	pipe, _ := newTestPipeline(t)
 
-	analyzeDeps, err := analyze.NewDependencies(analyze.Config{DictionaryPath: "../modules/analyze/dictionary.json"}, logger)
-	if err != nil {
-		t.Fatalf("init analyze: %v", err)
-	}
-
-	ingestCfg := ingest.Config{MaxTextSize: 1_000_000}
-
-	handler := analyze.MakeHandleAnalyze(ingestCfg, logger, analyzeDeps,
-		func(sourceType string, wordCount int, coverage float64, features analyze.FeatureVector, scores analyze.BigFiveScores) (string, map[string]any, string, string, error) {
-			prof := profileDeps.Aggregator.Aggregate(scores, features, wordCount, coverage)
-			analysisID, err := profileDeps.Storage.SaveAnalysis(sourceType, wordCount, coverage, features, prof)
-			if err != nil {
-				return "", nil, "", "", err
-			}
-			traits := make(map[string]any, len(prof.Traits))
-			for k, v := range prof.Traits {
-				traits[k] = v
-			}
-			return analysisID, traits, prof.ConfidenceFlag, profileDeps.NarrativeGenerator.GenerateSynthesis(prof), nil
-		},
-	)
+	handler := analyze.MakeHandleAnalyze(1_000_000, logger, pipe.Run)
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /analyze", handler)
 	chain := middleware.Chain(mux, middleware.RequestID)

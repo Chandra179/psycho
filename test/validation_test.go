@@ -171,15 +171,15 @@ func TestDimensionDirectionality(t *testing.T) {
 	vp := newValidationPipeline(t)
 
 	cases := []struct {
-		name    string
-		high    []string
-		low     []string
-		score   func(analyze.BigFiveScores) float64
-		minGap  float64
+		name   string
+		high   []string
+		low    []string
+		score  func(analyze.BigFiveScores) float64
+		minGap float64
 	}{
 		{
 			name:   "openness",
-			high:   []string{"the", "a", "and", "with", "also"},          // articles + inclusive
+			high:   []string{"the", "a", "and", "with", "also"},     // articles + inclusive
 			low:    []string{"i", "yesterday", "go", "was", "went"}, // pronouns + time/motion/past
 			score:  func(s analyze.BigFiveScores) float64 { return s.Openness },
 			minGap: 0.3,
@@ -187,7 +187,7 @@ func TestDimensionDirectionality(t *testing.T) {
 		{
 			name:   "conscientiousness",
 			high:   []string{"win", "success", "goal", "discipline", "focus"}, // achievement
-			low:    []string{"sad", "angry", "but", "not", "don't"},          // negative emotion + exclusive + negation
+			low:    []string{"sad", "angry", "but", "not", "don't"},           // negative emotion + exclusive + negation
 			score:  func(s analyze.BigFiveScores) float64 { return s.Conscientiousness },
 			minGap: 0.3,
 		},
@@ -200,7 +200,7 @@ func TestDimensionDirectionality(t *testing.T) {
 		},
 		{
 			name:   "agreeableness",
-			high:   []string{"with", "and", "up", "down", "happy"}, // inclusive + space + positive emotion
+			high:   []string{"with", "and", "up", "down", "happy"},    // inclusive + space + positive emotion
 			low:    []string{"sad", "angry", "bitter", "hurt", "mad"}, // negative emotion
 			score:  func(s analyze.BigFiveScores) float64 { return s.Agreeableness },
 			minGap: 0.3,
@@ -325,7 +325,7 @@ func TestLatencyBenchmarks(t *testing.T) {
 			scores.NeedForClosure = analyze.ComputeNeedForClosure(fv)
 			scores.Values = analyze.ComputeSchwartzValues(fv)
 			prof := vp.pd.Aggregator.Aggregate(scores, fv, doc.WordCount, coverage)
-			if _, err := vp.pd.Storage.SaveAnalysis("blog", doc.WordCount, coverage, fv, prof); err != nil {
+			if _, err := vp.pd.Storage.SaveAnalysis("blog", "2026-09-29", doc.WordCount, coverage, fv, prof); err != nil {
 				t.Fatalf("save analysis: %v", err)
 			}
 			_ = vp.pd.NarrativeGenerator.GenerateSynthesis(prof)

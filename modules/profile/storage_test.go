@@ -25,7 +25,7 @@ func TestStorageMigrateAndSave(t *testing.T) {
 		CategoryPercents: map[analyze.Category]float64{"positive_emotion": 5.0},
 	}
 
-	id, err := storage.SaveAnalysis("blog", 1000, 0.7, features, profile)
+	id, err := storage.SaveAnalysis("blog", "2024-03-15", 1000, 0.7, features, profile)
 	if err != nil {
 		t.Fatalf("SaveAnalysis: %v", err)
 	}
@@ -39,6 +39,9 @@ func TestStorageMigrateAndSave(t *testing.T) {
 	}
 	if saved.ConfidenceFlag != "high" {
 		t.Errorf("ConfidenceFlag = %q; want high", saved.ConfidenceFlag)
+	}
+	if saved.SourceDate != "2024-03-15" {
+		t.Errorf("SourceDate = %q; want 2024-03-15", saved.SourceDate)
 	}
 	if saved.WordCount != 1000 {
 		t.Errorf("WordCount = %d; want 1000", saved.WordCount)

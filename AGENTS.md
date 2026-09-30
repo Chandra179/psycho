@@ -22,6 +22,7 @@ modules/<name>/            # one flat Go package per domain module
   dependencies.go          # wire deps, load config, construct services
   handler.go               # HTTP handlers (MakeHandleX factory functions)
   <concern>.go             # one file per domain concern (bigfive.go, storage.go, ...)
+modules/pipeline/          # the analysis flow: normalize → extract → infer → persist
 modules/server/            # composes all modules, registers routes
 middleware/                # stdlib middleware stack (http.Handler adapter)
   chain.go                 # middleware.Chain(handler, mw...)

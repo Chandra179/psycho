@@ -1,13 +1,17 @@
 package ingest
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"psycho/middleware"
 	"psycho/zlogger"
@@ -30,12 +34,29 @@ type AnalyzeDirResponse struct {
 	Narrative          string             `json:"narrative"`
 }
 
-type AnalyzeDirFunc func(text string, sourceType string) (analysisID string, wordCount int, coverage float64, confidenceFlag string, traits map[string]any, values map[string]float64, summary any, narrative string, err error)
+// AnalysisOutput is everything the HTTP layer needs to render a response
+// after a successful analysis. Field types stay loose because ingest cannot
+// import its sibling modules without an import cycle; the JSON shape is the
+// contract at this seam.
+type AnalysisOutput struct {
+	AnalysisID         string
+	WordCount          int
+	DictionaryCoverage float64
+	ConfidenceFlag     string
+	Traits             map[string]any
+	Values             map[string]float64
+	Summary            any
+	Narrative          string
+}
+
+// AnalyzeFunc is the seam the HTTP handlers call into. modules/server and
+// the tests wire it to a *pipeline.Pipeline.
+type AnalyzeFunc func(ctx context.Context, sourceType, sourceDate, text string) (AnalysisOutput, error)
 
 func MakeHandleAnalyzeDir(
 	cfg Config,
 	logger *zlogger.Logger,
-	analyzeFn AnalyzeDirFunc,
+	analyzeFn AnalyzeFunc,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		req, err := middleware.DecodeAndValidate[AnalyzeDirRequest](r)
@@ -54,7 +75,7 @@ func MakeHandleAnalyzeDir(
 			sourceType = "file"
 		}
 
-		text, filesRead, err := ReadDir(cfg.DirPath)
+		text, filesRead, err := ReadDir(cfg.DirPath, cfg.MaxTextSize)
 		if err != nil {
 			logger.Error(r.Context(), "failed to read directory", zlogger.Field{Key: "error", Value: err.Error()})
 			http.Error(w, "failed to read directory: "+err.Error(), http.StatusInternalServerError)
@@ -71,7 +92,7 @@ func MakeHandleAnalyzeDir(
 			return
 		}
 
-		analysisID, wordCount, coverage, confidenceFlag, traits, values, summary, narrative, err := analyzeFn(text, sourceType)
+		out, err := analyzeFn(r.Context(), sourceType, req.SourceDate, text)
 		if err != nil {
 			logger.Error(r.Context(), "analysis failed", zlogger.Field{Key: "error", Value: err.Error()})
 			http.Error(w, "internal error", http.StatusInternalServerError)
@@ -79,15 +100,15 @@ func MakeHandleAnalyzeDir(
 		}
 
 		resp := AnalyzeDirResponse{
-			AnalysisID:         analysisID,
-			WordCount:          wordCount,
-			DictionaryCoverage: coverage,
-			ConfidenceFlag:     confidenceFlag,
-			Traits:             traits,
-			Values:             values,
+			AnalysisID:         out.AnalysisID,
+			WordCount:          out.WordCount,
+			DictionaryCoverage: out.DictionaryCoverage,
+			ConfidenceFlag:     out.ConfidenceFlag,
+			Traits:             out.Traits,
+			Values:             out.Values,
 			FilesRead:          filesRead,
-			Summary:            summary,
-			Narrative:          narrative,
+			Summary:            out.Summary,
+			Narrative:          out.Narrative,
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -95,23 +116,103 @@ func MakeHandleAnalyzeDir(
 	}
 }
 
-func FetchURLText(url string) (string, error) {
-	resp, err := http.Get(url)
+// urlFetchClient bounds every fetch in time and refuses redirects to
+// loopback, private, or link-local addresses, so a public URL cannot be
+// used to probe the local network or cloud metadata endpoints.
+var urlFetchClient = &http.Client{
+	Timeout: 15 * time.Second,
+	CheckRedirect: func(req *http.Request, via []*http.Request) error {
+		if len(via) >= 5 {
+			return fmt.Errorf("too many redirects")
+		}
+		if err := checkURLHost(req.URL); err != nil {
+			return fmt.Errorf("redirect to disallowed address: %w", err)
+		}
+		return nil
+	},
+}
+
+// FetchURLText downloads a URL and returns its body as text, capped at
+// maxSize bytes (no cap when maxSize <= 0). The scheme must be http or
+// https, and hosts resolving to private addresses are refused — this runs
+// on a user-supplied URL, so it must never become a free proxy into the
+// local network, and the body must never be read unbounded into memory.
+func FetchURLText(rawURL string, maxSize int) (string, error) {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return "", fmt.Errorf("parse url: %w", err)
+	}
+	if err := checkURLHost(u); err != nil {
+		return "", err
+	}
+
+	resp, err := urlFetchClient.Get(rawURL)
 	if err != nil {
 		return "", err
 	}
 	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("HTTP %d", resp.StatusCode)
 	}
-	b, err := io.ReadAll(resp.Body)
+	if ct := resp.Header.Get("Content-Type"); ct != "" &&
+		!strings.HasPrefix(ct, "text/") &&
+		!strings.Contains(ct, "html") &&
+		!strings.Contains(ct, "json") &&
+		!strings.Contains(ct, "xml") {
+		return "", fmt.Errorf("unsupported content type %q", ct)
+	}
+
+	var body io.Reader = resp.Body
+	if maxSize > 0 {
+		body = io.LimitReader(resp.Body, int64(maxSize)+1)
+	}
+	b, err := io.ReadAll(body)
 	if err != nil {
 		return "", err
+	}
+	if maxSize > 0 && len(b) > maxSize {
+		return "", fmt.Errorf("response exceeds max size %d", maxSize)
 	}
 	return string(b), nil
 }
 
-func ReadDir(dirPath string) (string, int, error) {
+// checkURLHost rejects non-http(s) schemes and any host that is, or
+// resolves to, a private address.
+func checkURLHost(u *url.URL) error {
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return fmt.Errorf("unsupported scheme %q", u.Scheme)
+	}
+	host := u.Hostname()
+	if host == "" {
+		return fmt.Errorf("missing host")
+	}
+	if ip := net.ParseIP(host); ip != nil {
+		return rejectPrivateIP(ip)
+	}
+	ips, err := net.LookupIP(host)
+	if err != nil {
+		return fmt.Errorf("resolve host: %w", err)
+	}
+	for _, ip := range ips {
+		if err := rejectPrivateIP(ip); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func rejectPrivateIP(ip net.IP) error {
+	if ip.IsLoopback() || ip.IsPrivate() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() || ip.IsUnspecified() {
+		return fmt.Errorf("refusing to fetch private address %s", ip)
+	}
+	return nil
+}
+
+// ReadDir concatenates the .txt files in dirPath, stopping once the combined
+// text exceeds maxSize (no cap when maxSize <= 0) so a huge directory cannot
+// exhaust memory before the caller's size check rejects the request.
+func ReadDir(dirPath string, maxSize int) (string, int, error) {
 	entries, err := os.ReadDir(dirPath)
 	if err != nil {
 		return "", 0, fmt.Errorf("read dir %s: %w", dirPath, err)
@@ -120,10 +221,7 @@ func ReadDir(dirPath string) (string, int, error) {
 	var builder strings.Builder
 	count := 0
 	for _, e := range entries {
-		if e.IsDir() {
-			continue
-		}
-		if !strings.HasSuffix(strings.ToLower(e.Name()), ".txt") {
+		if e.IsDir() || !strings.HasSuffix(strings.ToLower(e.Name()), ".txt") {
 			continue
 		}
 		b, err := os.ReadFile(filepath.Join(dirPath, e.Name()))
@@ -135,6 +233,9 @@ func ReadDir(dirPath string) (string, int, error) {
 		}
 		builder.Write(b)
 		count++
+		if maxSize > 0 && builder.Len() > maxSize {
+			break
+		}
 	}
 
 	if count == 0 {

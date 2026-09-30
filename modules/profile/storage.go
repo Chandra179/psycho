@@ -19,7 +19,8 @@ func NewStorage(db *sql.DB, logger *zlogger.Logger) *Storage {
 	return &Storage{db: db, logger: logger}
 }
 
-// Migrate creates the analyses table.
+// Migrate creates the analyses table and brings older databases up to the
+// current schema.
 func (s *Storage) Migrate() error {
 	q := `
 CREATE TABLE IF NOT EXISTS analyses (
@@ -33,12 +34,26 @@ CREATE TABLE IF NOT EXISTS analyses (
 	created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 `
-	_, err := s.db.Exec(q)
-	return err
+	if _, err := s.db.Exec(q); err != nil {
+		return err
+	}
+
+	var colCount int
+	if err := s.db.QueryRow(
+		`SELECT COUNT(*) FROM pragma_table_info('analyses') WHERE name = 'source_date'`,
+	).Scan(&colCount); err != nil {
+		return fmt.Errorf("inspect analyses schema: %w", err)
+	}
+	if colCount == 0 {
+		if _, err := s.db.Exec(`ALTER TABLE analyses ADD COLUMN source_date TEXT NOT NULL DEFAULT ''`); err != nil {
+			return fmt.Errorf("add source_date column: %w", err)
+		}
+	}
+	return nil
 }
 
 // SaveAnalysis persists a profile and returns the analysis ID.
-func (s *Storage) SaveAnalysis(sourceType string, wordCount int, coverage float64, features analyze.FeatureVector, profile Profile) (string, error) {
+func (s *Storage) SaveAnalysis(sourceType, sourceDate string, wordCount int, coverage float64, features analyze.FeatureVector, profile Profile) (string, error) {
 	featuresJSON, err := json.Marshal(features.CategoryPercents)
 	if err != nil {
 		return "", fmt.Errorf("marshal features: %w", err)
@@ -49,9 +64,9 @@ func (s *Storage) SaveAnalysis(sourceType string, wordCount int, coverage float6
 	}
 
 	_, err = s.db.Exec(
-		`INSERT INTO analyses (id, source_type, word_count, dictionary_coverage, features_json, scores_json, confidence_flag)
-		 VALUES (?, ?, ?, ?, ?, ?, ?)`,
-		profile.AnalysisID, sourceType, wordCount, coverage, string(featuresJSON), string(profileJSON), profile.ConfidenceFlag,
+		`INSERT INTO analyses (id, source_type, source_date, word_count, dictionary_coverage, features_json, scores_json, confidence_flag)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		profile.AnalysisID, sourceType, sourceDate, wordCount, coverage, string(featuresJSON), string(profileJSON), profile.ConfidenceFlag,
 	)
 	if err != nil {
 		return "", fmt.Errorf("insert analysis: %w", err)
@@ -80,9 +95,9 @@ func (s *Storage) GetAnalysis(id string) (*SavedAnalysis, error) {
 	var a SavedAnalysis
 	var featuresJSON, scoresJSON string
 	err := s.db.QueryRow(
-		`SELECT id, source_type, word_count, dictionary_coverage, features_json, scores_json, confidence_flag, created_at
+		`SELECT id, source_type, source_date, word_count, dictionary_coverage, features_json, scores_json, confidence_flag, created_at
 		 FROM analyses WHERE id = ?`, id,
-	).Scan(&a.ID, &a.SourceType, &a.WordCount, &a.Coverage, &featuresJSON, &scoresJSON, &a.ConfidenceFlag, &a.CreatedAt)
+	).Scan(&a.ID, &a.SourceType, &a.SourceDate, &a.WordCount, &a.Coverage, &featuresJSON, &scoresJSON, &a.ConfidenceFlag, &a.CreatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -100,13 +115,14 @@ func (s *Storage) GetAnalysis(id string) (*SavedAnalysis, error) {
 
 // SavedAnalysis is the database row representation.
 type SavedAnalysis struct {
-	ID              string
-	SourceType      string
-	WordCount       int
-	Coverage        float64
-	Features        map[string]float64
-	Scores          map[string]TraitResult
-	Summary         analyze.SummaryVariables
-	ConfidenceFlag  string
-	CreatedAt       string
+	ID             string
+	SourceType     string
+	SourceDate     string
+	WordCount      int
+	Coverage       float64
+	Features       map[string]float64
+	Scores         map[string]TraitResult
+	Summary        analyze.SummaryVariables
+	ConfidenceFlag string
+	CreatedAt      string
 }

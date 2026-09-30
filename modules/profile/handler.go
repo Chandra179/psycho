@@ -1,6 +1,8 @@
 package profile
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -17,8 +19,12 @@ func MakeHandleExportPDF(storage *Storage, pdfGen ProfilePDFGenerator, logger *z
 
 		prof, err := storage.GetProfile(id)
 		if err != nil {
-			logger.Error(r.Context(), "profile not found", zlogger.Field{Key: "error", Value: err.Error()})
-			http.Error(w, "analysis not found", http.StatusNotFound)
+			if errors.Is(err, sql.ErrNoRows) {
+				http.Error(w, "analysis not found", http.StatusNotFound)
+				return
+			}
+			logger.Error(r.Context(), "failed to load profile", zlogger.Field{Key: "error", Value: err.Error()})
+			http.Error(w, "storage error", http.StatusInternalServerError)
 			return
 		}
 

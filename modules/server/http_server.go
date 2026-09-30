@@ -8,6 +8,7 @@ import (
 	"psycho/middleware"
 	"psycho/modules/analyze"
 	"psycho/modules/ingest"
+	"psycho/modules/pipeline"
 	"psycho/modules/profile"
 	"psycho/zlogger"
 )
@@ -27,55 +28,22 @@ func NewHandler(cfg *config.Config, logger *zlogger.Logger) (http.Handler, error
 
 	mwDeps := middleware.NewDependencies(logger)
 
+	// One pipeline wires every stage once; both handlers call into it.
+	pipe := pipeline.New(
+		analyzeDeps.Extractor,
+		analyzeDeps.Model,
+		profileDeps.Aggregator,
+		profileDeps.NarrativeGenerator,
+		profileDeps.Storage,
+	)
+
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /analysis/{id}/pdf", profile.MakeHandleExportPDF(profileDeps.Storage, profileDeps.PDFGenerator, logger))
 
-	mux.HandleFunc("POST /analyze", analyze.MakeHandleAnalyze(
-		ingestDeps.Config,
-		logger,
-		analyzeDeps,
-		func(sourceType string, wordCount int, coverage float64, features analyze.FeatureVector, scores analyze.BigFiveScores) (string, map[string]any, string, string, error) {
-			prof := profileDeps.Aggregator.Aggregate(scores, features, wordCount, coverage)
-			prof.Narrative = profileDeps.NarrativeGenerator.GenerateSynthesis(prof)
-			analysisID, err := profileDeps.Storage.SaveAnalysis(sourceType, wordCount, coverage, features, prof)
-			if err != nil {
-				return "", nil, "", "", err
-			}
-			traits := make(map[string]any, len(prof.Traits))
-			for k, v := range prof.Traits {
-				traits[k] = v
-			}
-			return analysisID, traits, prof.ConfidenceFlag, prof.Narrative, nil
-		},
-	))
+	mux.HandleFunc("POST /analyze", analyze.MakeHandleAnalyze(cfg.Ingest.MaxTextSize, logger, pipe.Run))
 
-	mux.HandleFunc("POST /analyze-dir", ingest.MakeHandleAnalyzeDir(
-		ingestDeps.Config,
-		logger,
-		func(text string, sourceType string) (string, int, float64, string, map[string]any, map[string]float64, any, string, error) {
-			normalizer := ingest.NewNormalizer()
-			doc := normalizer.Normalize(text)
-			features, coverage := analyzeDeps.Extractor.Extract(doc)
-			scores := analyzeDeps.Model.Infer(features)
-			scores.RegulatoryFocus = analyze.ComputeRegulatoryFocus(features)
-			scores.NeedForCognition = analyze.ComputeNeedForCognition(features)
-			scores.CognitiveStyle = analyze.ComputeCognitiveStyle(features)
-			scores.NeedForClosure = analyze.ComputeNeedForClosure(features)
-			scores.Values = analyze.ComputeSchwartzValues(features)
-			prof := profileDeps.Aggregator.Aggregate(scores, features, doc.WordCount, coverage)
-			prof.Narrative = profileDeps.NarrativeGenerator.GenerateSynthesis(prof)
-			analysisID, err := profileDeps.Storage.SaveAnalysis(sourceType, doc.WordCount, coverage, features, prof)
-			if err != nil {
-				return "", 0, 0, "", nil, nil, nil, "", err
-			}
-			traits := make(map[string]any, len(prof.Traits))
-			for k, v := range prof.Traits {
-				traits[k] = v
-			}
-			return analysisID, doc.WordCount, coverage, prof.ConfidenceFlag, traits, prof.Values, prof.Summary, prof.Narrative, nil
-		},
-	))
+	mux.HandleFunc("POST /analyze-dir", ingest.MakeHandleAnalyzeDir(ingestDeps.Config, logger, pipe.Run))
 
 	chain := middleware.Chain(
 		mux,
