@@ -3,6 +3,7 @@ package profile
 import (
 	"fmt"
 	"sort"
+	"strings"
 
 	maroto "github.com/johnfercher/maroto/v2"
 	"github.com/johnfercher/maroto/v2/pkg/components/text"
@@ -10,6 +11,7 @@ import (
 	"github.com/johnfercher/maroto/v2/pkg/consts/align"
 	"github.com/johnfercher/maroto/v2/pkg/consts/fontstyle"
 	"github.com/johnfercher/maroto/v2/pkg/consts/pagesize"
+	"github.com/johnfercher/maroto/v2/pkg/core"
 	"github.com/johnfercher/maroto/v2/pkg/props"
 
 	"psycho/modules/analyze"
@@ -49,9 +51,7 @@ func (g *MarotoPDFGenerator) Generate(p Profile) ([]byte, error) {
 	m.AddRow(4, text.NewCol(12, ""))
 
 	if p.Narrative != "" {
-		m.AddRow(8, text.NewCol(12, "Summary", props.Text{Style: fontstyle.Bold, Size: 12}))
-		m.AddRow(4, text.NewCol(12, ""))
-		m.AddAutoRow(text.NewCol(12, p.Narrative, props.Text{Size: 9}))
+		g.renderNarrative(m, p.Narrative)
 		m.AddRow(6, text.NewCol(12, ""))
 	}
 
@@ -122,4 +122,36 @@ func (g *MarotoPDFGenerator) Generate(p Profile) ([]byte, error) {
 		return nil, fmt.Errorf("generate pdf: %w", err)
 	}
 	return doc.GetBytes(), nil
+}
+
+// renderNarrative converts the narrative's lightweight Markdown (##/###
+// headings, **bold** labels, - bullets, --- rules) into maroto rows.
+// Maroto has no inline styling, so emphasis markers are stripped rather
+// than printed literally.
+func (g *MarotoPDFGenerator) renderNarrative(m core.Maroto, narrative string) {
+	for _, line := range strings.Split(narrative, "\n") {
+		trimmed := strings.TrimSpace(line)
+		switch {
+		case trimmed == "":
+			continue
+		case strings.HasPrefix(trimmed, "### "):
+			m.AddRow(6, text.NewCol(12, strings.TrimPrefix(trimmed, "### "),
+				props.Text{Style: fontstyle.Bold, Size: 11}))
+		case strings.HasPrefix(trimmed, "## "):
+			m.AddRow(8, text.NewCol(12, strings.TrimPrefix(trimmed, "## "),
+				props.Text{Style: fontstyle.Bold, Size: 12}))
+		case trimmed == "---":
+			m.AddRow(3, text.NewCol(12, ""))
+		case strings.HasPrefix(trimmed, "- "):
+			m.AddAutoRow(text.NewCol(12, "• "+stripEmphasis(strings.TrimPrefix(trimmed, "- ")),
+				props.Text{Size: 9}))
+		default:
+			m.AddAutoRow(text.NewCol(12, stripEmphasis(trimmed), props.Text{Size: 9}))
+		}
+	}
+}
+
+func stripEmphasis(s string) string {
+	s = strings.ReplaceAll(s, "**", "")
+	return strings.ReplaceAll(s, "*", "")
 }
