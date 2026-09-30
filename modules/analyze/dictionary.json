@@ -32,7 +32,17 @@
     "him", "his", "himself", "she", "her", "hers", "herself", "we", "us", "our",
     "ours", "ourselves", "they", "them", "their", "theirs", "themselves", "it", "its", "itself",
     "i'm", "i've", "i'll", "i'd", "you're", "you've", "you'll", "you'd", "he's", "he'll",
-    "she's", "she'll", "we're", "we've", "we'll", "we'd", "they're", "they've", "they'll", "they'd", "it's"
+    "she's", "she'll", "we're", "we've", "we'll", "we'd", "they're", "they've", "they'll", "they'd", "it's",
+    "he'd", "she'd", "this", "that", "these", "those", "who", "whom", "whose", "which",
+    "what", "whoever", "someone", "somebody", "something", "anyone", "anybody", "anything",
+    "everyone", "everybody", "everything", "nobody"
+  ],
+  "preposition": [
+    "about", "above", "across", "after", "against", "along", "among", "around", "at", "before",
+    "behind", "below", "beneath", "beside", "between", "beyond", "by", "despite", "down", "during",
+    "except", "for", "from", "in", "inside", "into", "near", "of", "off", "on",
+    "onto", "outside", "over", "through", "throughout", "till", "to", "toward", "towards", "under",
+    "until", "up", "upon", "with", "within", "without"
   ],
   "article": [
     "a", "an", "the"

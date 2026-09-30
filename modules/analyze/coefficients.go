@@ -25,6 +25,8 @@ var coefficients = map[string]TraitWeights{
 	"tentative":         {Neuroticism: 0.007},
 	"certainty":         {Neuroticism: 0.008},
 	"pronoun":           {Openness: -0.013, Extraversion: 0.004, Neuroticism: 0.004},
+	// Prepositions are Yarkoni's second-strongest openness signal (ρ = .17).
+	"preposition":       {Openness: 0.010},
 	"article":           {Openness: 0.012, Neuroticism: -0.007},
 	"achievement":       {Conscientiousness: 0.008},
 	"social":            {Extraversion: 0.009},
@@ -55,6 +57,9 @@ type TraitWeights struct {
 }
 
 // intercepts provide baseline scores so results sit in a plausible 0-1 range.
+// They are a fixed 0.50 rather than calibrated against average category
+// rates, so adding a high-frequency category shifts absolute levels; treat
+// scores comparatively until a reference-calibration pass.
 var intercepts = BigFiveScores{
 	Openness:          0.50,
 	Conscientiousness: 0.50,
