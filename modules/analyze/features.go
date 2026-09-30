@@ -2,6 +2,7 @@ package analyze
 
 import (
 	"math"
+	"slices"
 	"strings"
 	"unicode"
 
@@ -14,6 +15,9 @@ type FeatureVector struct {
 	TypeTokenRatio   float64
 	BigWordRatio     float64
 	AvgWordLength    float64
+	// Evidence holds a bounded sample of the words that matched each
+	// category — the raw material behind the percentages.
+	Evidence map[Category][]string
 }
 
 // FeatureExtractor computes psycholinguistic features from a document.
@@ -33,6 +37,7 @@ func (fe *FeatureExtractor) Extract(doc ingest.Document) (FeatureVector, float64
 	}
 
 	catCounts := make(map[Category]int)
+	evidence := make(map[Category][]string)
 	var dictMatched int
 	var totalWordLen int
 	var bigWords int
@@ -49,6 +54,9 @@ func (fe *FeatureExtractor) Extract(doc ingest.Document) (FeatureVector, float64
 		}
 		for _, c := range cats {
 			catCounts[c]++
+			if ev := evidence[c]; len(ev) < MaxEvidenceWords && !slices.Contains(ev, w) {
+				evidence[c] = append(ev, w)
+			}
 		}
 	}
 
@@ -70,6 +78,7 @@ func (fe *FeatureExtractor) Extract(doc ingest.Document) (FeatureVector, float64
 		TypeTokenRatio:   doc.TypeTokenRatio,
 		BigWordRatio:     float64(bigWords) / wordCount,
 		AvgWordLength:    avgWordLen,
+		Evidence:         evidence,
 	}
 	return fv, coverage
 }

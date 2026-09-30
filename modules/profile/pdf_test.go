@@ -13,7 +13,11 @@ func TestMarotoPDFGenerate(t *testing.T) {
 		AnalysisID:     "test-123",
 		ConfidenceFlag: "high",
 		Traits: map[string]TraitResult{
-			"openness":           {Score: 0.65, Percentile: 75, ConfidenceInterval: []float64{0.55, 0.75}},
+			"openness": {Score: 0.65, Percentile: 75, ConfidenceInterval: []float64{0.55, 0.75},
+				Evidence: []analyze.Contribution{
+					{Category: "article", WordPercent: 4.2, Weight: 0.012, Contribution: 0.0504},
+					{Category: "pronoun", WordPercent: 8.1, Weight: -0.013, Contribution: -0.1053},
+				}},
 			"conscientiousness":  {Score: 0.50, Percentile: 50, ConfidenceInterval: []float64{0.40, 0.60}},
 			"extraversion":       {Score: 0.40, Percentile: 30, ConfidenceInterval: []float64{0.30, 0.50}},
 			"agreeableness":      {Score: 0.55, Percentile: 60, ConfidenceInterval: []float64{0.45, 0.65}},

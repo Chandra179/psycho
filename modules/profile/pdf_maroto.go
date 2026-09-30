@@ -117,6 +117,27 @@ func (g *MarotoPDFGenerator) Generate(p Profile) ([]byte, error) {
 		m.AddRow(5, text.NewCol(12, line, props.Text{Size: 7}))
 	}
 
+	m.AddRow(10, text.NewCol(12, ""))
+	m.AddRow(8, text.NewCol(12, "Linguistic Evidence", props.Text{Style: fontstyle.Bold, Size: 12}))
+	m.AddRow(4, text.NewCol(12, "Contribution = share of words in a dictionary category × per-percentage-point weight. Strongest contributors first.",
+		props.Text{Size: 7, Style: fontstyle.Italic}))
+	m.AddRow(4, text.NewCol(12, ""))
+	for _, name := range allTraits {
+		t, ok := p.Traits[name]
+		if !ok || len(t.Evidence) == 0 {
+			continue
+		}
+		m.AddRow(6, text.NewCol(12, traitDisplayName(name), props.Text{Size: 9}))
+		for i, c := range t.Evidence {
+			if i >= 3 {
+				break
+			}
+			line := fmt.Sprintf("%s — %.1f%% of words × %+.3f/pp = %+.2f",
+				c.Category, c.WordPercent, c.Weight, c.Contribution)
+			m.AddRow(5, text.NewCol(12, "    "+line, props.Text{Size: 8}))
+		}
+	}
+
 	doc, err := m.Generate()
 	if err != nil {
 		return nil, fmt.Errorf("generate pdf: %w", err)

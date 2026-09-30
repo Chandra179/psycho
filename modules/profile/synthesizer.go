@@ -18,11 +18,13 @@ type Profile struct {
 	Narrative      string
 }
 
-// TraitResult holds one Big Five trait output.
+// TraitResult holds one Big Five trait output. Evidence lists the category
+// contributions behind the score, strongest first — the audit trail.
 type TraitResult struct {
-	Score              float64   `json:"score"`
-	Percentile         int       `json:"percentile"`
-	ConfidenceInterval []float64 `json:"confidence_interval"`
+	Score              float64                `json:"score"`
+	Percentile         int                    `json:"percentile"`
+	ConfidenceInterval []float64              `json:"confidence_interval"`
+	Evidence           []analyze.Contribution `json:"evidence,omitempty"`
 }
 
 // ScoreAggregator merges raw scores into a user-facing profile.
@@ -38,15 +40,15 @@ func (sa *ScoreAggregator) Aggregate(scores analyze.BigFiveScores, fv analyze.Fe
 	ciWidth := computeCIWidth(wordCount, coverage)
 
 	traits := map[string]TraitResult{
-		"openness":           makeTraitResult(scores.Openness, ciWidth),
-		"conscientiousness":  makeTraitResult(scores.Conscientiousness, ciWidth),
-		"extraversion":       makeTraitResult(scores.Extraversion, ciWidth),
-		"agreeableness":      makeTraitResult(scores.Agreeableness, ciWidth),
-		"neuroticism":        makeTraitResult(scores.Neuroticism, ciWidth),
-		"regulatory_focus":   makeTraitResult(scores.RegulatoryFocus, ciWidth),
-		"need_for_cognition": makeTraitResult(scores.NeedForCognition, ciWidth),
-		"cognitive_style":    makeTraitResult(scores.CognitiveStyle, ciWidth),
-		"need_for_closure":   makeTraitResult(scores.NeedForClosure, ciWidth),
+		"openness":           makeTraitResult(scores.Openness, ciWidth, analyze.BigFiveEvidence("openness", fv)),
+		"conscientiousness":  makeTraitResult(scores.Conscientiousness, ciWidth, analyze.BigFiveEvidence("conscientiousness", fv)),
+		"extraversion":       makeTraitResult(scores.Extraversion, ciWidth, analyze.BigFiveEvidence("extraversion", fv)),
+		"agreeableness":      makeTraitResult(scores.Agreeableness, ciWidth, analyze.BigFiveEvidence("agreeableness", fv)),
+		"neuroticism":        makeTraitResult(scores.Neuroticism, ciWidth, analyze.BigFiveEvidence("neuroticism", fv)),
+		"regulatory_focus":   makeTraitResult(scores.RegulatoryFocus, ciWidth, analyze.RegulatoryFocusEvidence(fv)),
+		"need_for_cognition": makeTraitResult(scores.NeedForCognition, ciWidth, analyze.NeedForCognitionEvidence(fv)),
+		"cognitive_style":    makeTraitResult(scores.CognitiveStyle, ciWidth, analyze.CognitiveStyleEvidence(fv)),
+		"need_for_closure":   makeTraitResult(scores.NeedForClosure, ciWidth, analyze.NeedForClosureEvidence(fv)),
 	}
 
 	return Profile{
@@ -58,7 +60,7 @@ func (sa *ScoreAggregator) Aggregate(scores analyze.BigFiveScores, fv analyze.Fe
 	}
 }
 
-func makeTraitResult(score, ciWidth float64) TraitResult {
+func makeTraitResult(score, ciWidth float64, evidence []analyze.Contribution) TraitResult {
 	low := score - ciWidth
 	high := score + ciWidth
 	if low < 0 {
@@ -71,6 +73,7 @@ func makeTraitResult(score, ciWidth float64) TraitResult {
 		Score:              math.Round(score*100) / 100,
 		Percentile:         scoreToPercentile(score),
 		ConfidenceInterval: []float64{math.Round(low*100) / 100, math.Round(high*100) / 100},
+		Evidence:           evidence,
 	}
 }
 

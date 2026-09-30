@@ -17,10 +17,18 @@ import (
 	"psycho/modules/analyze"
 )
 
+type contributionJSON struct {
+	Category     string  `json:"category"`
+	WordPercent  float64 `json:"word_percent"`
+	Weight       float64 `json:"weight"`
+	Contribution float64 `json:"contribution"`
+}
+
 type traitJSON struct {
-	Score              float64   `json:"score"`
-	Percentile         int       `json:"percentile"`
-	ConfidenceInterval []float64 `json:"confidence_interval"`
+	Score              float64            `json:"score"`
+	Percentile         int                `json:"percentile"`
+	ConfidenceInterval []float64          `json:"confidence_interval"`
+	Evidence           []contributionJSON `json:"evidence"`
 }
 
 type analysisJSON struct {
@@ -180,6 +188,13 @@ type technicalTrait struct {
 	CILow      float64
 	CIHigh     float64
 }
+type evidenceRow struct {
+	Trait        string
+	Category     string
+	WordPercent  float64
+	Weight       float64
+	Contribution float64
+}
 type technicalSummary struct {
 	Name  string
 	Score float64
@@ -192,6 +207,7 @@ type technicalView struct {
 	WordCount      int
 	Coverage       float64
 	Traits         []technicalTrait
+	Evidence       []evidenceRow
 	Values         []ValueView
 	Summary        []technicalSummary
 }
@@ -267,6 +283,15 @@ func main() {
 			Key: k, Name: traitNames[k], Score: t.Score * 100, Label: specificLabel(k, t.Score),
 			Percentile: t.Percentile, CILow: round2(ci[0]), CIHigh: round2(ci[1]),
 		})
+		for i, c := range t.Evidence {
+			if i >= 3 {
+				break
+			}
+			tv.Evidence = append(tv.Evidence, evidenceRow{
+				Trait: traitNames[k], Category: c.Category,
+				WordPercent: c.WordPercent, Weight: c.Weight, Contribution: c.Contribution,
+			})
+		}
 	}
 	tv.Values = sortedValues(a.Values)
 	tv.Summary = []technicalSummary{

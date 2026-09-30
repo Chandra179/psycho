@@ -197,6 +197,37 @@
     </div>
   </section>
 
+  <section>
+    <h2>Linguistic Evidence</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Trait</th>
+          <th>Dictionary category</th>
+          <th class="num">Words</th>
+          <th class="num">Weight/pp</th>
+          <th class="num">Contribution</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Evidence}}
+        <tr>
+          <td>{{.Trait}}</td>
+          <td class="key">{{.Category}}</td>
+          <td class="num">{{.WordPercent}}%</td>
+          <td class="num">{{.Weight}}</td>
+          <td class="num">{{.Contribution}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    <div class="footnote">
+      Contribution = share of words in a dictionary category × per-percentage-point weight. The strongest
+      contributors (up to three per trait) are listed; negative contributions pulled the score down. Weight
+      sources: docs/system-design.md §References.
+    </div>
+  </section>
+
   {{if .Values}}
   <section>
     <h2>Schwartz Value Orientation</h2>

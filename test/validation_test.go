@@ -38,8 +38,8 @@ func newValidationPipeline(t *testing.T) *validationPipeline {
 }
 
 // runAnalysis runs a word pool through normalize -> extract -> infer and
-// returns the raw dimension scores.
-func (vp *validationPipeline) runAnalysis(t *testing.T, pool []string, total int) analyze.BigFiveScores {
+// returns the raw dimension scores plus the feature vector.
+func (vp *validationPipeline) runAnalysis(t *testing.T, pool []string, total int) (analyze.BigFiveScores, analyze.FeatureVector) {
 	t.Helper()
 	words := make([]string, 0, total)
 	for len(words) < total {
@@ -56,7 +56,7 @@ func (vp *validationPipeline) runAnalysis(t *testing.T, pool []string, total int
 	scores.CognitiveStyle = analyze.ComputeCognitiveStyle(fv)
 	scores.NeedForClosure = analyze.ComputeNeedForClosure(fv)
 	scores.Values = analyze.ComputeSchwartzValues(fv)
-	return scores
+	return scores, fv
 }
 
 func assertInRange(t *testing.T, name string, v float64) {
@@ -97,6 +97,21 @@ func TestExactFeatureExtraction(t *testing.T) {
 	// the(3) happy(5) i(1) zqx(3) — no word longer than six letters.
 	if fv.BigWordRatio != 0 {
 		t.Errorf("BigWordRatio = %f; want 0", fv.BigWordRatio)
+	}
+
+	// The matched-word evidence samples must be exact.
+	for cat, want := range map[analyze.Category]string{
+		"article":          "the",
+		"positive_emotion": "happy",
+		"pronoun":          "i",
+	} {
+		got := fv.Evidence[cat]
+		if len(got) != 1 || got[0] != want {
+			t.Errorf("evidence[%s] = %v; want [%s]", cat, got, want)
+		}
+	}
+	if _, ok := fv.Evidence["negative_emotion"]; ok {
+		t.Error("unexpected evidence for a category the fixture never matched")
 	}
 
 	// LIWC Sixltr: share of words with more than six letters.
@@ -243,14 +258,48 @@ func TestDimensionDirectionality(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		high := vp.runAnalysis(t, tc.high, 400)
-		low := vp.runAnalysis(t, tc.low, 400)
+		high, _ := vp.runAnalysis(t, tc.high, 400)
+		low, _ := vp.runAnalysis(t, tc.low, 400)
 		h, l := tc.score(high), tc.score(low)
 		assertInRange(t, tc.name+" (high)", h)
 		assertInRange(t, tc.name+" (low)", l)
 		if h-l < tc.minGap {
 			t.Errorf("%s: high=%.3f low=%.3f gap=%.3f; want gap >= %.2f", tc.name, h, l, h-l, tc.minGap)
 		}
+	}
+}
+
+// TestEvidenceContributions pins the audit trail: the evidence behind a
+// score must name the categories that actually drove it, with the right
+// sign. High-openness text must trace to articles positively; the
+// pronoun/time-heavy text must show negative contributions.
+func TestEvidenceContributions(t *testing.T) {
+	vp := newValidationPipeline(t)
+
+	_, fvHigh := vp.runAnalysis(t, []string{"the", "a", "and", "with", "also"}, 400)
+	evHigh := analyze.BigFiveEvidence("openness", fvHigh)
+	if len(evHigh) == 0 {
+		t.Fatal("no openness evidence for article/inclusive-heavy text")
+	}
+	if top := evHigh[0]; top.Category != "article" || top.Contribution <= 0 {
+		t.Errorf("top openness contribution = %+v; want article with positive contribution", top)
+	}
+
+	_, fvLow := vp.runAnalysis(t, []string{"i", "yesterday", "go", "was", "went"}, 400)
+	evLow := analyze.BigFiveEvidence("openness", fvLow)
+	negative := false
+	for _, c := range evLow {
+		if c.Contribution < 0 {
+			negative = true
+		}
+	}
+	if !negative {
+		t.Error("expected at least one negative openness contribution for pronoun/time-heavy text")
+	}
+
+	// The clitic fix must be visible in the evidence sample.
+	if words := fvHigh.Evidence["pronoun"]; len(words) != 0 {
+		t.Errorf("unexpected pronoun evidence for function-word fixture: %v", words)
 	}
 }
 
