@@ -36,5 +36,8 @@ vendor
 # Generated test output
 testresults/
 
+# Runtime database
+psycho.db
+
 # ZCode session state
 .zcode/
