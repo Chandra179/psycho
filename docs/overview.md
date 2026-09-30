@@ -223,20 +223,22 @@ put it.
 
 ## Current evidence
 
-Psycho is early stage. The numbers below are design targets, not measurements
-from long-term use, and the automated test suite is the current quality
-signal.
+Psycho is early stage. The speed number below is measured by the automated
+benchmark on a single development machine — a regression signal, not
+production evidence — while the rest remain design targets.
 
 | Area | Current status |
 |---|---|
-| Speed | designed to analyze a 5,000-word corpus in **under 5 seconds**; longer samples simply take longer |
+| Speed | a 5,000-word corpus analyzes in a median of **5 ms** (p95: **11 ms**) on the benchmark machine — far inside the **under 5 seconds** design target |
 | Usage | designed for 1–10 analyses per minute — personal, single-user pacing |
 | Storage | about **10 MB** per analyzed subject, including the text, the evidence, and the profile |
 | Short samples | below 500 words results are flagged low-confidence, never blocked |
-| Quality | every stage is covered by an automated test suite, from text cleanup to the finished profile |
+| Quality | every stage is covered by an automated test suite, including text fixtures with known linguistic profiles that pin exact feature counts, word-to-category placements, and the direction of every dimension |
 
-Benchmark comparisons against known writing samples are the next step
-planned in the development roadmap.
+An automated validation suite runs these known-profile text samples through
+the full pipeline on every test run, so a change that flips a score's
+direction or distorts a word count fails loudly; latency percentiles are
+recorded alongside each run.
 
 ## Your data
 
