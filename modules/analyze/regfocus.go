@@ -5,7 +5,8 @@ import "math"
 // Regulatory focus coefficients: promotion words increase the score,
 // prevention words decrease it. Score ranges [0,1] with 0.50 neutral.
 // Source: Higgins, E.T. (1997). Beyond pleasure and pain.
-//   American Psychologist, 52(12), 1280-1300.
+//
+//	American Psychologist, 52(12), 1280-1300.
 //
 // The paper provides the theoretical construct only — no word lists or
 // weights. The promotion/prevention categories in dictionary.json and the

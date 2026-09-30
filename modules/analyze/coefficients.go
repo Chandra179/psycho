@@ -20,7 +20,7 @@ var coefficients = map[string]TraitWeights{
 	// Openness (+): articles (ρ=.20), prepositions (.17), inclusive (.11)
 	// Openness (-): pronouns (-.21), time (-.22), motion (-.22), past_focus (-.16),
 	//               positive_emotion (-.15)
-	"positive_emotion": {Openness: -0.009, Extraversion: 0.006, Agreeableness: 0.011},
+	"positive_emotion":  {Openness: -0.009, Extraversion: 0.006, Agreeableness: 0.011},
 	"cognitive_process": {Neuroticism: 0.008, Conscientiousness: -0.007},
 	"tentative":         {Neuroticism: 0.007},
 	"certainty":         {Neuroticism: 0.008},

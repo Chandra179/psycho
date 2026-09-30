@@ -13,7 +13,7 @@ import "math"
 // certainty/tentative markers and weights are this project's own
 // operationalization; no published word-list mapping exists.
 var needClosureCoefficients = map[string]float64{
-	"certainty":  0.020,
+	"certainty": 0.020,
 	"tentative": -0.025,
 }
 

@@ -7,9 +7,9 @@ import (
 
 // Document holds normalized text with metadata.
 type Document struct {
-	RawText     string
-	WordCount   int
-	SentenceCount int
+	RawText        string
+	WordCount      int
+	SentenceCount  int
 	ParagraphCount int
 	TypeTokenRatio float64
 }

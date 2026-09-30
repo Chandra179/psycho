@@ -32,10 +32,10 @@ const bigWordsWeight = 0.012
 
 var cognitiveStyleCoefficients = map[string]float64{
 	// Systematic (+) — openminded depth, causality, precision, formality.
-	"cognitive_process":  0.008,
-	"cause":              0.008,
-	"certainty":          0.008,
-	"analytic_thinking":  0.010,
+	"cognitive_process": 0.008,
+	"cause":             0.008,
+	"certainty":         0.008,
+	"analytic_thinking": 0.010,
 	// Intuitive (−) — perceptual, personal, immediate, uncertain.
 	"sensation":          -0.008,
 	"pronoun":            -0.008,

@@ -81,9 +81,9 @@ func TestBigFiveModelHighNeuroticism(t *testing.T) {
 	model := NewBigFiveModel()
 	fv := FeatureVector{
 		CategoryPercents: map[Category]float64{
-			"negative_emotion": 25.0,
-			"pronoun":          20.0,
-			"tentative":        15.0,
+			"negative_emotion":  25.0,
+			"pronoun":           20.0,
+			"tentative":         15.0,
 			"cognitive_process": 10.0,
 		},
 	}
@@ -194,13 +194,13 @@ func TestComputeCognitiveStyleSystematic(t *testing.T) {
 			"cognitive_process":  15.0,
 			"cause":              12.0,
 			"certainty":          10.0,
-			"big_words":           8.0,
+			"big_words":          8.0,
 			"analytic_thinking":  12.0,
-			"sensation":           3.0,
-			"pronoun":             8.0,
-			"present_focus":       5.0,
-			"intuitive_thinking":  2.0,
-			"tentative":           4.0,
+			"sensation":          3.0,
+			"pronoun":            8.0,
+			"present_focus":      5.0,
+			"intuitive_thinking": 2.0,
+			"tentative":          4.0,
 		},
 	}
 	score := ComputeCognitiveStyle(fv)
