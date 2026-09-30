@@ -36,6 +36,9 @@ vendor
 # Generated test output
 testresults/
 
+# Rendered HTML report previews
+profile-*.html
+
 # Runtime database
 psycho.db
 
