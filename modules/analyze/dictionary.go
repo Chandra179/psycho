@@ -2,6 +2,7 @@ package analyze
 
 import (
 	"encoding/json"
+	"slices"
 	"strings"
 )
 
@@ -38,7 +39,12 @@ func LoadDictionaryFromJSON(data []byte) (Dictionary, error) {
 			if w == "" {
 				continue
 			}
-			wordToCats[w] = append(wordToCats[w], cat)
+			// A word may legitimately belong to several categories, but the
+			// same word listed twice under one category must not register
+			// twice — Extract counts each returned category occurrence.
+			if !slices.Contains(wordToCats[w], cat) {
+				wordToCats[w] = append(wordToCats[w], cat)
+			}
 		}
 	}
 	return &builtInDictionary{wordToCats: wordToCats, cats: cats}, nil

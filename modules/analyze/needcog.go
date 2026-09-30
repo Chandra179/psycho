@@ -6,6 +6,10 @@ import "math"
 // intuitive words decrease it. Score ranges [0,1] with 0.50 neutral.
 // Source: Cacioppo, J.T. & Petty, R.E. (1982). The need for cognition.
 //   Journal of Personality and Social Psychology, 42(1), 116-131.
+//
+// The paper provides the 18-item Need for Cognition scale, not word lists.
+// The analytic/intuitive categories and weights are this project's own
+// operationalization; no published word-list mapping exists.
 var needCogCoefficients = map[string]float64{
 	"analytic_thinking":  0.025,
 	"intuitive_thinking": -0.015,

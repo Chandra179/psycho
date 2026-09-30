@@ -75,10 +75,12 @@ func makeTraitResult(score, ciWidth float64) TraitResult {
 }
 
 // scoreToPercentile converts a [0,1] trait score to a population percentile
-// assuming a normal distribution with mean 0.50 and SD 0.12.
+// assuming a normal distribution with mean 0.50 and SD 0.15 — the same
+// trait-scale SD the regression coefficients were derived under
+// (see modules/analyze/coefficients.go).
 func scoreToPercentile(score float64) int {
 	mean := 0.50
-	sd := 0.12
+	sd := 0.15
 	z := (score - mean) / sd
 	p := normalCDF(z)
 	pct := int(math.Round(p * 100))

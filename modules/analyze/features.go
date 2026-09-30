@@ -39,7 +39,8 @@ func (fe *FeatureExtractor) Extract(doc ingest.Document) (FeatureVector, float64
 
 	for _, w := range words {
 		totalWordLen += len(w)
-		if len(w) >= 6 {
+		// LIWC's Sixltr counts words with more than six letters.
+		if len(w) > 6 {
 			bigWords++
 		}
 		cats := fe.dict.Lookup(w)

@@ -3,7 +3,7 @@ package analyze
 // Regression coefficients derived from Yarkoni (2010) Table 1 Spearman
 // correlations (ρ), converted to per-percentage-point weights on a [0,1]
 // trait scale using the formula β ≈ ρ × (SD_trait / SD_category) / trait_range
-// where SD_trait ≈ 0.15, SD_category ≈ 3 pp, trait_range = 1.
+// where SD_trait ≈ 0.15, SD_category ≈ 2.5 pp, trait_range = 1.
 //
 // Source:
 //   Yarkoni, T. (2010). Personality in 100,000 words: A large-scale analysis
@@ -24,7 +24,7 @@ var coefficients = map[string]TraitWeights{
 	"cognitive_process": {Neuroticism: 0.008, Conscientiousness: -0.007},
 	"tentative":         {Neuroticism: 0.007},
 	"certainty":         {Neuroticism: 0.008},
-	"pronoun":           {Openness: -0.013, Extraversion: 0.006, Neuroticism: 0.005},
+	"pronoun":           {Openness: -0.013, Extraversion: 0.004, Neuroticism: 0.004},
 	"article":           {Openness: 0.012, Neuroticism: -0.007},
 	"achievement":       {Conscientiousness: 0.008},
 	"social":            {Extraversion: 0.009},
@@ -37,7 +37,12 @@ var coefficients = map[string]TraitWeights{
 	"past_focus":        {Openness: -0.010},
 	// Categories mapped via weaker/general associations
 	"negative_emotion": {Neuroticism: 0.010, Conscientiousness: -0.011, Agreeableness: -0.009},
-	"sensation":        {Neuroticism: 0.006},
+	// Negations (ρ: N +.11, O −.13, C −.17 — the largest standalone C
+	// correlation in the table). Negative contractions are negation words too.
+	"negation": {Neuroticism: 0.007, Openness: -0.008, Conscientiousness: -0.010},
+	// "sensation" is intentionally absent: its published correlation with
+	// Neuroticism (Sensory Processes, ρ = .05) is non-significant at the
+	// paper's sample size, leaving no empirical basis for a weight.
 }
 
 // TraitWeights holds per-trait regression weights for a single category.

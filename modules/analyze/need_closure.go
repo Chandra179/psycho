@@ -8,6 +8,10 @@ import "math"
 // Source: Webster, D.M., & Kruglanski, A.W. (1994). Individual differences
 //
 //	in need for cognitive closure. Journal of Personality and Social Psychology.
+//
+// The paper provides the Need for Closure Scale, not word lists. The
+// certainty/tentative markers and weights are this project's own
+// operationalization; no published word-list mapping exists.
 var needClosureCoefficients = map[string]float64{
 	"certainty":  0.020,
 	"tentative": -0.025,

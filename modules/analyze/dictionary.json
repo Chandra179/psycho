@@ -25,12 +25,14 @@
   "certainty": [
     "always", "never", "absolutely", "definitely", "certainly", "clearly", "obviously", "undoubtedly", "indeed", "sure",
     "exactly", "precisely", "completely", "totally", "entirely", "fully", "perfectly", "correct", "true", "fact",
-    "prove", "confirm", "verify", "guarantee", "promise", "must", "will", "shall", "indeed", "actually"
+    "prove", "confirm", "verify", "guarantee", "promise", "must", "will", "shall", "actually"
   ],
   "pronoun": [
     "i", "me", "my", "mine", "myself", "you", "your", "yours", "yourself", "he",
     "him", "his", "himself", "she", "her", "hers", "herself", "we", "us", "our",
-    "ours", "ourselves", "they", "them", "their", "theirs", "themselves", "it", "its", "itself"
+    "ours", "ourselves", "they", "them", "their", "theirs", "themselves", "it", "its", "itself",
+    "i'm", "i've", "i'll", "i'd", "you're", "you've", "you'll", "you'd", "he's", "he'll",
+    "she's", "she'll", "we're", "we've", "we'll", "we'd", "they're", "they've", "they'll", "they'd", "it's"
   ],
   "article": [
     "a", "an", "the"
@@ -104,40 +106,45 @@
     "effect", "affect", "influence", "impact", "lead", "cause", "reason", "factor", "condition", "circumstance",
     "purpose", "intent", "aim", "goal", "objective", "motivation", "incentive", "stimulus", "trigger", "prompt",
     "provoke", "induce", "generate", "produce", "create", "make", "force", "compel", "drive", "push",
-    "origin", "source", "root", "basis", "foundation", "ground", "reason", "explanation", "justification", "rationale"
+    "origin", "source", "root", "basis", "foundation", "ground", "explanation", "justification", "rationale"
   ],
   "inclusive": [
     "and", "with", "plus", "also", "too", "including", "include", "addition", "furthermore", "moreover",
     "additionally", "besides", "along", "together", "joint", "combined", "collective", "aggregate", "total", "overall",
     "comprehensive", "complete", "full", "entire", "whole", "all", "every", "each", "both", "either",
-    "neither", "nor", "as well as", "in addition to", "along with", "coupled with", "together with", "accompanied by", "plus", "and"
+    "neither", "nor"
   ],
   "exclusive": [
     "but", "except", "excluding", "exclude", "without", "apart", "separate", "alone", "only", "solely",
     "merely", "just", "purely", "simply", "rather", "instead", "alternative", "otherwise", "else", "different",
     "distinct", "unique", "individual", "personal", "private", "own", "exclusive", "selective", "restricted", "limited",
-    "particular", "specific", "certain", "special", "especially", "particularly", "not", "no", "none", "never"
+    "particular", "specific", "certain", "special", "especially", "particularly"
+  ],
+  "negation": [
+    "no", "not", "none", "never", "nobody", "nothing", "nowhere", "neither", "nor",
+    "cannot", "don't", "doesn't", "didn't", "isn't", "aren't", "wasn't", "weren't",
+    "won't", "can't", "couldn't", "wouldn't", "shouldn't", "hasn't", "haven't", "hadn't"
   ],
   "past_focus": [
     "was", "were", "had", "did", "went", "came", "said", "got", "made", "took",
     "saw", "knew", "thought", "felt", "found", "gave", "told", "asked", "worked", "seemed",
-    "left", "put", "meant", "kept", "let", "began", "seemed", "helped", "showed", "heard",
+    "left", "put", "meant", "kept", "let", "began", "helped", "showed", "heard",
     "played", "ran", "moved", "lived", "believed", "brought", "wrote", "provided", "lost", "added",
-    "earlier", "before", "previously", "formerly", "once", "ago", "back then", "in the past", "used to", "had been"
+    "earlier", "before", "previously", "formerly", "once", "ago"
   ],
   "present_focus": [
     "is", "am", "are", "has", "have", "do", "does", "go", "come", "say",
     "get", "make", "take", "see", "know", "think", "feel", "find", "give", "tell",
-    "ask", "work", "seem", "leave", "put", "mean", "keep", "let", "begin", "seem",
+    "ask", "work", "seem", "leave", "put", "mean", "keep", "let", "begin",
     "help", "show", "hear", "play", "run", "move", "live", "believe", "bring", "write",
-    "provide", "lose", "add", "now", "today", "currently", "at present", "right now", "these days", "nowadays"
+    "provide", "lose", "add", "now", "today", "currently", "nowadays"
   ],
   "future_focus": [
-    "will", "shall", "would", "could", "should", "may", "might", "can", "going to", "plan",
+    "will", "shall", "would", "could", "should", "may", "might", "can", "plan",
     "expect", "anticipate", "predict", "forecast", "project", "envision", "imagine", "hope", "wish", "want",
     "desire", "intend", "aim", "goal", "target", "objective", "aspiration", "ambition", "dream", "vision",
     "tomorrow", "next", "upcoming", "coming", "approaching", "imminent", "pending", "prospective", "potential", "future",
-    "eventually", "soon", "later", "afterward", "thereafter", "subsequently", "down the road", "ahead", "forward"
+    "eventually", "soon", "later", "afterward", "thereafter", "subsequently", "ahead", "forward"
   ],
   "promotion_focus": [
     "aspire", "aspiration", "dream", "hope", "wish", "desire", "want",
@@ -188,21 +195,21 @@
   "value_self_direction": [
     "freedom", "freely", "independent", "independence", "choose", "choice",
     "curious", "curiosity", "explore", "exploration", "original", "originality",
-    "autonomous", "autonomy", "self-reliant", "individual", "unique",
+    "autonomous", "autonomy", "individual", "unique",
     "invent", "invention", "discover", "discovery", "imagination",
     "imaginative", "personal", "decide", "decision", "preference",
     "liberty", "spontaneous", "spontaneity", "unconventional",
-    "self-sufficient", "self-directed", "own path", "create", "creative",
+    "create", "creative",
     "creativity", "experiment", "experimental"
   ],
   "value_stimulation": [
-    "exciting", "excitement", "daring", "thrilling", "thrill",
+    "exciting", "excitement", "thrilling", "thrill",
     "adventure", "adventurous", "novel", "novelty", "bold",
     "intense", "intensity", "exhilarating", "exhilaration", "passionate",
     "challenge", "challenging", "varied", "variety", "extraordinary",
-    "risk", "risky", "daring", "courage", "courageous",
+    "risk", "risky", "courage", "courageous",
     "stimulating", "stimulation", "energetic", "vibrant", "lively",
-    "active", "action", "fast-paced", "explore", "frontier"
+    "active", "action", "explore", "frontier"
   ],
   "value_hedonism": [
     "pleasure", "pleasurable", "enjoy", "enjoyment", "fun",
@@ -232,7 +239,7 @@
     "competitive", "competition", "contest", "win", "winner",
     "fame", "reputation", "recognition", "importance", "important",
     "privilege", "privileged", "elite", "rank", "position",
-    "authority", "rule", "ruler", "govern", "governance"
+    "rule", "ruler", "govern", "governance"
   ],
   "value_security": [
     "safe", "safety", "secure", "security", "protect", "protection",
@@ -241,24 +248,24 @@
     "peace", "calm", "calmness", "steady", "reliable",
     "reliability", "dependable", "trustworthy", "trust",
     "familiar", "routine", "tradition", "traditional", "conservative",
-    "cautious", "caution", "risk-free", "insurance", "guarantee"
+    "cautious", "caution", "insurance", "guarantee"
   ],
   "value_conformity": [
     "obey", "obedience", "conform", "conformity", "polite", "politeness",
     "respect", "respectful", "proper", "propriety", "appropriate",
     "correct", "decent", "decency", "modest", "modesty",
-    "well-behaved", "manners", "etiquette", "courteous",
+    "manners", "etiquette", "courteous",
     "compliant", "compliance", "rule", "rules", "follow",
     "dutiful", "duty", "obligation", "obliged", "responsible",
     "responsibility", "agreeable", "agree", "accept", "acceptance",
-    "discipline", "orderly", "restraint", "self-control", "humble"
+    "discipline", "orderly", "restraint", "humble"
   ],
   "value_tradition": [
     "tradition", "traditional", "custom", "customary", "heritage",
     "ritual", "rituals", "conservative", "convention", "conventional",
-    "heritage", "legacy", "ancestors", "ancestral", "old-fashioned",
-    "classic", "classical", "historic", "historical", "time-honored",
-    "established", "rooted", "age-old", "folk", "folklore",
+    "legacy", "ancestors", "ancestral",
+    "classic", "classical", "historic", "historical",
+    "established", "rooted", "folk", "folklore",
     "cultural", "culture", "values", "virtue", "virtues",
     "piety", "devout", "faith", "faithful", "reverence",
     "respect", "honor", "loyalty", "loyal", "devotion"
@@ -278,11 +285,10 @@
     "justice", "just", "fair", "fairness", "equality", "equal",
     "peace", "peaceful", "nature", "natural", "environment",
     "environmental", "tolerant", "tolerance", "diverse", "diversity",
-    "inclusive", "inclusion", "broad-minded", "open-minded",
-    "social justice", "human rights", "rights", "freedom",
+    "inclusive", "inclusion", "rights", "freedom",
     "liberty", "harmony", "unity", "global", "world",
     "planet", "earth", "ecological", "sustainable", "sustainability",
     "protect", "preserve", "conservation", "beauty", "artistic",
-    "wisdom", "mature", "spiritual", "inner peace"
+    "wisdom", "mature", "spiritual"
   ]
 }
