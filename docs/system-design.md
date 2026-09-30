@@ -47,6 +47,7 @@ modules/
     pdf.go / pdf_maroto.go #   PDF report generation
     handler.go             #   GET /analysis/{id}/pdf handler
   server/                  # composes all modules, registers routes
+pipeline/                  # the analysis flow: normalize → extract → infer → persist
 middleware/                # shared: recovery, request ID, timeout, validation
 config/                    # YAML loader + config.yaml
 samples/                   # .txt corpus read by /analyze-dir
@@ -57,8 +58,9 @@ test/                      # integration + known-profile validation tests
 ### **Module boundaries**
 
 * **ingest** — Owns text normalisation, segmentation, and source metadata. Exposes a clean document object to downstream modules. Does NOT know about dictionaries, traits, or profiles.
-* **analyze** — Owns the psycholinguistic dictionary, feature extraction, and trait inference models. Depends on ingest for clean text. Does NOT know about temporal comparison or narrative synthesis.
-* **profile** — Owns score aggregation, confidence computation, and narrative generation. Depends on analyze for trait/feature data. Does NOT know about ingestion logic.
+* **analyze** — Owns the psycholinguistic dictionary, feature extraction, and trait inference models. Depends on ingest for clean text. Does NOT know about temporal comparison or narrative synthesis. Also owns the evidence trail: per-category contribution math (`evidence.go`) and the matched-word samples the extractor keeps.
+* **profile** — Owns score aggregation, confidence computation, evidence attachment, and narrative generation. Depends on analyze for trait/feature data. Does NOT know about ingestion logic.
+* **pipeline** — Owns stage ordering: normalizes, extracts, infers, aggregates, narrates, and persists in one `Run`. Depends on all three modules; exists so neither the HTTP server nor the tests duplicate the orchestration. The server and tests hand it to the handlers through the `ingest.AnalyzeFunc` seam.
 
 ### **Dependencies**
 
@@ -108,6 +110,8 @@ Tests run after each phase completes. The system is decomposed so each module is
 * "Submit 5,000‑word personal blog corpus → receive Big Five, Regulatory Focus, and Need for Cognition within 5 seconds. All 7 dimensions have valid scores and confidence intervals."
 * "Submit text with 80% domain‑specific jargon → system returns low dictionary coverage warning and wide confidence intervals."
 * Use test fixtures: pre‑prepared text samples with known linguistic profiles, embedded SQLite for test isolation.
+
+**Current state:** All of the above exists. Beyond the unit and integration tests, `test/validation_test.go` runs text fixtures with known linguistic profiles through the pipeline — asserting exact category percentages, word-to-category placements, and the direction of every dimension — and records latency percentiles per corpus size. GitHub Actions runs gofmt, vet, build, and the full suite on every push.
 
 ***
 

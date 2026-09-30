@@ -39,7 +39,7 @@ Wiring happens one level up in `modules/server/http_server.go`: `NewHandler` bui
 2. `ingest.Normalizer` strips markup, segments text, produces a `Document` with word count.
 3. `analyze.FeatureExtractor` tokenizes against the loaded dictionary (`dictionary.json`, loaded once at startup in `analyze.NewDependencies`) to build a `FeatureVector` + coverage %.
 4. `analyze.TraitModel.Infer` (Big Five, `bigfive.go`/`coefficients.go`) plus standalone `Compute*` functions for Regulatory Focus, Need for Cognition, Cognitive Style, Need for Closure, Schwartz Values — each is a pure function over the `FeatureVector`, independently testable.
-5. `profile.ScoreAggregator.Aggregate` combines everything into a `Profile` with confidence flags; `profile.NarrativeGenerator` (template-based, no LLM) fills in prose.
+5. `profile.ScoreAggregator.Aggregate` combines everything into a `Profile` with confidence flags and per-trait evidence (top category contributions, computed in `analyze/evidence.go`); `profile.NarrativeGenerator` (template-based, no LLM) fills in prose.
 6. `profile.Storage` (SQLite via `modernc.org/sqlite`, pure-Go/no CGO) persists the analysis as JSON blobs, keyed by a generated analysis ID.
 7. `profile.PDFGenerator` (`pdf_maroto.go`, backend selected by `cfg.PDFBackend` in `profile.NewDependencies`) renders a stored analysis to PDF on demand via `GET /analysis/{id}/pdf`.
 

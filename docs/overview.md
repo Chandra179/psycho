@@ -200,7 +200,10 @@ trusted, and the evidence behind each score is kept alongside it.
 
 Reports are rendered from the saved analysis rather than by re-reading your
 text, so a report generated today matches one generated months later. The
-saved profile — scores, evidence, and prose — is the single source of truth.
+PDF and the technical report include a Linguistic Evidence section: for each
+score, the dictionary categories that drove it, how much of your text they
+covered, and how much they moved the number. The saved profile — scores,
+evidence, and prose — is the single source of truth.
 
 ### Private and simple
 
@@ -233,7 +236,7 @@ production evidence — while the rest remain design targets.
 | Usage | designed for 1–10 analyses per minute — personal, single-user pacing |
 | Storage | about **10 MB** per analyzed subject, including the text, the evidence, and the profile |
 | Short samples | below 500 words results are flagged low-confidence, never blocked |
-| Quality | every stage is covered by an automated test suite, including text fixtures with known linguistic profiles that pin exact feature counts, word-to-category placements, and the direction of every dimension |
+| Quality | every stage is covered by an automated test suite, including text fixtures with known linguistic profiles that pin exact feature counts, word-to-category placements, and the direction of every dimension; the dictionary recognizes about **56%** of words in typical test samples |
 
 An automated validation suite runs these known-profile text samples through
 the full pipeline on every test run, so a change that flips a score's
