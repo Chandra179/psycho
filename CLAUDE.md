@@ -34,7 +34,7 @@ make pdf ID=<analysis_id> # downloads the PDF for a saved analysis
 
 Wiring happens one level up in `modules/server/http_server.go`: `NewHandler` builds each module's `Dependencies`, then registers routes on a stdlib `http.ServeMux`, threading cross-module glue through closures passed into `MakeHandleX` (e.g. the `/analyze` handler's callback takes `analyze` output and calls into `profileDeps.Aggregator`/`Storage`/`NarrativeGenerator` — modules never import each other's handler package directly for business logic, only `server` composes them).
 
-**Request flow** (`POST /analyze-dir`, the primary path — reads `.txt` files from a configured directory rather than accepting arbitrary uploads):
+**Request flow** (`POST /analyze-dir`, the primary path — reads `.txt` files from a configured directory rather than accepting arbitrary uploads; `source_type` deliberately accepts blog|chat|email|paste|file|url — broader than the PRD's "max 3" example, keeping its bounded-taxonomy intent):
 1. `ingest` reads and concatenates files (`ReadDir`), enforces min/max size.
 2. `ingest.Normalizer` strips markup, segments text, produces a `Document` with word count.
 3. `analyze.FeatureExtractor` tokenizes against the loaded dictionary (`dictionary.json`, loaded once at startup in `analyze.NewDependencies`) to build a `FeatureVector` + coverage %.

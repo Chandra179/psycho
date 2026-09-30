@@ -18,26 +18,40 @@
 ### **Directory Structure**
 
 ```
-cmd/psycho/main.go      # entrypoint — starts HTTP server
+cmd/
+  psycho/main.go         # entrypoint — starts HTTP server
+  rendertemplates/       # renders HTML report previews from an analysis JSON
 modules/
-  ingest/                  #   text ingestion module
-    config.go              #     module-specific config struct
-    dependencies.go        #     wire deps, load own config
-    http.go                #     HTTP handlers + route registration
-    normalizer.go          #     text normalization logic
-  analyze/                 #   psycholinguistic analysis module
-    config.go
-    dependencies.go
-    dictionary.go          #     dictionary lookup engine
-    features.go            #     stylometric feature extraction
-    inference.go           #     Big Five + cognitive style inference
-  profile/                 #   profile generation module
-    config.go
-    dependencies.go
-    synthesizer.go         #     aggregate scores, confidence intervals
-    narrative.go           #     optional LLM narrative synthesis
+  ingest/                  # text ingestion module
+    config.go              #   module-specific config struct
+    dependencies.go        #   wire deps, load own config
+    handler.go             #   POST /analyze-dir handler
+    normalizer.go          #   text normalization logic
+  analyze/                 # psycholinguistic analysis module
+    config.go / dependencies.go
+    dictionary.go          #   dictionary lookup engine (dictionary.json)
+    features.go            #   feature extraction + LIWC-style summary variables
+    bigfive.go             #   Big Five regression model
+    coefficients.go        #   Yarkoni (2010) regression weights
+    regfocus.go            #   Regulatory Focus inference
+    needcog.go             #   Need for Cognition inference
+    need_closure.go        #   Need for Closure inference
+    cognitive_style.go     #   cognitive style inference
+    values.go              #   Schwartz value scores
+    handler.go             #   POST /analyze handler
+  profile/                 # profile generation module
+    config.go / dependencies.go
+    synthesizer.go         #   aggregation, confidence intervals, percentiles
+    narrative.go           #   template-based narrative synthesis
+    storage.go             #   SQLite persistence (modernc.org/sqlite)
+    pdf.go / pdf_maroto.go #   PDF report generation
+    handler.go             #   GET /analysis/{id}/pdf handler
+  server/                  # composes all modules, registers routes
 middleware/                # shared: recovery, request ID, timeout, validation
 config/                    # YAML loader + config.yaml
+samples/                   # .txt corpus read by /analyze-dir
+templates/                 # HTML report templates (general/technical/balanced)
+test/                      # integration + known-profile validation tests
 ```
 
 ### **Module boundaries**
@@ -49,7 +63,7 @@ config/                    # YAML loader + config.yaml
 ### **Dependencies**
 
 * **Go standard library:** `net/http`, `database/sql`, `encoding/json`, `text/template`
-* **Open source:** `go-sqlite3` (embedded database), `empath` or equivalent open‑source psycholinguistic lexicon, optional LLM client package (Gemini/OpenAI, user‑configured)
+* **Open source:** `modernc.org/sqlite` (embedded database — pure Go, no CGO), `go.uber.org/zap` (logging), `go-playground/validator` (request validation), `johnfercher/maroto/v2` (PDF generation), `google/uuid` (analysis IDs), `google.golang.org/grpc` (gRPC request-ID interceptor in middleware)
 * **Sidecar/optional:** A small LLM binary (e.g., Ollama) running locally if the user enables narrative synthesis. The app functions fully without it.
 
 ### **Abstraction Depth per Module**
