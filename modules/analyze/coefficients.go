@@ -11,7 +11,7 @@ package analyze
 //   Personality, 44(3), 363–373. https://doi.org/10.1016/j.jrp.2010.04.001
 //
 // Only dictionary.json categories with a clear Yarkoni mapping are included.
-// Categories with no Yarkoni basis (big_words, quantitative, present_focus,
+// Categories with no Yarkoni basis (quantitative, present_focus,
 // future_focus) are kept as zero and should be updated when new research
 // provides empirical coefficients.
 

@@ -94,6 +94,16 @@ func TestExactFeatureExtraction(t *testing.T) {
 	if math.Abs(coverage-0.75) > 0.001 {
 		t.Errorf("coverage = %.4f; want 0.75", coverage)
 	}
+	// the(3) happy(5) i(1) zqx(3) — no word longer than six letters.
+	if fv.BigWordRatio != 0 {
+		t.Errorf("BigWordRatio = %f; want 0", fv.BigWordRatio)
+	}
+
+	// LIWC Sixltr: share of words with more than six letters.
+	fv2, _ := vp.extractor.Extract(ingest.NewNormalizer().Normalize("accommodate the"))
+	if math.Abs(fv2.BigWordRatio-0.5) > 0.001 {
+		t.Errorf("BigWordRatio = %f; want 0.5", fv2.BigWordRatio)
+	}
 }
 
 // TestDictionaryLoaderDeduplicates pins the load-time dedup: a word listed

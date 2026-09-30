@@ -377,37 +377,38 @@ func TestIndividualSamples(t *testing.T) {
 	defer server.Close()
 
 	samples := map[string]struct {
-		desc           string
+		desc            string
 		minAuthenticity float64
-		maxClout       float64
-		minAnalytic    float64
-		emotionalLow   bool
-		lowConfidence  bool
+		maxAuthenticity float64
+		maxClout        float64
+		minAnalytic     float64
+		emotionalLow    bool
+		lowConfidence   bool
 	}{
 		"tweet-thread.txt": {
-			desc:          "casual social media — low confidence (<500 words), low analytical thinking, low clout, high authenticity",
-			minAuthenticity: 0.70,
-			maxClout:       0.50,
-			lowConfidence:  true,
+			desc:            "casual social media — low confidence (<500 words), low analytical thinking, low clout, relatively high authenticity",
+			minAuthenticity: 0.25,
+			maxClout:        0.50,
+			lowConfidence:   true,
 		},
 		"angry-review.txt": {
-			desc:          "consumer rant — low confidence, low emotional tone (high negative emotion), low clout, high authenticity",
-			minAuthenticity: 0.50,
-			maxClout:       0.45,
-			emotionalLow:   true,
-			lowConfidence:  true,
+			desc:            "consumer rant — low confidence, low emotional tone (high negative emotion), low clout, relatively high authenticity",
+			minAuthenticity: 0.28,
+			maxClout:        0.45,
+			emotionalLow:    true,
+			lowConfidence:   true,
 		},
 		"diary-entry.txt": {
-			desc:          "personal confessional — near-zero analytical thinking, near-zero clout, max authenticity, negative emotional tone",
+			desc:            "personal confessional — near-zero analytical thinking, near-zero clout, max authenticity, negative emotional tone",
 			minAuthenticity: 0.75,
-			maxClout:       0.15,
-			emotionalLow:   true,
+			maxClout:        0.15,
+			emotionalLow:    true,
 		},
 		"research-abstract.txt": {
-			desc:          "formal academic paper — highest analytical thinking among samples, moderate authenticity, moderate clout",
-			minAnalytic:    0.48,
-			minAuthenticity: 0.20,
-			maxClout:       0.70,
+			desc:            "formal academic paper — highest analytical thinking among samples, lowest authenticity (polished, complex vocabulary), moderate clout",
+			minAnalytic:     0.48,
+			maxAuthenticity: 0.05,
+			maxClout:        0.70,
 		},
 	}
 
@@ -463,6 +464,9 @@ func TestIndividualSamples(t *testing.T) {
 		}
 		if expect.minAuthenticity > 0 && s.Authenticity < expect.minAuthenticity {
 			failures = append(failures, fmt.Sprintf("%s: authenticity=%.2f; want >=%.2f", name, s.Authenticity, expect.minAuthenticity))
+		}
+		if expect.maxAuthenticity > 0 && s.Authenticity > expect.maxAuthenticity {
+			failures = append(failures, fmt.Sprintf("%s: authenticity=%.2f; want <=%.2f", name, s.Authenticity, expect.maxAuthenticity))
 		}
 		if expect.maxClout > 0 && s.Clout > expect.maxClout {
 			failures = append(failures, fmt.Sprintf("%s: clout=%.2f; want <=%.2f", name, s.Clout, expect.maxClout))

@@ -99,7 +99,7 @@ func ComputeSummaryVariables(fv FeatureVector) SummaryVariables {
 		p["pronoun"] - p["tentative"] - p["negative_emotion"]) / 5.0)
 
 	au := sigmoid((p["pronoun"] + p["tentative"] + p["present_focus"] + p["inclusive"] + p["sensation"] -
-		p["big_words"] - p["cognitive_process"] - p["cause"] - p["past_focus"] - p["exclusive"] - p["certainty"]) / 6.0)
+		fv.BigWordRatio*100 - p["cognitive_process"] - p["cause"] - p["past_focus"] - p["exclusive"] - p["certainty"]) / 6.0)
 
 	return SummaryVariables{
 		AnalyticalThinking: math.Round(at*100) / 100,

@@ -49,24 +49,6 @@
     "together", "join", "unite", "connect", "bond", "trust", "loyal", "honest", "kind", "generous",
     "polite", "respect", "appreciate", "thank", "welcome", "invite", "visit", "call", "email", "message"
   ],
-  "big_words": [
-    "accommodate", "acknowledge", "acquisition", "administration", "advantageous", "aesthetic", "ambiguity", "anticipate", "apprehension", "arbitrary",
-    "articulate", "assimilation", "asynchronous", "authenticity", "benevolent", "bureaucracy", "bureaucratic", "capitulate", "catastrophe", "circumstance",
-    "collaboration", "comprehensive", "conscientious", "consequential", "contemplation", "contemporary", "contradiction", "conventional", "cooperation", "correspondence",
-    "credibility", "cumulative", "declaration", "deduction", "demonstration", "disposition", "distinction", "divergence", "dominance", "elaboration",
-    "eligibility", "embarrassment", "empirical", "encounter", "endeavor", "enthusiasm", "equilibrium", "equivalent", "establishment", "evaluation",
-    "exaggeration", "examination", "expectation", "expenditure", "experience", "explanation", "exploration", "facilitation", "fundamental", "generation",
-    "hypothesis", "ideological", "imagination", "implementation", "implication", "impression", "improvement", "inclination", "incorporation", "indication",
-    "indifference", "individuality", "inevitable", "inheritance", "inhibition", "innovation", "inspiration", "installation", "institution", "instruction",
-    "integration", "intellectual", "intelligence", "interaction", "interference", "interpretation", "intervention", "investigation", "justification", "legislation",
-    "maintenance", "manifestation", "manipulation", "mathematics", "modification", "negotiation", "notification", "observation", "opportunity", "organization",
-    "participation", "perception", "performance", "phenomenon", "philosophy", "possibility", "preparation", "presentation", "preservation", "probabilistic",
-    "probability", "proclamation", "productivity", "professional", "pronunciation", "proposition", "psychological", "qualification", "realization", "recognition",
-    "recommendation", "reconciliation", "reflection", "regeneration", "regulation", "relationship", "representation", "reproduction", "requirement", "reservation",
-    "resolution", "restoration", "retaliation", "retrospective", "satisfaction", "significance", "simultaneous", "specification", "speculation", "stimulation",
-    "substantial", "substitution", "sufficient", "suggestion", "superintendent", "superiority", "susceptible", "synthesis", "technological", "transformation",
-    "transmission", "transportation", "understanding", "unemployment", "utilization", "vulnerability", "willingness", "withdrawal"
-  ],
   "sensation": [
     "feel", "feeling", "touch", "taste", "smell", "hear", "see", "look", "sound", "sight",
     "texture", "temperature", "color", "bright", "dark", "loud", "quiet", "soft", "hard", "smooth",

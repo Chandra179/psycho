@@ -7,8 +7,9 @@ import "math"
 // Higher = systematic/analytical; lower = intuitive/heuristic.
 //
 // Systematic markers: cognitive process words, causal reasoning, complex
-// vocabulary, definitive claims, and analytical language indicate deliberate
-// elaboration.
+// vocabulary (computed as the share of words longer than six letters —
+// LIWC's Sixltr), definitive claims, and analytical language indicate
+// deliberate elaboration.
 //
 // Intuitive markers: perceptual/sensory language, personal pronouns,
 // present-tense focus, and tentative hedging indicate heuristic, felt-sense
@@ -23,12 +24,17 @@ import "math"
 // no published regression table exists matching LIWC categories to ELM
 // processing style. The weights reflect directional hypotheses consistent
 // with the ELM framework.
+// bigWordsWeight applies to vocabulary complexity, measured as the
+// percentage of words longer than six letters (LIWC's Sixltr). Unlike the
+// category coefficients below, that signal is computed on the feature
+// vector rather than looked up in the dictionary.
+const bigWordsWeight = 0.012
+
 var cognitiveStyleCoefficients = map[string]float64{
 	// Systematic (+) — openminded depth, causality, precision, formality.
 	"cognitive_process":  0.008,
 	"cause":              0.008,
 	"certainty":          0.008,
-	"big_words":          0.012,
 	"analytic_thinking":  0.010,
 	// Intuitive (−) — perceptual, personal, immediate, uncertain.
 	"sensation":          -0.008,
@@ -38,13 +44,15 @@ var cognitiveStyleCoefficients = map[string]float64{
 	"tentative":          -0.006,
 }
 
-// ComputeCognitiveStyle computes a cognitive processing style score from categories.
+// ComputeCognitiveStyle computes a cognitive processing style score from
+// category percentages plus the computed long-word ratio.
 func ComputeCognitiveStyle(fv FeatureVector) float64 {
 	score := 0.50
 	for cat, weight := range cognitiveStyleCoefficients {
 		pct := fv.CategoryPercents[Category(cat)]
 		score += weight * pct
 	}
+	score += bigWordsWeight * fv.BigWordRatio * 100
 	if score < 0 {
 		return 0
 	}
