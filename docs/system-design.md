@@ -119,6 +119,20 @@ Tests run after each phase completes. The system is decomposed so each module is
 
 Percentiles are measured, not assumed. `cmd/calibrate` runs the production inference path over a corpus of plain-text documents and writes `config/calibration.json`: per-dimension offsets that center the corpus mean at 0.50, plus the 1st–99th percentile quantiles of the adjusted scores. The server loads it at startup (`analyze.calibration_path`); `pipeline.Run` applies the offset before aggregation and the aggregator resolves percentiles by lookup instead of the normal approximation. The committed file was generated from a 4,010-post sample of the Blog Authorship Corpus (Schler et al., 2006 — blogger.com posts, Aug 2004), a genre matching the product's intended input; regenerate it with `go run ./cmd/calibrate -corpus <dir>` when the dictionary or weights change. Confidence intervals are deliberately unchanged — they model measurement error (text length × coverage), not population position.
 
+### **Measured accuracy** (`cmd/evaluate`)
+
+`cmd/evaluate` scores a labeled corpus with the production inference path (raw scores — calibration is monotone and cannot change ranking) and reports the Spearman rank correlation and AUC of each Big Five score against ground truth. On the Essays corpus (Pennebaker & King, 1999; 2,442 essays over 200 words, binary median-split labels; measured 2026-10-01):
+
+| trait | Spearman ρ | AUC | AUC 95% CI (bootstrap) |
+|---|---|---|---|
+| neuroticism | 0.101 | 0.558 | 0.535 – 0.580 |
+| extraversion | 0.098 | 0.555 | 0.534 – 0.577 |
+| agreeableness | 0.089 | 0.551 | 0.527 – 0.573 |
+| openness | 0.055 | 0.532 | 0.509 – 0.555 |
+| conscientiousness | 0.039 | 0.522 | 0.501 – 0.543 |
+
+All five dimensions rank above chance with confidence intervals excluding 0.5 — the sign of every published correlation holds on real data. The magnitudes are consistent with a zero-order weighted-sum baseline: Yarkoni (2010) reports zero-order ρ of 0.10–0.22, and dichotomizing each trait at its median (the corpus's labels) further attenuates measurable signal. Supervised multi-feature models (e.g., Mairesse et al., 2010, on full LIWC features) reach ρ ≈ 0.2–0.3; closing that gap means dictionary breadth and, eventually, multivariate combination — not changed signs.
+
 ***
 
 ## References
