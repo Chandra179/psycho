@@ -10,12 +10,13 @@ import (
 
 // Profile holds the aggregated output for a single analysis.
 type Profile struct {
-	AnalysisID     string
-	ConfidenceFlag string
-	Traits         map[string]TraitResult
-	Values         map[string]float64
-	Summary        analyze.SummaryVariables
-	Narrative      string
+	AnalysisID     string                   `json:"analysis_id"`
+	ConfidenceFlag string                   `json:"confidence_flag"`
+	Traits         map[string]TraitResult   `json:"traits"`
+	Values         map[string]float64       `json:"values"`
+	ValueEvidence  map[string][]string      `json:"value_evidence,omitempty"`
+	Summary        analyze.SummaryVariables `json:"summary"`
+	Narrative      string                   `json:"narrative"`
 }
 
 // TraitResult holds one Big Five trait output. Evidence lists the category
@@ -27,11 +28,21 @@ type TraitResult struct {
 	Evidence           []analyze.Contribution `json:"evidence,omitempty"`
 }
 
-// ScoreAggregator merges raw scores into a user-facing profile.
-type ScoreAggregator struct{}
+// ScoreAggregator merges raw scores into a user-facing profile. An optional
+// calibration replaces the normal-approximation percentile with a lookup
+// against an empirically measured reference distribution.
+type ScoreAggregator struct {
+	calibration *analyze.Calibration
+}
 
 func NewScoreAggregator() *ScoreAggregator {
 	return &ScoreAggregator{}
+}
+
+// UseCalibration attaches an empirical reference distribution used for
+// percentile lookup. Call before Aggregate; nil restores the default.
+func (sa *ScoreAggregator) UseCalibration(cal *analyze.Calibration) {
+	sa.calibration = cal
 }
 
 // Aggregate converts raw BigFiveScores into a Profile with confidence intervals.
@@ -40,15 +51,24 @@ func (sa *ScoreAggregator) Aggregate(scores analyze.BigFiveScores, fv analyze.Fe
 	ciWidth := computeCIWidth(wordCount, coverage)
 
 	traits := map[string]TraitResult{
-		"openness":           makeTraitResult(scores.Openness, ciWidth, analyze.BigFiveEvidence("openness", fv)),
-		"conscientiousness":  makeTraitResult(scores.Conscientiousness, ciWidth, analyze.BigFiveEvidence("conscientiousness", fv)),
-		"extraversion":       makeTraitResult(scores.Extraversion, ciWidth, analyze.BigFiveEvidence("extraversion", fv)),
-		"agreeableness":      makeTraitResult(scores.Agreeableness, ciWidth, analyze.BigFiveEvidence("agreeableness", fv)),
-		"neuroticism":        makeTraitResult(scores.Neuroticism, ciWidth, analyze.BigFiveEvidence("neuroticism", fv)),
-		"regulatory_focus":   makeTraitResult(scores.RegulatoryFocus, ciWidth, analyze.RegulatoryFocusEvidence(fv)),
-		"need_for_cognition": makeTraitResult(scores.NeedForCognition, ciWidth, analyze.NeedForCognitionEvidence(fv)),
-		"cognitive_style":    makeTraitResult(scores.CognitiveStyle, ciWidth, analyze.CognitiveStyleEvidence(fv)),
-		"need_for_closure":   makeTraitResult(scores.NeedForClosure, ciWidth, analyze.NeedForClosureEvidence(fv)),
+		"openness":           makeTraitResult(scores.Openness, ciWidth, sa.percentileFor("openness", scores.Openness), analyze.BigFiveEvidence("openness", fv)),
+		"conscientiousness":  makeTraitResult(scores.Conscientiousness, ciWidth, sa.percentileFor("conscientiousness", scores.Conscientiousness), analyze.BigFiveEvidence("conscientiousness", fv)),
+		"extraversion":       makeTraitResult(scores.Extraversion, ciWidth, sa.percentileFor("extraversion", scores.Extraversion), analyze.BigFiveEvidence("extraversion", fv)),
+		"agreeableness":      makeTraitResult(scores.Agreeableness, ciWidth, sa.percentileFor("agreeableness", scores.Agreeableness), analyze.BigFiveEvidence("agreeableness", fv)),
+		"neuroticism":        makeTraitResult(scores.Neuroticism, ciWidth, sa.percentileFor("neuroticism", scores.Neuroticism), analyze.BigFiveEvidence("neuroticism", fv)),
+		"regulatory_focus":   makeTraitResult(scores.RegulatoryFocus, ciWidth, sa.percentileFor("regulatory_focus", scores.RegulatoryFocus), analyze.RegulatoryFocusEvidence(fv)),
+		"need_for_cognition": makeTraitResult(scores.NeedForCognition, ciWidth, sa.percentileFor("need_for_cognition", scores.NeedForCognition), analyze.NeedForCognitionEvidence(fv)),
+		"cognitive_style":    makeTraitResult(scores.CognitiveStyle, ciWidth, sa.percentileFor("cognitive_style", scores.CognitiveStyle), analyze.CognitiveStyleEvidence(fv)),
+		"need_for_closure":   makeTraitResult(scores.NeedForClosure, ciWidth, sa.percentileFor("need_for_closure", scores.NeedForClosure), analyze.NeedForClosureEvidence(fv)),
+	}
+
+	// Matched words per Schwartz value — the audit trail for the values
+	// section (the extractor already samples words for every category).
+	valueEvidence := make(map[string][]string)
+	for _, cat := range analyze.SchwartzValueKeys() {
+		if words := fv.Evidence[cat]; len(words) > 0 {
+			valueEvidence[string(cat)] = words
+		}
 	}
 
 	return Profile{
@@ -56,11 +76,12 @@ func (sa *ScoreAggregator) Aggregate(scores analyze.BigFiveScores, fv analyze.Fe
 		ConfidenceFlag: confidence,
 		Traits:         traits,
 		Values:         scores.Values,
+		ValueEvidence:  valueEvidence,
 		Summary:        analyze.ComputeSummaryVariables(fv),
 	}
 }
 
-func makeTraitResult(score, ciWidth float64, evidence []analyze.Contribution) TraitResult {
+func makeTraitResult(score, ciWidth float64, percentile int, evidence []analyze.Contribution) TraitResult {
 	low := score - ciWidth
 	high := score + ciWidth
 	if low < 0 {
@@ -71,10 +92,22 @@ func makeTraitResult(score, ciWidth float64, evidence []analyze.Contribution) Tr
 	}
 	return TraitResult{
 		Score:              math.Round(score*100) / 100,
-		Percentile:         scoreToPercentile(score),
+		Percentile:         percentile,
 		ConfidenceInterval: []float64{math.Round(low*100) / 100, math.Round(high*100) / 100},
 		Evidence:           evidence,
 	}
+}
+
+// percentileFor resolves a score's population percentile: from the
+// calibration reference distribution when one is attached, otherwise from
+// the normal approximation below.
+func (sa *ScoreAggregator) percentileFor(dim string, score float64) int {
+	if sa.calibration != nil {
+		if p, ok := sa.calibration.Percentile(dim, score); ok {
+			return p
+		}
+	}
+	return scoreToPercentile(score)
 }
 
 // scoreToPercentile converts a [0,1] trait score to a population percentile

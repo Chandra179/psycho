@@ -38,6 +38,7 @@ type analysisJSON struct {
 	ConfidenceFlag     string               `json:"confidence_flag"`
 	Traits             map[string]traitJSON `json:"traits"`
 	Values             map[string]float64   `json:"values"`
+	ValueEvidence      map[string][]string  `json:"value_evidence"`
 	Summary            struct {
 		AnalyticalThinking float64 `json:"analytical_thinking"`
 		Clout              float64 `json:"clout"`
@@ -135,9 +136,10 @@ type ValueView struct {
 	Rank    int
 	Name    string
 	Percent float64
+	Words   []string
 }
 
-func sortedValues(values map[string]float64) []ValueView {
+func sortedValues(values map[string]float64, evidence map[string][]string) []ValueView {
 	keys := make([]string, 0, len(values))
 	for k := range values {
 		keys = append(keys, k)
@@ -146,7 +148,7 @@ func sortedValues(values map[string]float64) []ValueView {
 	out := make([]ValueView, 0, len(keys))
 	for i, k := range keys {
 		dn := analyze.ValueDisplayName(analyze.ValueCategory(k))
-		out = append(out, ValueView{Rank: i + 1, Name: dn, Percent: round2(values[k])})
+		out = append(out, ValueView{Rank: i + 1, Name: dn, Percent: round2(values[k]), Words: evidence[k]})
 	}
 	return out
 }
@@ -257,7 +259,7 @@ func main() {
 			AboveBlurb: b[0], BelowBlurb: b[1],
 		})
 	}
-	gv.Values = sortedValues(a.Values)
+	gv.Values = sortedValues(a.Values, a.ValueEvidence)
 	gv.Summary = []generalSummary{
 		{"Analytical Thinking", summaryLabel(a.Summary.AnalyticalThinking, "highly analytical", "intuitive")},
 		{"Clout", summaryLabel(a.Summary.Clout, "confident/dominant", "submissive/uncertain")},
@@ -293,7 +295,7 @@ func main() {
 			})
 		}
 	}
-	tv.Values = sortedValues(a.Values)
+	tv.Values = sortedValues(a.Values, a.ValueEvidence)
 	tv.Summary = []technicalSummary{
 		{"Analytical Thinking", a.Summary.AnalyticalThinking, summaryLabel(a.Summary.AnalyticalThinking, "highly analytical", "intuitive")},
 		{"Clout", a.Summary.Clout, summaryLabel(a.Summary.Clout, "confident/dominant", "submissive/uncertain")},
@@ -314,7 +316,7 @@ func main() {
 			Percentile: t.Percentile, Blurb: b[0],
 		})
 	}
-	bv.Values = sortedValues(a.Values)
+	bv.Values = sortedValues(a.Values, a.ValueEvidence)
 	bv.Summary = []balancedSummary{
 		{"Analytical Thinking", summaryLabel(a.Summary.AnalyticalThinking, "highly analytical", "intuitive")},
 		{"Clout", summaryLabel(a.Summary.Clout, "confident/dominant", "submissive/uncertain")},

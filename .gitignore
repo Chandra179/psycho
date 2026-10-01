@@ -44,3 +44,4 @@ psycho.db
 
 # ZCode session state
 .zcode/
+corpus/

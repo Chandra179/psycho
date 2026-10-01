@@ -40,7 +40,8 @@ type IngestConfig struct {
 }
 
 type AnalyzeConfig struct {
-	DictionaryPath string `yaml:"dictionary_path"`
+	DictionaryPath  string `yaml:"dictionary_path"`
+	CalibrationPath string `yaml:"calibration_path"`
 }
 
 type ProfileConfig struct {

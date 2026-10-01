@@ -16,11 +16,12 @@ import (
 // result. It is the single owner of stage ordering; the HTTP handlers only
 // deal with transport.
 type Pipeline struct {
-	extractor  *analyze.FeatureExtractor
-	model      analyze.TraitModel
-	aggregator *profile.ScoreAggregator
-	narrative  profile.NarrativeGenerator
-	storage    *profile.Storage
+	extractor   *analyze.FeatureExtractor
+	model       analyze.TraitModel
+	aggregator  *profile.ScoreAggregator
+	narrative   profile.NarrativeGenerator
+	storage     *profile.Storage
+	calibration *analyze.Calibration
 }
 
 func New(
@@ -29,13 +30,15 @@ func New(
 	aggregator *profile.ScoreAggregator,
 	narrative profile.NarrativeGenerator,
 	storage *profile.Storage,
+	calibration *analyze.Calibration,
 ) *Pipeline {
 	return &Pipeline{
-		extractor:  extractor,
-		model:      model,
-		aggregator: aggregator,
-		narrative:  narrative,
-		storage:    storage,
+		extractor:   extractor,
+		model:       model,
+		aggregator:  aggregator,
+		narrative:   narrative,
+		storage:     storage,
+		calibration: calibration,
 	}
 }
 
@@ -56,6 +59,13 @@ func (p *Pipeline) Run(ctx context.Context, sourceType, sourceDate, text string)
 	scores.CognitiveStyle = analyze.ComputeCognitiveStyle(features)
 	scores.NeedForClosure = analyze.ComputeNeedForClosure(features)
 	scores.Values = analyze.ComputeSchwartzValues(features)
+
+	// Recenter scores against the calibration corpus before aggregation so
+	// absolute scores and percentiles share the same reference population.
+	// Nil calibration leaves the raw scores untouched.
+	if p.calibration != nil {
+		p.calibration.AdjustScores(&scores)
+	}
 
 	prof := p.aggregator.Aggregate(scores, features, doc.WordCount, coverage)
 	prof.Narrative = p.narrative.GenerateSynthesis(prof)
@@ -81,6 +91,7 @@ func (p *Pipeline) Run(ctx context.Context, sourceType, sourceDate, text string)
 		ConfidenceFlag:     prof.ConfidenceFlag,
 		Traits:             traits,
 		Values:             prof.Values,
+		ValueEvidence:      prof.ValueEvidence,
 		Summary:            prof.Summary,
 		Narrative:          prof.Narrative,
 	}, nil

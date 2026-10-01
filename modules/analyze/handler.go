@@ -18,14 +18,15 @@ type AnalyzeRequest struct {
 }
 
 type AnalyzeResponse struct {
-	AnalysisID         string             `json:"analysis_id"`
-	WordCount          int                `json:"word_count"`
-	DictionaryCoverage float64            `json:"dictionary_coverage"`
-	ConfidenceFlag     string             `json:"confidence_flag"`
-	Traits             map[string]any     `json:"traits"`
-	Values             map[string]float64 `json:"values"`
-	Summary            SummaryVariables   `json:"summary"`
-	Narrative          string             `json:"narrative"`
+	AnalysisID         string              `json:"analysis_id"`
+	WordCount          int                 `json:"word_count"`
+	DictionaryCoverage float64             `json:"dictionary_coverage"`
+	ConfidenceFlag     string              `json:"confidence_flag"`
+	Traits             map[string]any      `json:"traits"`
+	Values             map[string]float64  `json:"values"`
+	ValueEvidence      map[string][]string `json:"value_evidence,omitempty"`
+	Summary            SummaryVariables    `json:"summary"`
+	Narrative          string              `json:"narrative"`
 }
 
 // MakeHandleAnalyze builds the POST /analyze handler. The analysis itself is
@@ -85,6 +86,7 @@ func MakeHandleAnalyze(
 			ConfidenceFlag:     out.ConfidenceFlag,
 			Traits:             out.Traits,
 			Values:             out.Values,
+			ValueEvidence:      out.ValueEvidence,
 			Summary:            summary,
 			Narrative:          out.Narrative,
 		}

@@ -3,6 +3,7 @@ package profile
 import (
 	"fmt"
 	"sort"
+	"strings"
 
 	"psycho/modules/analyze"
 )
@@ -62,7 +63,11 @@ func (g *TemplateNarrativeGenerator) GenerateSynthesis(profile Profile) string {
 		for _, k := range keys {
 			pct := profile.Values[k]
 			dn := analyze.ValueDisplayName(analyze.ValueCategory(k))
-			out += fmt.Sprintf("- **%s:** %.2f%% of words\n", dn, pct)
+			if words := profile.ValueEvidence[k]; len(words) > 0 {
+				out += fmt.Sprintf("- **%s:** %.2f%% of words — %s\n", dn, pct, strings.Join(words, ", "))
+			} else {
+				out += fmt.Sprintf("- **%s:** %.2f%% of words\n", dn, pct)
+			}
 		}
 		out += "\n"
 	}

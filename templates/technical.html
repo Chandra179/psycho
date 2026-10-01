@@ -232,10 +232,10 @@
   <section>
     <h2>Schwartz Value Orientation</h2>
     <table>
-      <thead><tr><th class="num">Rank</th><th>Category</th><th class="num">% of words</th></tr></thead>
+      <thead><tr><th class="num">Rank</th><th>Category</th><th class="num">% of words</th><th>Matched words</th></tr></thead>
       <tbody>
         {{range .Values}}
-        <tr><td class="num">{{.Rank}}</td><td>{{.Name}}</td><td class="num">{{.Percent}}%</td></tr>
+        <tr><td class="num">{{.Rank}}</td><td>{{.Name}}</td><td class="num">{{.Percent}}%</td><td>{{range $i, $w := .Words}}{{if $i}}, {{end}}{{$w}}{{end}}</td></tr>
         {{end}}
       </tbody>
     </table>

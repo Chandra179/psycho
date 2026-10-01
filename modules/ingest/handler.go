@@ -45,6 +45,7 @@ type AnalysisOutput struct {
 	ConfidenceFlag     string
 	Traits             map[string]any
 	Values             map[string]float64
+	ValueEvidence      map[string][]string
 	Summary            any
 	Narrative          string
 }

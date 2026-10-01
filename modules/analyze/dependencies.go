@@ -1,6 +1,7 @@
 package analyze
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -8,11 +9,12 @@ import (
 )
 
 type Dependencies struct {
-	Config    Config
-	Logger    *zlogger.Logger
-	Dict      Dictionary
-	Extractor *FeatureExtractor
-	Model     TraitModel
+	Config      Config
+	Logger      *zlogger.Logger
+	Dict        Dictionary
+	Extractor   *FeatureExtractor
+	Model       TraitModel
+	Calibration *Calibration
 }
 
 func NewDependencies(cfg Config, logger *zlogger.Logger) (*Dependencies, error) {
@@ -29,11 +31,30 @@ func NewDependencies(cfg Config, logger *zlogger.Logger) (*Dependencies, error) 
 	extractor := NewFeatureExtractor(dict)
 	model := NewBigFiveModel()
 
+	// Calibration is optional: an empty path leaves scores uncalibrated
+	// (fixed 0.50 intercepts, normal-approximation percentiles).
+	var cal *Calibration
+	if cfg.CalibrationPath != "" {
+		calData, err := os.ReadFile(cfg.CalibrationPath)
+		if err != nil {
+			return nil, fmt.Errorf("read calibration: %w", err)
+		}
+		cal, err = LoadCalibration(calData)
+		if err != nil {
+			return nil, fmt.Errorf("load calibration: %w", err)
+		}
+		logger.Info(context.Background(), "calibration loaded",
+			zlogger.Field{Key: "path", Value: cfg.CalibrationPath},
+			zlogger.Field{Key: "corpus", Value: cal.Corpus},
+		)
+	}
+
 	return &Dependencies{
-		Config:    cfg,
-		Logger:    logger,
-		Dict:      dict,
-		Extractor: extractor,
-		Model:     model,
+		Config:      cfg,
+		Logger:      logger,
+		Dict:        dict,
+		Extractor:   extractor,
+		Model:       model,
+		Calibration: cal,
 	}, nil
 }
