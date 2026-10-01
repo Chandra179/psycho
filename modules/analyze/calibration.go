@@ -25,10 +25,14 @@ type DimensionCalibration struct {
 // distribution-free percentiles. A nil *Calibration means "uncalibrated" —
 // callers fall back to the fixed 0.50 intercepts and the normal
 // approximation in profile.scoreToPercentile.
+//
+// DictionarySHA256 pins the calibration to the dictionary it was built
+// from; a test fails if the dictionary changes without recalibration.
 type Calibration struct {
-	Corpus      string                          `json:"corpus"`
-	GeneratedAt string                          `json:"generated_at"`
-	Dimensions  map[string]DimensionCalibration `json:"dimensions"`
+	Corpus           string                          `json:"corpus"`
+	GeneratedAt      string                          `json:"generated_at"`
+	DictionarySHA256 string                          `json:"dictionary_sha256,omitempty"`
+	Dimensions       map[string]DimensionCalibration `json:"dimensions"`
 }
 
 // LoadCalibration parses calibration JSON produced by cmd/calibrate.

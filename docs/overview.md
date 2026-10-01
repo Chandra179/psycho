@@ -238,7 +238,7 @@ production evidence — while the rest remain design targets.
 | Usage | designed for 1–10 analyses per minute — personal, single-user pacing |
 | Storage | about **10 MB** per analyzed subject, including the text, the evidence, and the profile |
 | Short samples | below 500 words results are flagged low-confidence, never blocked |
-| Quality | every stage is covered by an automated test suite, including text fixtures with known linguistic profiles that pin exact feature counts, word-to-category placements, and the direction of every dimension; the dictionary recognizes about **56%** of words in typical test samples |
+| Quality | every stage is covered by an automated test suite, including text fixtures with known linguistic profiles that pin exact feature counts, word-to-category placements, and the direction of every dimension; the dictionary recognizes about **58%** of words in typical test samples (2,155 words across 36 categories) |
 | Measured accuracy | scored against a public corpus of **2,442 essays** with ground-truth personality ratings, all five Big Five dimensions rank people **above chance** (AUC 0.52–0.56, each confidence interval excluding coin-flip) — the right direction everywhere, with honest, modest effect sizes that dictionary growth is expected to improve |
 
 An automated validation suite runs these known-profile text samples through

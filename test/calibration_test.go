@@ -1,6 +1,8 @@
 package integration_test
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"os"
 	"strings"
@@ -228,4 +230,22 @@ func clampForTest(v float64) float64 {
 		return 1
 	}
 	return float64(int(v*100+0.5)) / 100
+}
+
+// TestCalibrationMatchesDictionary fails when modules/analyze/dictionary.json
+// changes without a corresponding cmd/calibrate regeneration — a stale
+// calibration would silently misplace every percentile.
+func TestCalibrationMatchesDictionary(t *testing.T) {
+	cal := loadCommittedCalibration(t)
+	if cal.DictionarySHA256 == "" {
+		t.Fatal("committed calibration has no dictionary_sha256; regenerate with cmd/calibrate")
+	}
+	data, err := os.ReadFile("../modules/analyze/dictionary.json")
+	if err != nil {
+		t.Fatalf("read dictionary: %v", err)
+	}
+	sum := sha256.Sum256(data)
+	if got := hex.EncodeToString(sum[:]); got != cal.DictionarySHA256 {
+		t.Fatalf("dictionary changed (sha256 %s) but calibration was built for %s — rerun cmd/calibrate", got, cal.DictionarySHA256)
+	}
 }
