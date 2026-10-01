@@ -134,7 +134,9 @@ Every score carries an interval that widens or narrows with the evidence:
 longer samples produce tighter intervals, and text the dictionary barely
 recognizes produces wider ones. Very short samples always receive a
 low-confidence flag rather than being rejected. Scores are reported as
-percentiles relative to a reference sample.
+percentiles relative to a measured reference population — a sample of about
+4,000 blog posts (the Blog Authorship Corpus), so "60th percentile" means
+"higher than 60% of comparable texts in that reference sample."
 
 ## Under the hood
 

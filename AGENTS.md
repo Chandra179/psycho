@@ -17,6 +17,7 @@ Run `go test ./...` for the unit and integration tests (under `modules/` and `te
 ```
 cmd/psycho/main.go         # entrypoint — starts HTTP server
 cmd/rendertemplates/       # renders HTML report previews from an analysis JSON
+cmd/calibrate/             # derives config/calibration.json from a reference corpus
 modules/<name>/            # one flat Go package per domain module
   config.go                # YAML config structs
   dependencies.go          # wire deps, load config, construct services

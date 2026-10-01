@@ -21,6 +21,7 @@
 cmd/
   psycho/main.go         # entrypoint — starts HTTP server
   rendertemplates/       # renders HTML report previews from an analysis JSON
+  calibrate/             # derives config/calibration.json from a reference corpus
 modules/
   ingest/                  # text ingestion module
     config.go              #   module-specific config struct
@@ -33,6 +34,7 @@ modules/
     features.go            #   feature extraction + LIWC-style summary variables
     bigfive.go             #   Big Five regression model
     coefficients.go        #   Yarkoni (2010) regression weights
+    calibration.go         #   reference distribution: offsets + percentile quantiles
     regfocus.go            #   Regulatory Focus inference
     needcog.go             #   Need for Cognition inference
     need_closure.go        #   Need for Closure inference
@@ -45,7 +47,7 @@ modules/
     narrative.go           #   template-based narrative synthesis
     storage.go             #   SQLite persistence (modernc.org/sqlite)
     pdf.go / pdf_maroto.go #   PDF report generation
-    handler.go             #   GET /analysis/{id}/pdf handler
+    handler.go             #   GET /analysis/{id} and GET /analysis/{id}/pdf handlers
   server/                  # composes all modules, registers routes
 pipeline/                  # the analysis flow: normalize → extract → infer → persist
 middleware/                # shared: recovery, request ID, timeout, validation
@@ -58,7 +60,7 @@ test/                      # integration + known-profile validation tests
 ### **Module boundaries**
 
 * **ingest** — Owns text normalisation, segmentation, and source metadata. Exposes a clean document object to downstream modules. Does NOT know about dictionaries, traits, or profiles.
-* **analyze** — Owns the psycholinguistic dictionary, feature extraction, and trait inference models. Depends on ingest for clean text. Does NOT know about temporal comparison or narrative synthesis. Also owns the evidence trail: per-category contribution math (`evidence.go`) and the matched-word samples the extractor keeps.
+* **analyze** — Owns the psycholinguistic dictionary, feature extraction, and trait inference models. Depends on ingest for clean text. Does NOT know about temporal comparison or narrative synthesis. Also owns the evidence trail: per-category contribution math (`evidence.go`) and the matched-word samples the extractor keeps. Owns the calibration reference (`calibration.go`): raw scores are centered and ranked against the distribution measured by `cmd/calibrate` over a reference corpus (`config/calibration.json`, committed; nil calibration falls back to the fixed 0.50 intercepts and the normal approximation).
 * **profile** — Owns score aggregation, confidence computation, evidence attachment, and narrative generation. Depends on analyze for trait/feature data. Does NOT know about ingestion logic.
 * **pipeline** — Owns stage ordering: normalizes, extracts, infers, aggregates, narrates, and persists in one `Run`. Depends on all three modules; exists so neither the HTTP server nor the tests duplicate the orchestration. The server and tests hand it to the handlers through the `ingest.AnalyzeFunc` seam.
 
@@ -111,7 +113,11 @@ Tests run after each phase completes. The system is decomposed so each module is
 * "Submit text with 80% domain‑specific jargon → system returns low dictionary coverage warning and wide confidence intervals."
 * Use test fixtures: pre‑prepared text samples with known linguistic profiles, embedded SQLite for test isolation.
 
-**Current state:** All of the above exists. Beyond the unit and integration tests, `test/validation_test.go` runs text fixtures with known linguistic profiles through the pipeline — asserting exact category percentages, word-to-category placements, and the direction of every dimension — and records latency percentiles per corpus size. GitHub Actions runs gofmt, vet, build, and the full suite on every push.
+**Current state:** All of the above exists. Beyond the unit and integration tests, `test/validation_test.go` runs text fixtures with known linguistic profiles through the pipeline — asserting exact category percentages, word-to-category placements, and the direction of every dimension — and records latency percentiles per corpus size. `test/calibration_test.go` pins the committed calibration: quantile lookup is monotonic and clamped, a corpus-average score maps to the 50th percentile, the JSON round-trips, and directionally opposite texts rank correctly through the calibrated pipeline. GitHub Actions runs gofmt, vet, build, and the full suite on every push.
+
+### **Score calibration**
+
+Percentiles are measured, not assumed. `cmd/calibrate` runs the production inference path over a corpus of plain-text documents and writes `config/calibration.json`: per-dimension offsets that center the corpus mean at 0.50, plus the 1st–99th percentile quantiles of the adjusted scores. The server loads it at startup (`analyze.calibration_path`); `pipeline.Run` applies the offset before aggregation and the aggregator resolves percentiles by lookup instead of the normal approximation. The committed file was generated from a 4,010-post sample of the Blog Authorship Corpus (Schler et al., 2006 — blogger.com posts, Aug 2004), a genre matching the product's intended input; regenerate it with `go run ./cmd/calibrate -corpus <dir>` when the dictionary or weights change. Confidence intervals are deliberately unchanged — they model measurement error (text length × coverage), not population position.
 
 ***
 
