@@ -50,3 +50,61 @@ func TestStorageMigrateAndSave(t *testing.T) {
 		t.Errorf("Openness score = %f; want 0.75", saved.Scores["openness"].Score)
 	}
 }
+
+// TestStorageMigratesLegacySchema builds a pre-rename database (scores_json,
+// no source_date, no profile_version), runs Migrate, and verifies the
+// schema is brought forward without losing the stored row.
+func TestStorageMigratesLegacySchema(t *testing.T) {
+	db := openTestDB(t)
+	legacy := `
+CREATE TABLE analyses (
+	id TEXT PRIMARY KEY,
+	source_type TEXT NOT NULL,
+	word_count INTEGER NOT NULL,
+	dictionary_coverage REAL NOT NULL,
+	features_json TEXT NOT NULL,
+	scores_json TEXT NOT NULL,
+	confidence_flag TEXT NOT NULL,
+	created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);`
+	if _, err := db.Exec(legacy); err != nil {
+		t.Fatalf("create legacy table: %v", err)
+	}
+	if _, err := db.Exec(
+		`INSERT INTO analyses (id, source_type, word_count, dictionary_coverage, features_json, scores_json, confidence_flag)
+		 VALUES ('legacy-1', 'blog', 500, 0.6, '{}', '{"analysis_id":"legacy-1","confidence_flag":"high"}', 'high')`,
+	); err != nil {
+		t.Fatalf("seed legacy row: %v", err)
+	}
+
+	storage := NewStorage(db, zlogger.New("dev"))
+	if err := storage.Migrate(); err != nil {
+		t.Fatalf("Migrate: %v", err)
+	}
+
+	for _, col := range []string{"profile_json", "profile_version", "source_date"} {
+		var count int
+		if err := db.QueryRow(
+			`SELECT COUNT(*) FROM pragma_table_info('analyses') WHERE name = ?`, col,
+		).Scan(&count); err != nil {
+			t.Fatalf("inspect schema: %v", err)
+		}
+		if count != 1 {
+			t.Errorf("column %q missing after migration", col)
+		}
+	}
+	var scoresJSON int
+	if err := db.QueryRow(
+		`SELECT COUNT(*) FROM pragma_table_info('analyses') WHERE name = 'scores_json'`,
+	).Scan(&scoresJSON); err != nil || scoresJSON != 0 {
+		t.Errorf("scores_json should be gone after migration (count=%d, err=%v)", scoresJSON, err)
+	}
+
+	saved, err := storage.GetAnalysis("legacy-1")
+	if err != nil {
+		t.Fatalf("GetAnalysis on migrated row: %v", err)
+	}
+	if saved.ConfidenceFlag != "high" || saved.ProfileVersion != 1 {
+		t.Errorf("migrated row: flag=%q version=%d; want high/1", saved.ConfidenceFlag, saved.ProfileVersion)
+	}
+}

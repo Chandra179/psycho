@@ -19,6 +19,10 @@ func NewStorage(db *sql.DB, logger *zlogger.Logger) *Storage {
 	return &Storage{db: db, logger: logger}
 }
 
+// profileSchemaVersion versions the JSON blob stored in profile_json. Bump
+// it whenever the marshaled Profile shape changes incompatibly.
+const profileSchemaVersion = 1
+
 // Migrate creates the analyses table and brings older databases up to the
 // current schema.
 func (s *Storage) Migrate() error {
@@ -29,7 +33,8 @@ CREATE TABLE IF NOT EXISTS analyses (
 	word_count INTEGER NOT NULL,
 	dictionary_coverage REAL NOT NULL,
 	features_json TEXT NOT NULL,
-	scores_json TEXT NOT NULL,
+	profile_json TEXT NOT NULL,
+	profile_version INTEGER NOT NULL DEFAULT 1,
 	confidence_flag TEXT NOT NULL,
 	created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
@@ -38,16 +43,49 @@ CREATE TABLE IF NOT EXISTS analyses (
 		return err
 	}
 
-	var colCount int
-	if err := s.db.QueryRow(
-		`SELECT COUNT(*) FROM pragma_table_info('analyses') WHERE name = 'source_date'`,
-	).Scan(&colCount); err != nil {
-		return fmt.Errorf("inspect analyses schema: %w", err)
-	}
-	if colCount == 0 {
-		if _, err := s.db.Exec(`ALTER TABLE analyses ADD COLUMN source_date TEXT NOT NULL DEFAULT ''`); err != nil {
-			return fmt.Errorf("add source_date column: %w", err)
+	// Pre-2026-10 databases stored the profile blob in a column misleadingly
+	// named scores_json; rename it in place.
+	if ok, err := s.columnExists("scores_json"); err != nil {
+		return err
+	} else if ok {
+		if has, err := s.columnExists("profile_json"); err != nil {
+			return err
+		} else if !has {
+			if _, err := s.db.Exec(`ALTER TABLE analyses RENAME COLUMN scores_json TO profile_json`); err != nil {
+				return fmt.Errorf("rename scores_json: %w", err)
+			}
 		}
+	}
+
+	if err := s.ensureColumn("source_date", `ALTER TABLE analyses ADD COLUMN source_date TEXT NOT NULL DEFAULT ''`); err != nil {
+		return fmt.Errorf("add source_date column: %w", err)
+	}
+	if err := s.ensureColumn("profile_version", `ALTER TABLE analyses ADD COLUMN profile_version INTEGER NOT NULL DEFAULT 1`); err != nil {
+		return fmt.Errorf("add profile_version column: %w", err)
+	}
+	return nil
+}
+
+func (s *Storage) columnExists(name string) (bool, error) {
+	var count int
+	if err := s.db.QueryRow(
+		`SELECT COUNT(*) FROM pragma_table_info('analyses') WHERE name = ?`, name,
+	).Scan(&count); err != nil {
+		return false, fmt.Errorf("inspect analyses schema: %w", err)
+	}
+	return count > 0, nil
+}
+
+func (s *Storage) ensureColumn(name, alter string) error {
+	ok, err := s.columnExists(name)
+	if err != nil {
+		return err
+	}
+	if ok {
+		return nil
+	}
+	if _, err := s.db.Exec(alter); err != nil {
+		return err
 	}
 	return nil
 }
@@ -64,9 +102,9 @@ func (s *Storage) SaveAnalysis(sourceType, sourceDate string, wordCount int, cov
 	}
 
 	_, err = s.db.Exec(
-		`INSERT INTO analyses (id, source_type, source_date, word_count, dictionary_coverage, features_json, scores_json, confidence_flag)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-		profile.AnalysisID, sourceType, sourceDate, wordCount, coverage, string(featuresJSON), string(profileJSON), profile.ConfidenceFlag,
+		`INSERT INTO analyses (id, source_type, source_date, word_count, dictionary_coverage, features_json, profile_json, profile_version, confidence_flag)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		profile.AnalysisID, sourceType, sourceDate, wordCount, coverage, string(featuresJSON), string(profileJSON), profileSchemaVersion, profile.ConfidenceFlag,
 	)
 	if err != nil {
 		return "", fmt.Errorf("insert analysis: %w", err)
@@ -76,15 +114,15 @@ func (s *Storage) SaveAnalysis(sourceType, sourceDate string, wordCount int, cov
 
 // GetProfile retrieves a full Profile from storage by analysis ID.
 func (s *Storage) GetProfile(id string) (Profile, error) {
-	var scoresJSON string
+	var profileJSON string
 	err := s.db.QueryRow(
-		`SELECT scores_json FROM analyses WHERE id = ?`, id,
-	).Scan(&scoresJSON)
+		`SELECT profile_json FROM analyses WHERE id = ?`, id,
+	).Scan(&profileJSON)
 	if err != nil {
 		return Profile{}, err
 	}
 	var prof Profile
-	if err := json.Unmarshal([]byte(scoresJSON), &prof); err != nil {
+	if err := json.Unmarshal([]byte(profileJSON), &prof); err != nil {
 		return Profile{}, fmt.Errorf("unmarshal profile: %w", err)
 	}
 	return prof, nil
@@ -93,11 +131,11 @@ func (s *Storage) GetProfile(id string) (Profile, error) {
 // GetAnalysis retrieves a saved analysis by ID.
 func (s *Storage) GetAnalysis(id string) (*SavedAnalysis, error) {
 	var a SavedAnalysis
-	var featuresJSON, scoresJSON string
+	var featuresJSON, profileJSON string
 	err := s.db.QueryRow(
-		`SELECT id, source_type, source_date, word_count, dictionary_coverage, features_json, scores_json, confidence_flag, created_at
+		`SELECT id, source_type, source_date, word_count, dictionary_coverage, features_json, profile_json, profile_version, confidence_flag, created_at
 		 FROM analyses WHERE id = ?`, id,
-	).Scan(&a.ID, &a.SourceType, &a.SourceDate, &a.WordCount, &a.Coverage, &featuresJSON, &scoresJSON, &a.ConfidenceFlag, &a.CreatedAt)
+	).Scan(&a.ID, &a.SourceType, &a.SourceDate, &a.WordCount, &a.Coverage, &featuresJSON, &profileJSON, &a.ProfileVersion, &a.ConfidenceFlag, &a.CreatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +143,7 @@ func (s *Storage) GetAnalysis(id string) (*SavedAnalysis, error) {
 		return nil, fmt.Errorf("unmarshal features: %w", err)
 	}
 	var prof Profile
-	if err := json.Unmarshal([]byte(scoresJSON), &prof); err != nil {
+	if err := json.Unmarshal([]byte(profileJSON), &prof); err != nil {
 		return nil, fmt.Errorf("unmarshal profile: %w", err)
 	}
 	a.Scores = prof.Traits
@@ -131,5 +169,6 @@ type SavedAnalysis struct {
 	Summary        analyze.SummaryVariables `json:"summary"`
 	Narrative      string                   `json:"narrative,omitempty"`
 	ConfidenceFlag string                   `json:"confidence_flag"`
+	ProfileVersion int                      `json:"profile_version"`
 	CreatedAt      string                   `json:"created_at"`
 }
