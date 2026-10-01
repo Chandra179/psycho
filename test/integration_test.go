@@ -42,6 +42,7 @@ func newTestPipeline(t *testing.T) (*pipeline.Pipeline, *profile.Dependencies) {
 		profileDeps.Aggregator,
 		profileDeps.NarrativeGenerator,
 		profileDeps.Storage,
+		analyzeDeps.Calibration,
 	)
 	return pipe, profileDeps
 }
@@ -403,5 +404,77 @@ func TestIndividualSamples(t *testing.T) {
 
 	if len(failures) > 0 {
 		t.Errorf("%d assertion failures:\n%s", len(failures), strings.Join(failures, "\n"))
+	}
+}
+
+// TestGetAnalysisEndpoint covers GET /analysis/{id}: the stored analysis
+// round-trips as JSON (scores, values, narrative), and unknown ids 404.
+func TestGetAnalysisEndpoint(t *testing.T) {
+	logger := zlogger.New("dev")
+
+	pipe, profileDeps := newTestPipeline(t)
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("POST /analyze", analyze.MakeHandleAnalyze(1_000_000, logger, pipe.Run))
+	mux.HandleFunc("GET /analysis/{id}", profile.MakeHandleGetAnalysis(profileDeps.Storage, logger))
+	chain := middleware.Chain(mux, middleware.RequestID)
+	server := httptest.NewServer(chain)
+	defer server.Close()
+
+	text := strings.Repeat("I think the article explains the theory about cities. ", 30)
+	payload := map[string]string{"text": text, "source_type": "blog"}
+	body, _ := json.Marshal(payload)
+	resp, err := http.Post(fmt.Sprintf("%s/analyze", server.URL), "application/json", bytes.NewReader(body))
+	if err != nil {
+		t.Fatalf("POST /analyze: %v", err)
+	}
+	var posted analyze.AnalyzeResponse
+	if err := json.NewDecoder(resp.Body).Decode(&posted); err != nil {
+		t.Fatalf("decode analyze response: %v", err)
+	}
+	resp.Body.Close()
+	if posted.AnalysisID == "" {
+		t.Fatal("empty AnalysisID from /analyze")
+	}
+
+	got, err := http.Get(fmt.Sprintf("%s/analysis/%s", server.URL, posted.AnalysisID))
+	if err != nil {
+		t.Fatalf("GET /analysis: %v", err)
+	}
+	defer got.Body.Close()
+	if got.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", got.StatusCode)
+	}
+
+	var saved profile.SavedAnalysis
+	if err := json.NewDecoder(got.Body).Decode(&saved); err != nil {
+		t.Fatalf("decode saved analysis: %v", err)
+	}
+	if saved.ID != posted.AnalysisID {
+		t.Errorf("saved.ID = %s; want %s", saved.ID, posted.AnalysisID)
+	}
+	if saved.WordCount == 0 {
+		t.Error("saved.WordCount = 0")
+	}
+	if len(saved.Scores) != 9 {
+		t.Errorf("len(saved.Scores) = %d; want 9", len(saved.Scores))
+	}
+	if len(saved.Values) == 0 {
+		t.Error("saved.Values is empty")
+	}
+	if saved.Narrative == "" {
+		t.Error("saved.Narrative is empty")
+	}
+	if saved.CreatedAt == "" {
+		t.Error("saved.CreatedAt is empty")
+	}
+
+	missing, err := http.Get(fmt.Sprintf("%s/analysis/does-not-exist", server.URL))
+	if err != nil {
+		t.Fatalf("GET missing analysis: %v", err)
+	}
+	missing.Body.Close()
+	if missing.StatusCode != http.StatusNotFound {
+		t.Errorf("unknown id: expected 404, got %d", missing.StatusCode)
 	}
 }

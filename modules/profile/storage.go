@@ -110,19 +110,26 @@ func (s *Storage) GetAnalysis(id string) (*SavedAnalysis, error) {
 	}
 	a.Scores = prof.Traits
 	a.Summary = prof.Summary
+	a.Values = prof.Values
+	a.ValueEvidence = prof.ValueEvidence
+	a.Narrative = prof.Narrative
 	return &a, nil
 }
 
-// SavedAnalysis is the database row representation.
+// SavedAnalysis is the full stored analysis as returned by the retrieval
+// endpoint.
 type SavedAnalysis struct {
-	ID             string
-	SourceType     string
-	SourceDate     string
-	WordCount      int
-	Coverage       float64
-	Features       map[string]float64
-	Scores         map[string]TraitResult
-	Summary        analyze.SummaryVariables
-	ConfidenceFlag string
-	CreatedAt      string
+	ID             string                   `json:"id"`
+	SourceType     string                   `json:"source_type"`
+	SourceDate     string                   `json:"source_date,omitempty"`
+	WordCount      int                      `json:"word_count"`
+	Coverage       float64                  `json:"dictionary_coverage"`
+	Features       map[string]float64       `json:"features"`
+	Scores         map[string]TraitResult   `json:"scores"`
+	Values         map[string]float64       `json:"values,omitempty"`
+	ValueEvidence  map[string][]string      `json:"value_evidence,omitempty"`
+	Summary        analyze.SummaryVariables `json:"summary"`
+	Narrative      string                   `json:"narrative,omitempty"`
+	ConfidenceFlag string                   `json:"confidence_flag"`
+	CreatedAt      string                   `json:"created_at"`
 }
