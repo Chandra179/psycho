@@ -21,7 +21,7 @@ A local-first system that extracts the psychological structure of a person from 
 
 ## Constraints
 
-* Only handle text input: file upload, URL fetch, direct paste. No audio, video, or images.
+* Only handle text input: direct paste, URL fetch, and directory import (.txt files from a local folder). Browser-style file upload is deferred to a later phase. No audio, video, or images.
 * Single user. No authentication, no multi‑tenancy, no role‑based access.
 * Only Big Five (OCEAN), Regulatory Focus (Higgins, 1997), Need for Cognition (Cacioppo & Petty, 1982), cognitive style, and Schwartz values. No MBTI, Enneagram, or custom frameworks in MVP.
 * Dictionary‑based feature extraction only. LLM used optionally for narrative prose synthesis, never for core trait inference.
@@ -34,7 +34,7 @@ A local-first system that extracts the psychological structure of a person from 
 
 ### **Feature 1: Text Ingestion & Psychometric Analysis**
 
-**What it does:** User submits text via paste, file upload, or URL. System normalises, extracts psycholinguistic features, and outputs Big Five trait scores, Regulatory Focus, Need for Cognition, cognitive style labels, and value orientations with confidence intervals.
+**What it does:** User submits text via direct paste, URL, or directory import. System normalises, extracts psycholinguistic features, and outputs Big Five trait scores, Regulatory Focus, Need for Cognition, cognitive style labels, and value orientations with confidence intervals.
 
 **Risks we tolerate:**
 
@@ -56,7 +56,7 @@ A local-first system that extracts the psychological structure of a person from 
 
 **Phase 1: Text Ingestion & Basic Analysis**
 
-* Build `ingest` module: paste handler, file upload, URL fetch. Normalise text, extract metadata.
+* Build `ingest` module: paste handler, URL fetch, directory import. Normalise text, extract metadata.
 * Build `analyze` module: load dictionary, tokenise, compute category percentages and stylometrics.
 * Implement Big Five inference using published regression coefficients (hardcoded for MVP).
 * Write unit tests for normalizer, dictionary lookup, and trait inference.
