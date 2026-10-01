@@ -53,18 +53,6 @@ var traitOrder = []string{
 	"regulatory_focus", "need_for_cognition", "cognitive_style", "need_for_closure",
 }
 
-var traitNames = map[string]string{
-	"openness":           "Openness",
-	"conscientiousness":  "Conscientiousness",
-	"extraversion":       "Extraversion",
-	"agreeableness":      "Agreeableness",
-	"neuroticism":        "Neuroticism",
-	"regulatory_focus":   "Regulatory Focus",
-	"need_for_cognition": "Need for Cognition",
-	"cognitive_style":    "Cognitive Style",
-	"need_for_closure":   "Need for Closure",
-}
-
 var traitBlurbs = map[string][2]string{
 	"openness":           {"Curious, drawn to new ideas and experiences, enjoys abstract thinking", "Prefers the familiar and practical, more concrete and routine-oriented"},
 	"conscientiousness":  {"Organized, disciplined, plans ahead, follows through", "Flexible and spontaneous, less bound by structure"},
@@ -75,50 +63,6 @@ var traitBlurbs = map[string][2]string{
 	"need_for_cognition": {"Enjoys effortful thinking, seeks out complex problems", "Prefers simple, quick answers over deep deliberation"},
 	"cognitive_style":    {"Analytical — breaks things down, reasons step by step", "Intuitive — relies on gut feel and holistic impressions"},
 	"need_for_closure":   {"Prefers clear answers, uncomfortable with ambiguity, decides quickly", "Comfortable with open questions, willing to keep deliberating"},
-}
-
-func label(score float64) string {
-	if score >= 0.65 {
-		return "high"
-	}
-	if score < 0.35 {
-		return "low"
-	}
-	return "moderate"
-}
-
-func specificLabel(key string, score float64) string {
-	switch key {
-	case "regulatory_focus":
-		return analyze.ComputeRegulatoryFocusLabel(score)
-	case "need_for_cognition":
-		return analyze.ComputeNeedForCognitionLabel(score)
-	case "cognitive_style":
-		return analyze.ComputeCognitiveStyleLabel(score)
-	case "need_for_closure":
-		return analyze.ComputeNeedForClosureLabel(score)
-	}
-	return label(score)
-}
-
-func summaryLabel(score float64, high, low string) string {
-	if score >= 0.65 {
-		return high
-	}
-	if score < 0.35 {
-		return low
-	}
-	return "moderate"
-}
-
-func toneLabel(score float64) string {
-	if score >= 0.65 {
-		return "positive"
-	}
-	if score < 0.35 {
-		return "negative"
-	}
-	return "neutral"
 }
 
 func readingQuality(flag string) string {
@@ -155,6 +99,29 @@ func sortedValues(values map[string]float64, evidence map[string][]string) []Val
 
 func round2(f float64) float64 {
 	return float64(int(f*100)) / 100
+}
+
+// Local label helpers for the summary variables: custom wording, shared
+// thresholds from analyze.
+
+func summaryLabel(score float64, high, low string) string {
+	switch analyze.HighModerateLow(score) {
+	case "high":
+		return high
+	case "low":
+		return low
+	}
+	return "moderate"
+}
+
+func toneLabel(score float64) string {
+	if analyze.HighModerateLow(score) == "high" {
+		return "positive"
+	}
+	if analyze.HighModerateLow(score) == "low" {
+		return "negative"
+	}
+	return "neutral"
 }
 
 // --- General template view ---
@@ -255,7 +222,7 @@ func main() {
 		t := a.Traits[k]
 		b := traitBlurbs[k]
 		gv.Traits = append(gv.Traits, generalTrait{
-			Name: traitNames[k], Score100: int(t.Score * 100), Label: specificLabel(k, t.Score),
+			Name: analyze.DimensionDisplayName(k), Score100: int(t.Score * 100), Label: analyze.DimensionLabel(k, t.Score),
 			AboveBlurb: b[0], BelowBlurb: b[1],
 		})
 	}
@@ -282,7 +249,7 @@ func main() {
 			ci[0], ci[1] = t.ConfidenceInterval[0]*100, t.ConfidenceInterval[1]*100
 		}
 		tv.Traits = append(tv.Traits, technicalTrait{
-			Key: k, Name: traitNames[k], Score: t.Score * 100, Label: specificLabel(k, t.Score),
+			Key: k, Name: analyze.DimensionDisplayName(k), Score: t.Score * 100, Label: analyze.DimensionLabel(k, t.Score),
 			Percentile: t.Percentile, CILow: round2(ci[0]), CIHigh: round2(ci[1]),
 		})
 		for i, c := range t.Evidence {
@@ -290,7 +257,7 @@ func main() {
 				break
 			}
 			tv.Evidence = append(tv.Evidence, evidenceRow{
-				Trait: traitNames[k], Category: c.Category,
+				Trait: analyze.DimensionDisplayName(k), Category: c.Category,
 				WordPercent: c.WordPercent, Weight: c.Weight, Contribution: c.Contribution,
 			})
 		}
@@ -312,7 +279,7 @@ func main() {
 		t := a.Traits[k]
 		b := traitBlurbs[k]
 		bv.Traits = append(bv.Traits, balancedTrait{
-			Name: traitNames[k], Score100: int(t.Score * 100), Label: specificLabel(k, t.Score),
+			Name: analyze.DimensionDisplayName(k), Score100: int(t.Score * 100), Label: analyze.DimensionLabel(k, t.Score),
 			Percentile: t.Percentile, Blurb: b[0],
 		})
 	}

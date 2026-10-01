@@ -62,7 +62,7 @@ func (g *MarotoPDFGenerator) Generate(p Profile) ([]byte, error) {
 		if !ok || len(t.ConfidenceInterval) < 2 {
 			continue
 		}
-		m.AddRow(5, text.NewCol(12, fmt.Sprintf("%s: %s", traitDisplayName(name), traitLabel(name, t.Score)),
+		m.AddRow(5, text.NewCol(12, fmt.Sprintf("%s: %s", analyze.DimensionDisplayName(name), analyze.DimensionLabel(name, t.Score)),
 			props.Text{Size: 9}))
 	}
 
@@ -113,7 +113,7 @@ func (g *MarotoPDFGenerator) Generate(p Profile) ([]byte, error) {
 			continue
 		}
 		line := fmt.Sprintf("%s: %.2f — %dth percentile (95%% CI: %.2f–%.2f)",
-			traitDisplayName(name), t.Score, t.Percentile, t.ConfidenceInterval[0], t.ConfidenceInterval[1])
+			analyze.DimensionDisplayName(name), t.Score, t.Percentile, t.ConfidenceInterval[0], t.ConfidenceInterval[1])
 		m.AddRow(5, text.NewCol(12, line, props.Text{Size: 7}))
 	}
 
@@ -127,7 +127,7 @@ func (g *MarotoPDFGenerator) Generate(p Profile) ([]byte, error) {
 		if !ok || len(t.Evidence) == 0 {
 			continue
 		}
-		m.AddRow(6, text.NewCol(12, traitDisplayName(name), props.Text{Size: 9}))
+		m.AddRow(6, text.NewCol(12, analyze.DimensionDisplayName(name), props.Text{Size: 9}))
 		for i, c := range t.Evidence {
 			if i >= 3 {
 				break

@@ -28,28 +28,28 @@ func (g *TemplateNarrativeGenerator) GenerateSynthesis(profile Profile) string {
 	for _, name := range []string{"openness", "conscientiousness", "extraversion", "agreeableness", "neuroticism"} {
 		t := profile.Traits[name]
 		out += fmt.Sprintf("**%s:** %.2f (%s) — %dth percentile (95%% CI: %.2f–%.2f)\n\n",
-			traitDisplayName(name), t.Score, traitLabel(name, t.Score), t.Percentile, t.ConfidenceInterval[0], t.ConfidenceInterval[1])
+			analyze.DimensionDisplayName(name), t.Score, analyze.DimensionLabel(name, t.Score), t.Percentile, t.ConfidenceInterval[0], t.ConfidenceInterval[1])
 	}
 
 	out += "### Regulatory Focus\n\n"
 	rf := profile.Traits["regulatory_focus"]
 	out += fmt.Sprintf("**Regulatory Focus:** %.2f (%s) — %dth percentile (95%% CI: %.2f–%.2f)\n\n",
-		rf.Score, traitLabel("regulatory_focus", rf.Score), rf.Percentile, rf.ConfidenceInterval[0], rf.ConfidenceInterval[1])
+		rf.Score, analyze.DimensionLabel("regulatory_focus", rf.Score), rf.Percentile, rf.ConfidenceInterval[0], rf.ConfidenceInterval[1])
 
 	out += "### Need for Cognition\n\n"
 	nc := profile.Traits["need_for_cognition"]
 	out += fmt.Sprintf("**Need for Cognition:** %.2f (%s) — %dth percentile (95%% CI: %.2f–%.2f)\n\n",
-		nc.Score, traitLabel("need_for_cognition", nc.Score), nc.Percentile, nc.ConfidenceInterval[0], nc.ConfidenceInterval[1])
+		nc.Score, analyze.DimensionLabel("need_for_cognition", nc.Score), nc.Percentile, nc.ConfidenceInterval[0], nc.ConfidenceInterval[1])
 
 	out += "### Cognitive Style\n\n"
 	cs := profile.Traits["cognitive_style"]
 	out += fmt.Sprintf("**Cognitive Style:** %.2f (%s) — %dth percentile (95%% CI: %.2f–%.2f)\n\n",
-		cs.Score, traitLabel("cognitive_style", cs.Score), cs.Percentile, cs.ConfidenceInterval[0], cs.ConfidenceInterval[1])
+		cs.Score, analyze.DimensionLabel("cognitive_style", cs.Score), cs.Percentile, cs.ConfidenceInterval[0], cs.ConfidenceInterval[1])
 
 	out += "### Need for Closure\n\n"
 	ncl := profile.Traits["need_for_closure"]
 	out += fmt.Sprintf("**Need for Closure:** %.2f (%s) — %dth percentile (95%% CI: %.2f–%.2f)\n\n",
-		ncl.Score, traitLabel("need_for_closure", ncl.Score), ncl.Percentile, ncl.ConfidenceInterval[0], ncl.ConfidenceInterval[1])
+		ncl.Score, analyze.DimensionLabel("need_for_closure", ncl.Score), ncl.Percentile, ncl.ConfidenceInterval[0], ncl.ConfidenceInterval[1])
 
 	if len(profile.Values) > 0 {
 		out += "### Schwartz Value Orientation\n\n"
@@ -84,61 +84,21 @@ func (g *TemplateNarrativeGenerator) GenerateSynthesis(profile Profile) string {
 	return out
 }
 
-func traitDisplayName(key string) string {
-	names := map[string]string{
-		"openness":           "Openness",
-		"conscientiousness":  "Conscientiousness",
-		"extraversion":       "Extraversion",
-		"agreeableness":      "Agreeableness",
-		"neuroticism":        "Neuroticism",
-		"regulatory_focus":   "Regulatory Focus",
-		"need_for_cognition": "Need for Cognition",
-		"cognitive_style":    "Cognitive Style",
-		"need_for_closure":   "Need for Closure",
-	}
-	if n, ok := names[key]; ok {
-		return n
-	}
-	return key
-}
-
-func traitLabel(name string, score float64) string {
-	if name == "regulatory_focus" {
-		return analyze.ComputeRegulatoryFocusLabel(score)
-	}
-	if name == "need_for_cognition" {
-		return analyze.ComputeNeedForCognitionLabel(score)
-	}
-	if name == "cognitive_style" {
-		return analyze.ComputeCognitiveStyleLabel(score)
-	}
-	if name == "need_for_closure" {
-		return analyze.ComputeNeedForClosureLabel(score)
-	}
-	if score >= 0.65 {
-		return "high"
-	}
-	if score < 0.35 {
-		return "low"
-	}
-	return "moderate"
-}
-
 func summaryLabel(score float64, high, low string) string {
-	if score >= 0.65 {
+	switch analyze.HighModerateLow(score) {
+	case "high":
 		return high
-	}
-	if score < 0.35 {
+	case "low":
 		return low
 	}
 	return "moderate"
 }
 
 func toneLabel(score float64) string {
-	if score >= 0.65 {
+	if analyze.HighModerateLow(score) == "high" {
 		return "positive"
 	}
-	if score < 0.35 {
+	if analyze.HighModerateLow(score) == "low" {
 		return "negative"
 	}
 	return "neutral"

@@ -125,39 +125,6 @@ func TestTemplateNarrativeGenerator_EdgeScores(t *testing.T) {
 	}
 }
 
-func TestTraitDisplayName(t *testing.T) {
-	cases := []struct{ key, want string }{
-		{"openness", "Openness"},
-		{"conscientiousness", "Conscientiousness"},
-		{"extraversion", "Extraversion"},
-		{"agreeableness", "Agreeableness"},
-		{"neuroticism", "Neuroticism"},
-		{"regulatory_focus", "Regulatory Focus"},
-		{"need_for_cognition", "Need for Cognition"},
-		{"cognitive_style", "Cognitive Style"},
-		{"need_for_closure", "Need for Closure"},
-		{"unknown", "unknown"},
-	}
-	for _, c := range cases {
-		got := traitDisplayName(c.key)
-		if got != c.want {
-			t.Errorf("traitDisplayName(%q) = %q; want %q", c.key, got, c.want)
-		}
-	}
-}
-
-func TestTraitLabel(t *testing.T) {
-	if label := traitLabel("openness", 0.70); label != "high" {
-		t.Errorf("traitLabel(openness, 0.70) = %q; want high", label)
-	}
-	if label := traitLabel("openness", 0.30); label != "low" {
-		t.Errorf("traitLabel(openness, 0.30) = %q; want low", label)
-	}
-	if label := traitLabel("openness", 0.50); label != "moderate" {
-		t.Errorf("traitLabel(openness, 0.50) = %q; want moderate", label)
-	}
-}
-
 func TestSummaryLabel(t *testing.T) {
 	if got := summaryLabel(0.70, "high", "low"); got != "high" {
 		t.Errorf("summaryLabel(0.70) = %q; want high", got)
