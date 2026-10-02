@@ -133,7 +133,10 @@ segment is deliberately cut (see below).
 **Protocol.** Per 45-minute session: 15 minutes on past behavior ("tell me
 about the last time you tried to understand your own patterns — what did you
 do?"), no pitching. Then the participant pastes a real writing sample, reads
-their general-template report thinking aloud, and the facilitator says nothing.
+their report thinking aloud — the balanced view first (percentiles), then the
+technical view (confidence intervals, linguistic evidence) — and the
+facilitator says nothing. The dry run on 2026-10-02 showed the general view
+carries no numbers, so the pre-set bars are judged on balanced/technical.
 
 **Usability bar.** At least 4 of 5 correctly explain the percentile and the
 confidence interval in their own words, unaided, and trace at least one score

@@ -52,10 +52,16 @@ minute."
 
 ### 20–40 — The report (think-aloud)
 
-They paste a real sample (500+ words), you run the analysis, they read the
-general-template report aloud. Your only words: "what are you thinking here?"
-and "what does that mean to you?" Never explain the interface — silence is
-data.
+They paste a real sample (500+ words), you render the reports with
+`scripts/render-report.sh their-sample.txt out-dir`, then they read the
+**balanced** report thinking aloud — its percentile shows as "Higher than X%
+of people", which is what U1 tests. Then you open the **technical** report
+("this is the full detail behind the same analysis") and let them explore it —
+the 95% CI range there is what U2 tests, and the Linguistic Evidence section
+is what U3 tests. (The general view deliberately shows no numbers, so it
+can't carry the bars; the dry run on 2026-10-02 confirmed this.) Your only
+words: "what are you thinking here?" and "what does that mean to you?" Never
+explain the interface — silence is data.
 
 Watch for and log verbatim:
 
@@ -87,9 +93,16 @@ Notes — confusion moments, over/under-trust, requested features:
 
 ## Day before: dry run
 
-Run one sample from `samples/` through the app (`go run ./cmd/psycho`, then
-import the directory via `POST /analyze-dir`) and render the general report
-(`cmd/rendertemplates`), so session day has no surprises.
+Already done once (2026-10-02, `samples/diary-entry.txt` — outputs in
+`session-kit/`); the pipeline renders all three views with real percentiles,
+CI ranges, and evidence. Per participant on session day:
+
+```
+scripts/render-report.sh participant-sample.txt out-dir-1
+```
+
+Open `out-dir-1/profile-balanced.html` and `profile-technical.html` in the
+browser for the think-aloud.
 
 ## Decision rules (from the discovery doc)
 
