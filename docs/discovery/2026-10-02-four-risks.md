@@ -1,7 +1,8 @@
 # Four-Risks Discovery Assessment — 2026-10-02
 
-Status: open. Cycles 0 and 1 are pending; outcomes are logged at the bottom of
-this document as they conclude.
+Status: Cycle 0 concluded 2026-10-02 (fail → pivot the quality strategy);
+Cycle 1 pending. Outcomes are logged at the bottom of this document as they
+conclude.
 
 This document records a product discovery assessment of Psycho as built, run
 with the INSPIRED method (Marty Cagan): before committing further engineering
@@ -89,6 +90,38 @@ new feature families (function words, syntax, readability) or reframe value
 around auditability and reflection rather than accuracy. Either way, stop
 grinding the dictionary.
 
+### Cycle 0 result — 2026-10-02
+
+Run via `go run ./cmd/evaluate -ablation` (5 seeded category-subset draws per
+level; full report in `testresults/ablation-essays.json`). Mean AUC by
+dictionary size:
+
+| Level | Categories | Coverage | Extraversion | Neuroticism | Agreeableness | Conscientiousness | Openness |
+|---|---|---|---|---|---|---|---|
+| 100% (baseline) | 36 | 0.69 | 0.542 | 0.554 | 0.552 | 0.524 | 0.532 |
+| 75% | 27 | 0.57 | 0.540 | 0.557 | 0.547 | 0.521 | 0.527 |
+| 50% | 18 | 0.27 | 0.528 | 0.543 | 0.533 | 0.519 | 0.526 |
+| function-only | 4 | 0.38 | 0.527 | 0.560 | 0.500 | 0.526 | 0.513 |
+| content-only | 32 | 0.34 | 0.534 | 0.530 | 0.552 | 0.511 | 0.547 |
+| projected 2× (linear) | — | — | 0.570 | 0.578 | 0.589 | 0.535 | 0.544 |
+
+**Decision: FAIL per the pre-set rule — pivot the quality strategy.** No
+trait's 2× projection reaches 0.60 (best: agreeableness at 0.589). Gains from
+50% to 100% are 0.006–0.019, with conscientiousness and openness below the
+0.01 flatness bar, and the 75%→100% segment bought nothing (−0.003 to
++0.005). Per-draw spread at 50% (openness 0.477–0.568) puts even those small
+gains partly within subset noise.
+
+The function/content split shows the signal is real but trait-specific:
+neuroticism lives in function words (0.560 alone, above its content-only
+0.530), agreeableness lives in content words only (exactly chance on function
+words), and openness is *better* without the function categories (0.547 vs
+0.532). Implications: generic breadth is not the lever; selective composition
+(issue #19) can recover small trait-specific gains but its projection stays
+under the bar. Conscientiousness and extraversion are weak under every cut
+and will not be fixed by this dictionary. The Cycle 1 pitch therefore leans
+on auditability, privacy, and your-own-words — not accuracy.
+
 ## Cycle 1 — value + usability batch
 
 Five to eight sessions in one week. Live-data prototype: the real product.
@@ -135,4 +168,4 @@ about accuracy in the Cycle 1 sessions.
 
 | Date | Cycle | Result | Decision |
 |------|-------|--------|----------|
-| — | — | — | — |
+| 2026-10-02 | 0 — quality-ceiling spike | Flat AUC curve: 50%→100% gains of 0.006–0.019, 75%→100% flat; no trait projected ≥ 0.60 at 2× dictionary (best 0.589, agreeableness). Signal is trait-specific: neuroticism in function words, agreeableness in content words, openness hurt by function words. | PIVOT — stop dictionary-breadth work; quality strategy moves to selective composition and/or new feature families; Cycle 1 pitches auditability, not accuracy |
