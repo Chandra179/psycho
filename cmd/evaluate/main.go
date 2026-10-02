@@ -8,6 +8,10 @@
 //
 //	go run ./cmd/evaluate -csv corpus-eval/essays.csv
 //
+// With -ablation, it instead thins the dictionary to fractions of its
+// categories and reports the AUC-vs-size curve — discovery Cycle 0
+// (docs/discovery/2026-10-02-four-risks.md).
+//
 // Essays are scored with the production inference path (normalize →
 // extract → Infer) using raw, uncalibrated scores: calibration offsets are
 // monotone shifts and cannot change ranking. Metrics per trait: Spearman
@@ -66,6 +70,10 @@ func main() {
 	minWords := flag.Int("min-words", 200, "skip essays shorter than this many words")
 	resamples := flag.Int("resamples", 1000, "bootstrap resamples for the AUC confidence interval")
 	seed := flag.Int64("seed", 42, "random seed for the bootstrap")
+	ablation := flag.Bool("ablation", false, "run the dictionary-ablation sweep instead of the baseline report")
+	ablationLevels := flag.String("ablation-levels", "50,75", "comma-separated dictionary size levels (% of categories) for -ablation")
+	draws := flag.Int("draws", 5, "random category subsets per level for -ablation")
+	ablationOut := flag.String("ablation-out", "testresults/ablation-essays.json", "output JSON path for -ablation")
 	flag.Parse()
 
 	rows, err := readLabeledCSV(*csvPath)
@@ -77,6 +85,16 @@ func main() {
 	if err != nil {
 		fatal(fmt.Errorf("read dictionary: %w", err))
 	}
+
+	if *ablation {
+		levels, err := parseLevels(*ablationLevels)
+		if err != nil {
+			fatal(err)
+		}
+		runAblation(rows, data, *csvPath, *minWords, *draws, levels, *seed, *ablationOut)
+		return
+	}
+
 	dict, err := analyze.LoadDictionaryFromJSON(data)
 	if err != nil {
 		fatal(fmt.Errorf("load dictionary: %w", err))
