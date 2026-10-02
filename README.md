@@ -1,7 +1,5 @@
 # Psycho
 
-![Test Result](psy.png)
-
 A local-first Go service that extracts the psychological structure of a person from their writing and presents it with full auditability — every trait, cognitive label, and value assignment is traceable to specific linguistic evidence, with explicit confidence levels. Zero data leaves the device.
 
 Inference is dictionary-based (LIWC-style) — no LLM in the core inference path. Single-user, no auth, everything runs in one process against an embedded SQLite database.
