@@ -46,3 +46,7 @@ psycho.db
 .zcode/
 corpus/
 corpus-eval/
+
+# Session-day report outputs — may contain participant writing; never commit
+session-kit/
+report-output/
