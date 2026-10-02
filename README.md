@@ -1,5 +1,9 @@
 # Psycho
 
+<p align="center">
+  <img src="docs/images/report-balanced.png" width="55%" alt="Balanced report: trait bars, percentiles, values, and summary variables">
+</p>
+
 A local-first Go service that extracts the psychological structure of a person from their writing and presents it with full auditability — every trait, cognitive label, and value assignment is traceable to specific linguistic evidence, with explicit confidence levels. Zero data leaves the device.
 
 Inference is dictionary-based (LIWC-style) — no LLM in the core inference path. Single-user, no auth, everything runs in one process against an embedded SQLite database.
@@ -18,10 +22,6 @@ One diary-entry sample, rendered by Psycho — the balanced view for reading,
 and the technical view showing the full evidence trail behind every score
 (rendered with `scripts/render-report.sh`):
 
-<p align="center">
-  <img src="docs/images/report-balanced.png" width="49%" alt="Balanced report: trait bars, percentiles, values, and summary variables">
-  <img src="docs/images/report-technical.png" width="49%" alt="Technical report: raw scores, confidence intervals, and linguistic evidence">
-</p>
 
 ## Getting started
 
