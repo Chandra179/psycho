@@ -23,15 +23,16 @@ type AnalyzeDirRequest struct {
 }
 
 type AnalyzeDirResponse struct {
-	AnalysisID         string             `json:"analysis_id"`
-	WordCount          int                `json:"word_count"`
-	DictionaryCoverage float64            `json:"dictionary_coverage"`
-	ConfidenceFlag     string             `json:"confidence_flag"`
-	Traits             map[string]any     `json:"traits"`
-	Values             map[string]float64 `json:"values"`
-	FilesRead          int                `json:"files_read"`
-	Summary            any                `json:"summary"`
-	Narrative          string             `json:"narrative"`
+	AnalysisID         string              `json:"analysis_id"`
+	WordCount          int                 `json:"word_count"`
+	DictionaryCoverage float64             `json:"dictionary_coverage"`
+	ConfidenceFlag     string              `json:"confidence_flag"`
+	Traits             map[string]any      `json:"traits"`
+	Values             map[string]float64  `json:"values"`
+	ValueEvidence      map[string][]string `json:"value_evidence,omitempty"`
+	FilesRead          int                 `json:"files_read"`
+	Summary            any                 `json:"summary"`
+	Narrative          string              `json:"narrative"`
 }
 
 // AnalysisOutput is everything the HTTP layer needs to render a response
@@ -107,6 +108,7 @@ func MakeHandleAnalyzeDir(
 			ConfidenceFlag:     out.ConfidenceFlag,
 			Traits:             out.Traits,
 			Values:             out.Values,
+			ValueEvidence:      out.ValueEvidence,
 			FilesRead:          filesRead,
 			Summary:            out.Summary,
 			Narrative:          out.Narrative,
