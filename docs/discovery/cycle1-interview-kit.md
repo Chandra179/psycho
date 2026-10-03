@@ -52,16 +52,14 @@ minute."
 
 ### 20–40 — The report (think-aloud)
 
-They paste a real sample (500+ words), you render the reports with
+They paste a real sample (500+ words), you render the report with
 `scripts/render-report.sh their-sample.txt out-dir`, then they read the
-**balanced** report thinking aloud — its percentile shows as "Higher than X%
-of people", which is what U1 tests. Then you open the **technical** report
-("this is the full detail behind the same analysis") and let them explore it —
-the 95% CI range there is what U2 tests, and the Linguistic Evidence section
-is what U3 tests. (The general view deliberately shows no numbers, so it
-can't carry the bars; the dry run on 2026-10-02 confirmed this.) Your only
-words: "what are you thinking here?" and "what does that mean to you?" Never
-explain the interface — silence is data.
+single report thinking aloud — the percentile shows as "Higher than X%
+of people", which is what U1 tests; the plain-language honest range under
+each bar ("could plausibly land anywhere from 27 to 77") is what U2 tests;
+and the collapsed "Show the evidence behind every score" section is what
+U3 tests. Your only words: "what are you thinking here?" and "what does
+that mean to you?" Never explain the interface — silence is data.
 
 Watch for and log verbatim:
 
@@ -85,7 +83,7 @@ Watch for and log verbatim:
 | Check | Pass? | Quote / evidence |
 |---|---|---|
 | U1 — percentile explained correctly, unaided | | |
-| U2 — confidence interval explained correctly, unaided | | |
+| U2 — honest range (confidence interval) explained correctly, unaided | | |
 | U3 — traced a score to evidence words without help | | |
 | V1 — returned with a second sample within 7 days | | date: |
 
@@ -101,7 +99,7 @@ CI ranges, and evidence. Per participant on session day:
 scripts/render-report.sh participant-sample.txt out-dir-1
 ```
 
-Open `out-dir-1/profile-balanced.html` and `profile-technical.html` in the
+Open `out-dir-1/profile-report.html` in the
 browser for the think-aloud.
 
 ## Decision rules (from the discovery doc)

@@ -14,7 +14,9 @@ Inference is dictionary-based (LIWC-style) — no LLM in the core inference path
 * Psycholinguistic feature extraction against a bundled dictionary
 * Trait inference: Big Five (OCEAN), Regulatory Focus, Need for Cognition, Need for Closure, cognitive style, and Schwartz value orientations
 * Confidence intervals on every score
-* Structured JSON output, PDF report export, HTML previews
+* Structured JSON output and PDF report export (`GET /analysis/{id}/pdf`)
+* Single-report browser flow (Tailwind + HTMX): paste text at the root URL, the report swaps in on the same page, download it as PDF — every score ships with its evidence trail, self-writing consent required
+* Config file path overridable via `PSYCHO_CONFIG`
 
 ## Report preview
 
