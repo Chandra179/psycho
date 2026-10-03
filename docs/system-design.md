@@ -13,7 +13,7 @@
 
 ### **Storage choice & why**
 
-**Embedded SQLite**. Single‑user local app with modest data volumes. No server process needed. Provides queryability for cross‑subject comparison and temporal tracking that flat JSON files would make cumbersome. The database file is portable; a user can back up their entire analysis history by copying one file.
+**Embedded SQLite**. Single‑user app with modest data volumes. No server process needed. Provides queryability for cross‑subject comparison and temporal tracking that flat JSON files would make cumbersome. The database file is portable; a user can back up their entire analysis history by copying one file.
 
 ### **Directory Structure**
 

@@ -2,7 +2,7 @@
 
 ## Goal
 
-A local-first system that extracts the psychological structure of a person from their writing and presents it with full auditability: every trait, cognitive label, and value assignment traceable to specific linguistic evidence, with explicit confidence levels. Zero data leaves the device.
+A self-contained system that extracts the psychological structure of a person from their writing and presents it with full auditability: every trait, cognitive label, and value assignment traceable to specific linguistic evidence, with explicit confidence levels.
 
 ## Non-goals
 
@@ -11,11 +11,11 @@ A local-first system that extracts the psychological structure of a person from 
 * Predicting future behavior
 * Black‑box LLM inference (all claims are auditable)
 * Multi‑modal input (audio, video); text only in this version
-* Multi‑tenant SaaS platform; single‑user local app for now
+* Multi‑tenant SaaS platform; single‑user app for now
 
 ## Numbers
 
-* QPS: 1–10 analysis requests per minute (single‑user local app)
+* QPS: 1–10 analysis requests per minute (single‑user app)
 * Storage: \~10 MB per analyzed subject (raw text + feature vectors + profile)
 * Latency target: <5 seconds for full analysis of a 5,000‑word corpus
 
@@ -38,7 +38,7 @@ A local-first system that extracts the psychological structure of a person from 
 
 **Risks we tolerate:**
 
-* No authentication on the ingestion endpoint. Anyone with access to the local port can submit text.
+* No authentication on the ingestion endpoint. Anyone who can reach the server port can submit text.
 * Analysis may be unreliable for texts <500 words. System warns but does not block submission.
 * Single‑threaded processing. Texts >50,000 words may take >30 seconds. No progress indicator in MVP.
 
