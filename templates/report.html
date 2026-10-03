@@ -1,0 +1,114 @@
+{{define "report-body"}}
+<div class="max-w-2xl mx-auto px-6 py-10">
+
+  <header class="flex flex-wrap items-start justify-between gap-3">
+    <div>
+      <p class="text-[11px] tracking-[0.25em] uppercase text-teal-700 font-semibold">Psycho · personal reading</p>
+      <h1 class="font-serif text-4xl mt-2">Your personality reading</h1>
+      <div class="flex flex-wrap items-center gap-3 mt-3">
+        <span class="inline-flex items-center rounded-full bg-teal-50 text-teal-800 px-3 py-1 text-xs font-medium ring-1 ring-teal-600/20">Reading quality: {{.Quality}}</span>
+        <span class="text-sm text-stone-500">{{.GeneratedAt}} · {{.WordCount}} words</span>
+      </div>
+    </div>
+    <a href="/analysis/{{.AnalysisID}}/pdf"
+       class="inline-flex items-center rounded-full bg-stone-900 text-white px-4 py-2 text-xs font-medium hover:bg-stone-700 transition">
+      Download PDF
+    </a>
+  </header>
+
+  <section class="mt-8">
+    <h2 class="font-serif text-xl">The snapshot</h2>
+    <p class="mt-3 leading-relaxed text-stone-700">{{.Snapshot}}</p>
+  </section>
+
+  <section class="mt-10">
+    <h2 class="font-serif text-xl mb-4">What the words say</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {{range .Traits}}
+      <div class="bg-white rounded-2xl border border-stone-200 shadow-sm p-5">
+        <div class="flex items-center justify-between gap-2">
+          <h3 class="font-medium">{{.Name}}</h3>
+          <span class="text-[11px] uppercase tracking-wider rounded-full px-2 py-0.5 font-medium {{.ChipClass}}">{{.Label}}</span>
+        </div>
+        <div class="relative h-2 rounded-full bg-stone-100 mt-4">
+          <div class="absolute inset-y-0 left-0 rounded-full bg-teal-500" style="width:{{.Score100}}%"></div>
+          <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-0.5 h-3.5 bg-stone-300 rounded"></div>
+        </div>
+        <p class="text-sm mt-3">Higher than <b>{{.Percentile}}%</b> of people</p>
+        {{if .HasCI}}<p class="text-xs text-stone-500 mt-0.5">could plausibly land anywhere from {{.CILo}} to {{.CIHi}}</p>{{end}}
+        <p class="text-sm text-stone-600 mt-2 italic">{{.Blurb}}</p>
+      </div>
+      {{end}}
+    </div>
+  </section>
+
+  {{if .Values}}
+  <section class="mt-10">
+    <h2 class="font-serif text-xl mb-2">What you value</h2>
+    <p class="text-xs text-stone-500 mb-2">Ranked by how often value-related words appear. Bars are relative to your top value.</p>
+    <div class="bg-white rounded-2xl border border-stone-200 shadow-sm px-5 py-2">
+      {{range .Values}}
+      <div class="flex items-center gap-3 py-2.5 border-b border-stone-100 last:border-0">
+        <span class="w-6 h-6 rounded-full bg-teal-600 text-white text-xs grid place-items-center flex-none">{{.Rank}}</span>
+        <span class="w-32 text-sm font-medium flex-none">{{.Name}}</span>
+        <span class="flex-1 h-1.5 bg-stone-100 rounded-full overflow-hidden"><span class="block h-full bg-teal-400 rounded-full" style="width:{{.RelWidth}}%"></span></span>
+        <span class="text-xs text-stone-400 tabular-nums w-12 text-right flex-none">{{.Percent}}%</span>
+        {{if .Words}}<span class="hidden sm:block text-xs text-stone-400 w-36 text-right flex-none truncate">seen in: {{range $i, $w := .Words}}{{if $i}}, {{end}}{{$w}}{{end}}</span>{{end}}
+      </div>
+      {{end}}
+    </div>
+  </section>
+  {{end}}
+
+  <section class="mt-10">
+    <h2 class="font-serif text-xl mb-4">At a glance</h2>
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      {{range .Summary}}
+      <div class="bg-white rounded-xl border border-stone-200 p-4 text-center">
+        <div class="font-serif text-lg">{{.Label}}</div>
+        <div class="text-[11px] uppercase tracking-wider text-stone-400 mt-1">{{.Name}}</div>
+      </div>
+      {{end}}
+    </div>
+  </section>
+
+  <details class="group mt-10 bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden">
+    <summary class="cursor-pointer select-none px-5 py-4 flex items-center justify-between text-sm font-medium text-stone-700 hover:bg-stone-50">
+      Show the evidence behind every score
+      <span class="group-open:rotate-180 transition-transform text-stone-400">⌄</span>
+    </summary>
+    <div class="px-5 pb-5">
+      <p class="text-xs text-stone-500 mb-3">{{.WordCount}} words · {{.Coverage}}% dictionary coverage · dictionary-based (LIWC-style) · analysis {{.AnalysisID}}</p>
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-[11px] uppercase tracking-wider text-stone-400 border-b border-stone-200">
+            <th class="py-2 pr-3 text-left font-medium">Trait</th>
+            <th class="py-2 pr-3 text-left font-medium">Category</th>
+            <th class="py-2 pr-3 text-right font-medium">% of words</th>
+            <th class="py-2 pr-3 text-right font-medium">× weight</th>
+            <th class="py-2 text-right font-medium">= contribution</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{range .Traits}}{{$t := .}}{{range .Evidence}}
+          <tr class="border-b border-stone-50">
+            <td class="py-1.5 pr-3">{{$t.Name}}</td>
+            <td class="py-1.5 pr-3 text-stone-600">{{.Category}}</td>
+            <td class="py-1.5 pr-3 tabular-nums text-right">{{printf "%.1f" .WordPercent}}%</td>
+            <td class="py-1.5 pr-3 tabular-nums text-right">{{printf "%+.3f" .Weight}}</td>
+            <td class="py-1.5 tabular-nums text-right {{if lt .Contribution 0.0}}text-rose-600{{end}}">{{printf "%+.3f" .Contribution}}</td>
+          </tr>
+          {{end}}{{end}}
+        </tbody>
+      </table>
+      <p class="text-xs text-stone-500 mt-3">Each row: how often a word category appeared, the direction and strength it pulls the score, and its net effect. Positive contributions push the trait up, negative pull it down — this table is the whole calculation.</p>
+    </div>
+  </details>
+
+  <footer class="mt-10 pt-6 border-t border-stone-200 text-xs text-stone-400 flex flex-wrap justify-between gap-2">
+    <span>Statistical estimates from word usage — for fun and self-reflection. Not a clinical or diagnostic assessment.</span>
+    <span>{{.AnalysisID}}</span>
+  </footer>
+
+</div>
+{{end}}

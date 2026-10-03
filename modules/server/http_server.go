@@ -2,6 +2,7 @@ package server
 
 import (
 	"net/http"
+	"path/filepath"
 	"time"
 
 	"psycho/config"
@@ -10,6 +11,7 @@ import (
 	"psycho/modules/ingest"
 	"psycho/modules/pipeline"
 	"psycho/modules/profile"
+	"psycho/modules/report"
 	"psycho/zlogger"
 )
 
@@ -45,6 +47,17 @@ func NewHandler(cfg *config.Config, logger *zlogger.Logger) (http.Handler, error
 	)
 
 	mux := http.NewServeMux()
+
+	// Browser surface: paste text, get a report. The upload page and report
+	// templates both live in templates/, resolved like config relative to
+	// the working directory.
+	const templatesDir = "templates"
+
+	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, filepath.Join(templatesDir, "index.html"))
+	})
+
+	mux.HandleFunc("POST /report", report.MakeHandleReportForm(cfg.Ingest.MaxTextSize, templatesDir, logger, pipe.Run))
 
 	mux.HandleFunc("GET /analysis/{id}/pdf", profile.MakeHandleExportPDF(profileDeps.Storage, profileDeps.PDFGenerator, logger))
 

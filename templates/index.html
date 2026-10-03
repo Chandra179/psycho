@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Psycho — analyze your writing</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.4/dist/htmx.min.js"></script>
+</head>
+<body class="bg-stone-50 text-stone-800 antialiased">
+<main class="max-w-2xl mx-auto px-6 py-12">
+
+  <header class="text-center mb-10">
+    <p class="text-[11px] tracking-[0.25em] uppercase text-teal-700 font-semibold">Psycho</p>
+    <h1 class="font-serif text-4xl mt-2">Read your writing's mind</h1>
+    <p class="mt-3 text-stone-600 leading-relaxed">Paste a piece of your own writing — a journal entry, a
+    blog post — and get a personality-style profile where every score shows the exact words behind it.</p>
+  </header>
+
+  <form action="/report" method="post" hx-post="/report" hx-target="#result" hx-swap="innerHTML"
+        class="bg-white rounded-2xl border border-stone-200 shadow-sm p-6">
+    <label for="text" class="block font-medium mb-2">Your writing</label>
+    <textarea id="text" name="text" required minlength="10" rows="9"
+      class="w-full px-4 py-3 rounded-xl border border-stone-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 outline-none resize-y font-serif text-[15px] leading-relaxed"
+      placeholder="Paste your text here. Around 500 words or more gives the most meaningful results."></textarea>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-5">
+      <div>
+        <label for="source_type" class="block text-sm font-medium mb-1.5">Kind of writing</label>
+        <select id="source_type" name="source_type"
+          class="w-full px-3 py-2.5 rounded-xl border border-stone-300 bg-white focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 outline-none">
+          <option value="paste" selected>Journal / personal</option>
+          <option value="blog">Blog post</option>
+          <option value="email">Email</option>
+          <option value="chat">Chat</option>
+        </select>
+      </div>
+      <div>
+        <label for="source_date" class="block text-sm font-medium mb-1.5">Written on <span class="text-stone-400 font-normal">(optional)</span></label>
+        <input type="date" id="source_date" name="source_date"
+          class="w-full px-3 py-2.5 rounded-xl border border-stone-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 outline-none">
+      </div>
+    </div>
+
+    <label class="flex items-start gap-3 mt-5 p-4 rounded-xl bg-stone-100/80 text-sm cursor-pointer">
+      <input type="checkbox" name="consent" required class="mt-0.5 w-4 h-4 accent-teal-600">
+      <span>This is my own writing, and I understand this tool produces statistical
+      estimates from word usage — for fun and curiosity, not psychology or diagnosis.</span>
+    </label>
+
+    <button type="submit"
+      class="mt-6 w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-stone-900 text-white px-8 py-3 font-medium hover:bg-stone-700 transition">
+      <span>Analyze my writing</span>
+      <span class="htmx-indicator inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+    </button>
+  </form>
+
+  <div id="result" class="mt-10"></div>
+
+  <p class="mt-8 text-xs text-stone-400 text-center">Your text is processed and stored only on this
+  server's own database. Every result ships with its evidence — expand
+  “Show the evidence behind every score” on your report to check the tool's work.</p>
+
+</main>
+
+<script>
+document.body.addEventListener('htmx:responseError', function (e) {
+  document.getElementById('result').innerHTML =
+    '<div class="rounded-2xl border border-rose-200 bg-rose-50 p-5 text-sm text-rose-800">'
+    + e.detail.xhr.responseText + '</div>';
+});
+document.body.addEventListener('htmx:afterSwap', function (e) {
+  if (e.detail.target.id === 'result') {
+    e.detail.target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+});
+</script>
+</body>
+</html>

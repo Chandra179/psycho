@@ -38,17 +38,18 @@ type AnalyzeDirResponse struct {
 // AnalysisOutput is everything the HTTP layer needs to render a response
 // after a successful analysis. Field types stay loose because ingest cannot
 // import its sibling modules without an import cycle; the JSON shape is the
-// contract at this seam.
+// contract at this seam, so the tags below are load-bearing — consumers
+// (including the report renderer) decode this shape by its snake_case keys.
 type AnalysisOutput struct {
-	AnalysisID         string
-	WordCount          int
-	DictionaryCoverage float64
-	ConfidenceFlag     string
-	Traits             map[string]any
-	Values             map[string]float64
-	ValueEvidence      map[string][]string
-	Summary            any
-	Narrative          string
+	AnalysisID         string              `json:"analysis_id"`
+	WordCount          int                 `json:"word_count"`
+	DictionaryCoverage float64             `json:"dictionary_coverage"`
+	ConfidenceFlag     string              `json:"confidence_flag"`
+	Traits             map[string]any      `json:"traits"`
+	Values             map[string]float64  `json:"values"`
+	ValueEvidence      map[string][]string `json:"value_evidence,omitempty"`
+	Summary            any                 `json:"summary"`
+	Narrative          string              `json:"narrative,omitempty"`
 }
 
 // AnalyzeFunc is the seam the HTTP handlers call into. modules/server and
