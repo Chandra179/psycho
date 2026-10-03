@@ -1,0 +1,43 @@
+Why Gen Z Can't Get a Job: The Perfect Storm
+
+The transition from education to employment has always been a bumpy ride, but for Generation Z born between 1997 and 2012 the road has become nearly impassable. Across the United States, Europe, and Asia, young people are facing what many economists are calling the worst entry-level job market in a generation. This is not simply a cyclical downturn. It is a structural shift driven by automation, degree inflation, remote work disruption, and a fundamental mismatch between what universities produce and what employers actually need.
+
+The Numbers Tell a Grim Story
+
+Unemployment rates for workers aged sixteen to twenty-four have remained stubbornly high even as the broader economy recovers from the pandemic shocks. In the United States, youth unemployment hovers around eleven percent, nearly three times the national average. In the European Union, the situation is even starker with countries like Spain and Greece reporting youth unemployment above twenty-five percent. Entry-level job postings have shrunk by nearly thirty percent since 2020 according to labor market data, while the number of college graduates applying for those roles has increased substantially.
+
+The Great Degree Inflation
+
+One of the most significant barriers facing Gen Z is degree inflation. Jobs that once required a high school diploma now demand a bachelor's degree. Roles that required a bachelor's degree now want a master's. A simple administrative assistant position, which twenty years ago needed only basic typing skills and a friendly phone manner, now lists five years of experience and a degree in business administration as minimum requirements. This credential creep has pushed millions of qualified young workers out of contention for jobs they could easily perform.
+
+Employers defend this practice by saying they want candidates who are ready to hit the ground running. But the real reason is simpler. In a buyer's market where hundreds of applications flood in for every opening, recruiters use degree requirements as a crude filter to shrink the pile. The result is that a generation with record levels of educational attainment finds itself overqualified and underemployed in equal measure.
+
+The Experience Paradox
+
+Every entry-level job requires two to three years of experience. But how does a brand new graduate gain experience if nobody will hire them? This is the classic catch twenty-two of the modern job market, and it has never been more punishing than it is for Gen Z today. Internships were once the bridge between school and work, but paid internships have become fiercely competitive and unpaid internships are a luxury that many families simply cannot afford. Without internship experience, graduates cannot get full-time jobs, and without full-time jobs, they cannot get the experience that the next application round demands.
+
+The rise of applicant tracking systems has made this problem worse. These automated filters reject resumes that do not hit a certain number of keywords or years of experience before a human ever lays eyes on them. A qualified candidate with no professional history is silently discarded by an algorithm, never getting the chance to explain their potential in an interview.
+
+Artificial Intelligence Is Eating Entry Level Work
+
+The rapid advancement of large language models and generative AI has dealt another devastating blow to Gen Z job seekers. Many of the tasks traditionally assigned to junior employees summarizing documents, drafting emails, data entry, basic research, and content creation can now be performed by AI tools at a fraction of the cost. Law firms have stopped hiring as many junior associates because AI can handle document review. Marketing departments have cut entry-level copywriting positions because ChatGPT can generate blog posts. Software engineering teams are scaling back graduate recruitment because AI coding assistants let senior engineers produce more with fewer people.
+
+This is not a future trend. It is happening right now. A recent survey found that nearly forty percent of companies expect to reduce their workforce because of AI, and the cuts will hit junior roles hardest. Senior employees can use AI to amplify their productivity, but junior employees are the ones being removed from the equation entirely.
+
+The Remote Work Divide
+
+Remote and hybrid work was supposed to be a great equalizer, but it has actually widened the gap between experienced professionals and newcomers. Senior employees thrive in remote environments because they already know how to navigate office politics, communicate effectively across digital channels, and manage their time without supervision. Junior employees, on the other hand, learn best by observing, by overhearing hallway conversations, by grabbing a coffee with a mentor, and by absorbing the unspoken norms of a workplace. None of this happens over Zoom.
+
+Many companies have quietly admitted that they are reluctant to hire fresh graduates for remote roles precisely because they do not have the infrastructure to onboard and mentor them properly. This has pushed Gen Z workers back toward in-person jobs, which are often lower paying and offer fewer advancement opportunities.
+
+Mental Health and Burnout
+
+The relentless rejection cycle takes a profound psychological toll. Gen Z is already the most anxious generation on record, and the job search amplifies every insecurity. Hundreds of tailored applications submitted through portals that feel like black holes. Automated rejection emails arriving at three in the morning. Ghosting after multiple rounds of interviews. The experience is dehumanizing, and it erodes the confidence that young people need to perform well when they finally do get a chance.
+
+Studies show that long-term unemployment early in a career can create permanent scarring. People who struggle to find their first job tend to earn less for the rest of their lives, and they report lower levels of career satisfaction even decades later. Gen Z is acutely aware of this research, and the anxiety is palpable in online communities like Reddit and TikTok where young workers share their struggles and their despair.
+
+What Can Be Done
+
+Solving this crisis requires coordinated action from multiple stakeholders. Companies need to invest in apprenticeship programs and on the job training instead of demanding ready made employees. Universities need to align their curricula more closely with labor market needs, emphasizing practical skills over abstract theory. Governments need to subsidize entry level positions and fund public sector employment programs that give young people a foothold in the workforce.
+
+But perhaps most importantly, hiring managers need to rediscover the lost art of taking a chance on someone. Every experienced professional was once a nervous graduate with no experience and everything to prove. The only way to break the cycle is to look past the resume, ignore the algorithm, and hire for potential over polish. Until that happens, an entire generation will remain trapped in the waiting room of the economy, qualified and eager but unable to find a door that will open.
