@@ -1,14 +1,13 @@
 #!/usr/bin/env bash
-# Render Psycho's three HTML report views for one participant's writing.
-# Session-day helper for discovery Cycle 1 (docs/discovery/cycle1-interview-kit.md).
+# Render Psycho's single HTML report for one participant's writing.
 #
 # Usage:
 #   scripts/render-report.sh <participant.txt | dir-of-txt> [output-dir]
 #
 # Builds the server and renderer, spins up an isolated instance with its own
 # config pointing at the participant text, runs POST /analyze-dir, renders
-# templates/{general,technical,balanced}.html, and writes profile-*.html plus
-# the raw analysis.json into the output dir. The temp working copy is removed
+# the single report template, and writes profile-report.html plus the raw
+# analysis.json into the output dir. The temp working copy is removed
 # afterwards; nothing is left beyond the output dir.
 set -euo pipefail
 

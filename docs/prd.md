@@ -1,8 +1,8 @@
-# Psycho — Product Requirements (PRD)
+# Psycho Product Requirements (PRD)
 
 ## Goal
 
-A local-first system that extracts the psychological structure of a person from their writing and presents it with full auditability—every trait, cognitive label, and value assignment traceable to specific linguistic evidence, with explicit confidence levels. Zero data leaves the device.
+A local-first system that extracts the psychological structure of a person from their writing and presents it with full auditability: every trait, cognitive label, and value assignment traceable to specific linguistic evidence, with explicit confidence levels. Zero data leaves the device.
 
 ## Non-goals
 

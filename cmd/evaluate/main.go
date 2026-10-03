@@ -9,8 +9,8 @@
 //	go run ./cmd/evaluate -csv corpus-eval/essays.csv
 //
 // With -ablation, it instead thins the dictionary to fractions of its
-// categories and reports the AUC-vs-size curve — discovery Cycle 0
-// (docs/discovery/2026-10-02-four-risks.md).
+// categories and reports the AUC-vs-size curve — the breadth experiment
+// summarized in docs/system-design.md (Measured accuracy).
 //
 // Essays are scored with the production inference path (normalize →
 // extract → Infer) using raw, uncalibrated scores: calibration offsets are

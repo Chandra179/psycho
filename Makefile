@@ -28,9 +28,8 @@ pdf:
 	curl -s -o "profile-$(ID).pdf" \
 		-X GET http://localhost:8080/analysis/$(ID)/pdf
 
-# Runs test-curl, downloads the resulting PDF, and renders the templates/
-# HTML previews (general/technical/balanced) from the same analysis. HTML
-# only for now -- not converted to PDF.
+# Runs test-curl, downloads the resulting PDF, and renders the single HTML
+# report (profile-report.html) from the same analysis.
 test-pdf:
 	@TMP=$$(mktemp); \
 	curl -s -X POST http://localhost:8080/analyze-dir \
@@ -46,7 +45,7 @@ test-pdf:
 	echo "--> wrote profile-$$ID.pdf"; \
 	go run ./cmd/rendertemplates < $$TMP; \
 	rm $$TMP; \
-	echo "--> wrote profile-general.html, profile-technical.html, profile-balanced.html"
+	echo "--> wrote profile-report.html"
 
 image:
 	podman build -t psycho .

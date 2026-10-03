@@ -1,12 +1,12 @@
 # Psycho
 
 <p align="center">
-  <img src="docs/images/report-balanced.png" width="80%" alt="Balanced report: trait bars, percentiles, values, and summary variables">
+  <img src="docs/images/report.png" width="70%" alt="The Psycho report: trait cards with bars and percentiles, values with matched words, and a collapsible evidence section">
 </p>
 
-A local-first Go service that extracts the psychological structure of a person from their writing and presents it with full auditability — every trait, cognitive label, and value assignment is traceable to specific linguistic evidence, with explicit confidence levels. Zero data leaves the device.
+A local-first Go service that extracts the psychological structure of a person from their writing and presents it with full auditability: every trait, cognitive label, and value assignment is traceable to specific linguistic evidence, with explicit confidence levels. Zero data leaves the device.
 
-Inference is dictionary-based (LIWC-style) — no LLM in the core inference path. Single-user, no auth, everything runs in one process against an embedded SQLite database.
+Inference is dictionary-based (LIWC-style), no LLM in the core inference path. Single-user, no auth, everything runs in one process against an embedded SQLite database.
 
 ## Features
 
@@ -15,15 +15,8 @@ Inference is dictionary-based (LIWC-style) — no LLM in the core inference path
 * Trait inference: Big Five (OCEAN), Regulatory Focus, Need for Cognition, Need for Closure, cognitive style, and Schwartz value orientations
 * Confidence intervals on every score
 * Structured JSON output and PDF report export (`GET /analysis/{id}/pdf`)
-* Single-report browser flow (Tailwind + HTMX): paste text at the root URL, the report swaps in on the same page, download it as PDF — every score ships with its evidence trail, self-writing consent required
+* Single-report browser flow (Tailwind + HTMX): paste text at the root URL, the report swaps in on the same page, download it as PDF. Every score ships with its evidence trail, and self-writing consent is required
 * Config file path overridable via `PSYCHO_CONFIG`
-
-## Report preview
-
-One diary-entry sample, rendered by Psycho — the balanced view for reading,
-and the technical view showing the full evidence trail behind every score
-(rendered with `scripts/render-report.sh`):
-
 
 ## Getting started
 
@@ -31,7 +24,7 @@ Requires Go 1.27.
 
 ```sh
 make build   # go build ./...
-make run     # go run ./cmd/psycho/ — serves on :8080
+make run     # go run ./cmd/psycho/ (serves on :8080)
 make test    # go test ./... -v
 ```
 
@@ -51,5 +44,6 @@ make down   # stop and remove the container
 
 ## Documentation
 
-* [docs/prd.md](docs/prd.md) — product requirements: goal, non-goals, constraints, core features, implementation phases
-* [docs/system-design.md](docs/system-design.md) — architecture, storage, module boundaries, testing strategy, and the research references each inference is based on
+* [docs/overview.md](docs/overview.md): plain-language tour of what Psycho does and how to read a report
+* [docs/prd.md](docs/prd.md): product requirements (goal, non-goals, constraints, core features)
+* [docs/system-design.md](docs/system-design.md): architecture, storage, module boundaries, and the research references each inference is based on

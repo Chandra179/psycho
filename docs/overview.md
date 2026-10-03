@@ -28,7 +28,7 @@ It is useful for:
 
 Everything runs on your own machine. The analyzed text and the resulting
 profiles never need to leave the device, and no account is required. Psycho is
-not a clinical instrument — diagnosis and mental-health assessment are explicit
+not a clinical instrument; diagnosis and mental-health assessment are explicit
 non-goals.
 
 ## How it works
@@ -46,7 +46,7 @@ summary. The profile can be read on screen or exported as a PDF report.
 
 ### 1. Add your writing
 
-You provide a sample of writing — for example saved blog posts, emails, or
+You provide a sample of writing, for example saved blog posts, emails, or
 chat logs. Psycho checks that the sample is long enough to say anything
 meaningful, cleans it up, and preserves its structure: paragraphs, sentences,
 and rhythm all survive intact.
@@ -56,7 +56,7 @@ and rhythm all survive intact.
 Every word is looked up in a psycholinguistic dictionary that maps words to
 psychological categories. From those lookups Psycho counts how often each
 category appears, measures stylistic habits, and records how much of the text
-the dictionary actually covered — the main signal for how well the tool fits
+the dictionary actually covered, the main signal for how well the tool fits
 the sample.
 
 ### 3. Read your profile
@@ -68,19 +68,19 @@ score so any result can be traced back to the words that produced it.
 
 ## Main features
 
-- **Private by design** — text, profiles, and evidence stay on your own machine.
-- **No black-box AI** — scores come from a transparent, dictionary-based method, so the same text always produces the same result and every score can be explained.
-- **Big Five (OCEAN) traits** — openness, conscientiousness, extraversion, agreeableness, and neuroticism, estimated from word-use patterns.
-- **Regulatory Focus** — whether the writing leans toward promotion (gains, aspirations) or prevention (safety, obligations).
-- **Need for Cognition** — the writer's tendency toward effortful, analytic thinking.
-- **Need for Closure** — comfort with definite answers versus ambiguity.
-- **Cognitive style** — systematic versus intuitive processing markers.
-- **Schwartz value orientations** — which values the writing emphasizes, from a cross-cultural framework.
-- **Confidence intervals on every score** — the profile always states how much it should be trusted.
-- **Full auditability** — every output is kept with the linguistic evidence that produced it.
-- **Honest warnings** — short samples or poorly covered text widen the intervals and raise flags instead of failing silently.
-- **Reports you can keep** — a PDF report to save or print, plus on-screen views in three styles.
-- **Your whole history in one place** — past analyses persist on your device and can be re-read or re-exported anytime.
+- **Private by design**: text, profiles, and evidence stay on your own machine.
+- **No black-box AI**: scores come from a transparent, dictionary-based method, so the same text always produces the same result and every score can be explained.
+- **Big Five (OCEAN) traits**: openness, conscientiousness, extraversion, agreeableness, and neuroticism, estimated from word-use patterns.
+- **Regulatory Focus**: whether the writing leans toward promotion (gains, aspirations) or prevention (safety, obligations).
+- **Need for Cognition**: the writer's tendency toward effortful, analytic thinking.
+- **Need for Closure**: comfort with definite answers versus ambiguity.
+- **Cognitive style**: systematic versus intuitive processing markers.
+- **Schwartz value orientations**: which values the writing emphasizes, from a cross-cultural framework.
+- **Confidence intervals on every score**: the profile always states how much it should be trusted.
+- **Full auditability**: every output is kept with the linguistic evidence that produced it.
+- **Honest warnings**: short samples or poorly covered text widen the intervals and raise flags instead of failing silently.
+- **Reports you can keep**: a PDF report to save or print, plus the single on-screen report.
+- **Your whole history in one place**: past analyses persist on your device and can be re-read or re-exported anytime.
 
 ## Algorithms
 
@@ -94,7 +94,7 @@ formatting artifacts.
 ### Dictionary mapping
 
 Each word is looked up in a LIWC-style psycholinguistic dictionary, and the
-categories it belongs to are tallied into percentages over the whole corpus —
+categories it belongs to are tallied into percentages over the whole corpus:
 how much emotion language, cognitive language, social language, and so on. The
 share of words that hit any category at all is the coverage rate: the main
 signal for how well the dictionary fits the text.
@@ -134,7 +134,7 @@ Every score carries an interval that widens or narrows with the evidence:
 longer samples produce tighter intervals, and text the dictionary barely
 recognizes produces wider ones. Very short samples always receive a
 low-confidence flag rather than being rejected. Scores are reported as
-percentiles relative to a measured reference population — a sample of about
+percentiles relative to a measured reference population, a sample of about
 4,000 blog posts (the Blog Authorship Corpus), so "60th percentile" means
 "higher than 60% of comparable texts in that reference sample."
 
@@ -143,7 +143,7 @@ percentiles relative to a measured reference population — a sample of about
 Text flows through one pipeline from submission to a finished profile: clean
 up, count, infer, combine, save. Each stage does one job and hands its result
 to the next, which is what keeps results reproducible and the reasoning
-inspectable. None of this changes how Psycho is used — it explains why it
+inspectable. None of this changes how Psycho is used; it explains why it
 behaves the way it does.
 
 ### From sample to profile
@@ -186,8 +186,8 @@ number is stored with the profile, not discarded after the fact.
 
 Low-quality input degrades results gradually rather than silently. A short
 sample yields wide intervals and a low-confidence flag; jargon-heavy text the
-dictionary barely recognizes yields the same. Nothing is blocked — the profile
-is still produced — but the output always states how much it should be
+dictionary barely recognizes yields the same. Nothing is blocked; the profile
+is still produced, but the output always states how much it should be
 trusted, and the evidence behind each score is kept alongside it.
 
 ### Reports you can keep
@@ -196,16 +196,16 @@ trusted, and the evidence behind each score is kept alongside it.
    a finished analysis
        │
        ├── export ──▶ a PDF report you can save or print
-       └── view ───▶ on-screen pages in three styles:
-                     general, technical, and balanced
+       └── view ───▶ the on-screen report, with the
+                     evidence trail one click away
 ```
 
 Reports are rendered from the saved analysis rather than by re-reading your
 text, so a report generated today matches one generated months later. The
-PDF and the technical report include a Linguistic Evidence section: for each
+PDF and the on-screen report include the linguistic evidence: for each
 score, the dictionary categories that drove it, how much of your text they
-covered, and how much they moved the number. The saved profile — scores,
-evidence, and prose — is the single source of truth.
+covered, and how much they moved the number. The saved profile (scores,
+evidence, and prose) is the single source of truth.
 
 ### Private and simple
 
@@ -213,7 +213,7 @@ evidence, and prose — is the single source of truth.
  ┌──────────────────────────────────────────────────┐
  │ one app, on your machine                         │
  │                                                  │
- │ accounts:      none — no sign-up, no login       │
+ │ accounts:      none, no sign-up, no login       │
  │ network:       nothing is uploaded; analysis     │
  │                works offline                     │
  │ resilience:    the app recovers from unexpected  │
@@ -229,17 +229,17 @@ put it.
 ## Current evidence
 
 Psycho is early stage. The speed number below is measured by the automated
-benchmark on a single development machine — a regression signal, not
-production evidence — while the rest remain design targets.
+benchmark on a single development machine, a regression signal, not
+production evidence, while the rest remain design targets.
 
 | Area | Current status |
 |---|---|
-| Speed | a 5,000-word corpus analyzes in a median of **5 ms** (p95: **11 ms**) on the benchmark machine — far inside the **under 5 seconds** design target |
-| Usage | designed for 1–10 analyses per minute — personal, single-user pacing |
+| Speed | a 5,000-word corpus analyzes in a median of **5 ms** (p95: **11 ms**) on the benchmark machine, far inside the **under 5 seconds** design target |
+| Usage | designed for 1–10 analyses per minute, personal, single-user pacing |
 | Storage | about **10 MB** per analyzed subject, including the text, the evidence, and the profile |
 | Short samples | below 500 words results are flagged low-confidence, never blocked |
 | Quality | every stage is covered by an automated test suite, including text fixtures with known linguistic profiles that pin exact feature counts, word-to-category placements, and the direction of every dimension; the dictionary recognizes about **58%** of words in typical test samples (2,155 words across 36 categories) |
-| Measured accuracy | scored against a public corpus of **2,442 essays** with ground-truth personality ratings, all five Big Five dimensions rank people **above chance** (AUC 0.52–0.56, each confidence interval excluding coin-flip) — the right direction everywhere, with honest, modest effect sizes that dictionary growth is expected to improve |
+| Measured accuracy | scored against a public corpus of **2,442 essays** with ground-truth personality ratings, all five Big Five dimensions rank people **above chance** (AUC 0.52–0.56, each confidence interval excluding coin-flip); the right direction everywhere, with honest, modest effect sizes that dictionary growth is expected to improve |
 
 An automated validation suite runs these known-profile text samples through
 the full pipeline on every test run, so a change that flips a score's
@@ -249,7 +249,7 @@ recorded alongside each run.
 ## Your data
 
 Each analysis is a permanent record: the text you submitted, the word counts,
-the scores, the evidence behind them, and the narrative — all kept together on
+the scores, the evidence behind them, and the narrative, all kept together on
 your device. Past analyses remain available across restarts, and your entire
 history lives in one place that can be backed up by copying a single item.
 Nothing in the analysis path needs an internet connection.
@@ -257,8 +257,8 @@ Nothing in the analysis path needs an internet connection.
 ## What Psycho is designed for
 
 Psycho is designed for private, personal profiling on one machine. It
-prioritizes results you can interrogate — every score traceable to the words
-that produced it — local data control, and a simple operating model: give it
+prioritizes results you can interrogate: every score traceable to the words
+that produced it, local data control, and a simple operating model: give it
 text, get an honest, explainable profile back.
 
 The deeper material is there if you want it: the

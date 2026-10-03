@@ -1,8 +1,8 @@
-# Psycho — System Design
+# Psycho System Design
 
 ## Software Architecture
 
-**Style:** Modular monolith — components share a single process and database but have clear interface boundaries. No network calls between modules.
+**Style:** Modular monolith: components share a single process and database but have clear interface boundaries. No network calls between modules.
 
 **Core flow**
 
@@ -13,13 +13,13 @@
 
 ### **Storage choice & why**
 
-**Embedded SQLite** — Single‑user local app with modest data volumes. No server process needed. Provides queryability for cross‑subject comparison and temporal tracking that flat JSON files would make cumbersome. The database file is portable; a user can back up their entire analysis history by copying one file.
+**Embedded SQLite**. Single‑user local app with modest data volumes. No server process needed. Provides queryability for cross‑subject comparison and temporal tracking that flat JSON files would make cumbersome. The database file is portable; a user can back up their entire analysis history by copying one file.
 
 ### **Directory Structure**
 
 ```
 cmd/
-  psycho/main.go         # entrypoint — starts HTTP server
+  psycho/main.go         # entrypoint, starts HTTP server
   rendertemplates/       # renders HTML report previews from an analysis JSON
   calibrate/             # derives config/calibration.json from a reference corpus
 modules/
@@ -48,42 +48,45 @@ modules/
     storage.go             #   SQLite persistence (modernc.org/sqlite)
     pdf.go / pdf_maroto.go #   PDF report generation
     handler.go             #   GET /analysis/{id} and GET /analysis/{id}/pdf handlers
+  report/                  # the single HTML report
+    report.go              #   view builder + rendering (fragment for HTMX, full page otherwise)
+    form.go                #   POST /report handler (analyze + return the report inline)
   server/                  # composes all modules, registers routes
 pipeline/                  # the analysis flow: normalize → extract → infer → persist
 middleware/                # shared: recovery, request ID, timeout, validation
 config/                    # YAML loader + config.yaml
-samples/                   # .txt corpus read by /analyze-dir
-templates/                 # HTML report templates (general/technical/balanced)
+samples/                   # .txt demo corpus read by /analyze-dir
+templates/                 # index.html (Tailwind + HTMX upload page) and the report templates
 test/                      # integration + known-profile validation tests
 ```
 
 ### **Module boundaries**
 
-* **ingest** — Owns text normalisation, segmentation, and source metadata. Exposes a clean document object to downstream modules. Does NOT know about dictionaries, traits, or profiles.
-* **analyze** — Owns the psycholinguistic dictionary, feature extraction, and trait inference models. Depends on ingest for clean text. Does NOT know about temporal comparison or narrative synthesis. Also owns the evidence trail: per-category contribution math (`evidence.go`) and the matched-word samples the extractor keeps. Owns the calibration reference (`calibration.go`): raw scores are centered and ranked against the distribution measured by `cmd/calibrate` over a reference corpus (`config/calibration.json`, committed; nil calibration falls back to the fixed 0.50 intercepts and the normal approximation).
-* **profile** — Owns score aggregation, confidence computation, evidence attachment, and narrative generation. Depends on analyze for trait/feature data. Does NOT know about ingestion logic.
-* **pipeline** — Owns stage ordering: normalizes, extracts, infers, aggregates, narrates, and persists in one `Run`. Depends on all three modules; exists so neither the HTTP server nor the tests duplicate the orchestration. The server and tests hand it to the handlers through the `ingest.AnalyzeFunc` seam.
+* **ingest**: Owns text normalisation, segmentation, and source metadata. Exposes a clean document object to downstream modules. Does NOT know about dictionaries, traits, or profiles.
+* **analyze**: Owns the psycholinguistic dictionary, feature extraction, and trait inference models. Depends on ingest for clean text. Does NOT know about temporal comparison or narrative synthesis. Also owns the evidence trail: per-category contribution math (`evidence.go`) and the matched-word samples the extractor keeps. Owns the calibration reference (`calibration.go`): raw scores are centered and ranked against the distribution measured by `cmd/calibrate` over a reference corpus (`config/calibration.json`, committed; nil calibration falls back to the fixed 0.50 intercepts and the normal approximation).
+* **profile**: Owns score aggregation, confidence computation, evidence attachment, and narrative generation. Depends on analyze for trait/feature data. Does NOT know about ingestion logic.
+* **pipeline**: Owns stage ordering: normalizes, extracts, infers, aggregates, narrates, and persists in one `Run`. Depends on all three modules; exists so neither the HTTP server nor the tests duplicate the orchestration. The server and tests hand it to the handlers through the `ingest.AnalyzeFunc` seam.
 
 ### **Dependencies**
 
 * **Go standard library:** `net/http`, `database/sql`, `encoding/json`, `text/template`
-* **Open source:** `modernc.org/sqlite` (embedded database — pure Go, no CGO), `go.uber.org/zap` (logging), `go-playground/validator` (request validation), `johnfercher/maroto/v2` (PDF generation), `google/uuid` (analysis IDs), `google.golang.org/grpc` (gRPC request-ID interceptor in middleware)
+* **Open source:** `modernc.org/sqlite` (embedded database, pure Go, no CGO), `go.uber.org/zap` (logging), `go-playground/validator` (request validation), `johnfercher/maroto/v2` (PDF generation), `google/uuid` (analysis IDs), `google.golang.org/grpc` (gRPC request-ID interceptor in middleware)
 * **Sidecar/optional:** A small LLM binary (e.g., Ollama) running locally if the user enables narrative synthesis. The app functions fully without it.
 
 ### **Abstraction Depth per Module**
 
-**ingest** — No interfaces. Single implementation. Text normalisation is not swappable; the rules are the product.
+**ingest**: No interfaces. Single implementation. Text normalisation is not swappable; the rules are the product.
 
 **analyze**
 
-* `Dictionary` interface — **Why abstracted:** Allows swapping between LIWC‑compatible lexicons without changing inference logic. Users may bring their own dictionary. The module exports `Lookup(word) → []Category` as the contract.
-* `TraitModel` interface — **Why abstracted:** The regression model may be updated as new research publishes. The module exports `Infer(features) → BigFiveScores`.
-* `FeatureExtractor` is NOT abstracted — single implementation. The features are dictated by the psycholinguistic literature, not user preference.
+* `Dictionary` interface. **Why abstracted:** Allows swapping between LIWC‑compatible lexicons without changing inference logic. Users may bring their own dictionary. The module exports `Lookup(word) → []Category` as the contract.
+* `TraitModel` interface. **Why abstracted:** The regression model may be updated as new research publishes. The module exports `Infer(features) → BigFiveScores`.
+* `FeatureExtractor` is NOT abstracted: single implementation. The features are dictated by the psycholinguistic literature, not user preference.
 
 **profile**
 
-* `NarrativeGenerator` interface — **Why abstracted:** Users may choose no LLM (template‑based), a local LLM (Ollama), or a cloud API (Gemini). The module exports `GenerateSynthesis(scores) → string`.
-* `ScoreAggregator` is NOT abstracted — single implementation. The aggregation math is the product.
+* `NarrativeGenerator` interface. **Why abstracted:** Users may choose no LLM (template‑based), a local LLM (Ollama), or a cloud API (Gemini). The module exports `GenerateSynthesis(scores) → string`.
+* `ScoreAggregator` is NOT abstracted: single implementation. The aggregation math is the product.
 
 ***
 
@@ -113,15 +116,15 @@ Tests run after each phase completes. The system is decomposed so each module is
 * "Submit text with 80% domain‑specific jargon → system returns low dictionary coverage warning and wide confidence intervals."
 * Use test fixtures: pre‑prepared text samples with known linguistic profiles, embedded SQLite for test isolation.
 
-**Current state:** All of the above exists. Beyond the unit and integration tests, `test/validation_test.go` runs text fixtures with known linguistic profiles through the pipeline — asserting exact category percentages, word-to-category placements, and the direction of every dimension — and records latency percentiles per corpus size. `test/calibration_test.go` pins the committed calibration: quantile lookup is monotonic and clamped, a corpus-average score maps to the 50th percentile, the JSON round-trips, and directionally opposite texts rank correctly through the calibrated pipeline. GitHub Actions runs gofmt, vet, build, and the full suite on every push.
+**Current state:** All of the above exists. Beyond the unit and integration tests, `test/validation_test.go` runs text fixtures with known linguistic profiles through the pipeline (asserting exact category percentages, word-to-category placements, and the direction of every dimension) and records latency percentiles per corpus size. `test/calibration_test.go` pins the committed calibration: quantile lookup is monotonic and clamped, a corpus-average score maps to the 50th percentile, the JSON round-trips, and directionally opposite texts rank correctly through the calibrated pipeline. GitHub Actions runs gofmt, vet, build, and the full suite on every push.
 
 ### **Score calibration**
 
-Percentiles are measured, not assumed. `cmd/calibrate` runs the production inference path over a corpus of plain-text documents and writes `config/calibration.json`: per-dimension offsets that center the corpus mean at 0.50, plus the 1st–99th percentile quantiles of the adjusted scores. The file also records the SHA-256 of the dictionary it was built from, and `TestCalibrationMatchesDictionary` fails if the dictionary changes without recalibration. The server loads it at startup (`analyze.calibration_path`); `pipeline.Run` applies the offset before aggregation and the aggregator resolves percentiles by lookup instead of the normal approximation. The committed file was generated from a 4,010-post sample of the Blog Authorship Corpus (Schler et al., 2006 — blogger.com posts, Aug 2004), a genre matching the product's intended input; regenerate it with `go run ./cmd/calibrate -corpus <dir>` when the dictionary or weights change. Confidence intervals are deliberately unchanged — they model measurement error (text length × coverage), not population position.
+Percentiles are measured, not assumed. `cmd/calibrate` runs the production inference path over a corpus of plain-text documents and writes `config/calibration.json`: per-dimension offsets that center the corpus mean at 0.50, plus the 1st–99th percentile quantiles of the adjusted scores. The file also records the SHA-256 of the dictionary it was built from, and `TestCalibrationMatchesDictionary` fails if the dictionary changes without recalibration. The server loads it at startup (`analyze.calibration_path`); `pipeline.Run` applies the offset before aggregation and the aggregator resolves percentiles by lookup instead of the normal approximation. The committed file was generated from a 4,010-post sample of the Blog Authorship Corpus (Schler et al., 2006; blogger.com posts, Aug 2004), a genre matching the product's intended input; regenerate it with `go run ./cmd/calibrate -corpus <dir>` when the dictionary or weights change. Confidence intervals are deliberately unchanged: they model measurement error (text length × coverage), not population position.
 
 ### **Measured accuracy** (`cmd/evaluate`)
 
-`cmd/evaluate` scores a labeled corpus with the production inference path (raw scores — calibration is monotone and cannot change ranking) and reports the Spearman rank correlation and AUC of each Big Five score against ground truth. On the Essays corpus (Pennebaker & King, 1999; 2,442 essays over 200 words, binary median-split labels; measured 2026-10-01, dictionary at 2,155 words / 36 categories):
+`cmd/evaluate` scores a labeled corpus with the production inference path (raw scores; calibration is monotone and cannot change ranking) and reports the Spearman rank correlation and AUC of each Big Five score against ground truth. On the Essays corpus (Pennebaker & King, 1999; 2,442 essays over 200 words, binary median-split labels; measured 2026-10-01, dictionary at 2,155 words / 36 categories):
 
 | trait | Spearman ρ | AUC | AUC 95% CI (bootstrap) |
 |---|---|---|---|
@@ -131,9 +134,9 @@ Percentiles are measured, not assumed. `cmd/calibrate` runs the production infer
 | openness | 0.055 | 0.532 | 0.509 – 0.555 |
 | conscientiousness | 0.042 | 0.524 | 0.503 – 0.547 |
 
-All five dimensions rank above chance with confidence intervals excluding 0.5 — the sign of every published correlation holds on real data. The magnitudes are consistent with a zero-order weighted-sum baseline: Yarkoni (2010) reports zero-order ρ of 0.10–0.22, and dichotomizing each trait at its median (the corpus's labels) further attenuates measurable signal. Supervised multi-feature models (e.g., Mairesse et al., 2010, on full LIWC features) reach ρ ≈ 0.2–0.3.
+All five dimensions rank above chance with confidence intervals excluding 0.5; the sign of every published correlation holds on real data. The magnitudes are consistent with a zero-order weighted-sum baseline: Yarkoni (2010) reports zero-order ρ of 0.10–0.22, and dichotomizing each trait at its median (the corpus's labels) further attenuates measurable signal. Supervised multi-feature models (e.g., Mairesse et al., 2010, on full LIWC features) reach ρ ≈ 0.2–0.3.
 
-**Breadth experiment (2026-10-01):** growing the dictionary from 1,471 to 2,155 words raised sample coverage from 55.8% to 57.8% but left the AUCs unchanged (all deltas inside overlapping bootstrap CIs). The discriminating signal in this corpus sits in closed-class function words (articles, prepositions, pronouns), which were already near-complete; generic content-word additions add coverage and evidence richness but not rank accuracy. The next lever is *discriminative* vocabulary — words selected because their usage varies with the traits, as LIWC's lists were — not more breadth for its own sake.
+**Breadth experiment (2026-10-01):** growing the dictionary from 1,471 to 2,155 words raised sample coverage from 55.8% to 57.8% but left the AUCs unchanged (all deltas inside overlapping bootstrap CIs). The discriminating signal in this corpus sits in closed-class function words (articles, prepositions, pronouns), which were already near-complete; generic content-word additions add coverage and evidence richness but not rank accuracy. The next lever is *discriminative* vocabulary (words selected because their usage varies with the traits, as LIWC's lists were), not more breadth for its own sake.
 
 ***
 
