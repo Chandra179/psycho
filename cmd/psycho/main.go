@@ -17,7 +17,13 @@ import (
 )
 
 func main() {
-	cfg, err := config.Load("config/config.yaml")
+	// PSYCHO_CONFIG overrides the config file path; asset paths inside the
+	// config stay relative to the working directory.
+	configPath := os.Getenv("PSYCHO_CONFIG")
+	if configPath == "" {
+		configPath = "config/config.yaml"
+	}
+	cfg, err := config.Load(configPath)
 	if err != nil {
 		log.Fatalf("load config: %v", err)
 	}
