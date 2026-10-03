@@ -1,7 +1,7 @@
 <!--
   Template: TECHNICAL
   Audience: analyst / researcher / power user — full statistical detail,
-  raw scores, percentiles, 95% CI, dictionary coverage, word count.
+  raw scores, percentiles, honest ranges (95% CI), dictionary coverage, word count.
 
   Expected data (ReportView, built from Profile + the ingest-time
   wordCount/coverage that Aggregate() already receives — currently
@@ -169,7 +169,7 @@
           <th class="num">Score</th>
           <th>Label</th>
           <th class="num">Percentile</th>
-          <th>95% CI</th>
+          <th>Honest range</th>
         </tr>
       </thead>
       <tbody>
@@ -192,8 +192,10 @@
       </tbody>
     </table>
     <div class="footnote">
-      Percentile relative to reference sample (see docs/system-design.md §References). CI width derives from
-      SE ≈ 0.08/√(n/1000), widened when dictionary coverage &lt; 0.5. See synthesizer.go:computeCIWidth.
+      How to read this: the bar shows where the score could plausibly land, and the dot is the tool's
+      best guess. A wide bar means the tool is unsure — one piece of writing is thin evidence.
+      Ranges widen when dictionary coverage is low (fewer matched words = less certainty).
+      Percentile is relative to a reference sample; full derivation in docs/system-design.md.
     </div>
   </section>
 
