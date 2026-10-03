@@ -170,12 +170,12 @@ calls no external service.
 
 ## References
 
-- Pennebaker, J.W., Boyd, R.L., Jordan, K., & Blackburn, K. (2015). *The development and psychometric properties of LIWC2015*. University of Texas at Austin. The dictionary model behind the word-to-category mapping, and the word-length summary variables stylized here.
-- Tweedie, F.J., & Baayen, R.H. (1998). *How variable may a constant be? Measures of lexical richness in corpus*. Literary and Linguistic Computing, 13(3), 23-30. The type-token ratio and related lexical diversity measures.
-- Yarkoni, T. (2010). *Personality in 100,000 words: A large-scale analysis of personality and word use among bloggers*. Journal of Research in Personality. The word-category to trait weights for the Big Five.
-- Pennebaker, J.W., & King, L.A. (1999). *Linguistic styles: Language use as an individual difference*. Journal of Personality and Social Psychology. The finding that function words carry stable personality signals.
-- Higgins, E.T. (1997). *Beyond pleasure and pain*. American Psychologist, 52(12), 1280-1300. Regulatory Focus Theory, promotion versus prevention.
-- Cacioppo, J.T., & Petty, R.E. (1982). *The need for cognition*. Journal of Personality and Social Psychology, 42(1), 116-131. The need for cognition construct.
-- Webster, D.M., & Kruglanski, A.W. (1994). *Individual differences in need for cognitive closure*. Journal of Personality and Social Psychology. Need for closure, read from certainty versus tentative language.
-- Schwartz, S.H. (1992). *Universals in the content and structure of values: Theoretical advances and empirical tests in 20 countries*. Advances in Experimental Social Psychology. The Schwartz Value Survey behind the value orientations.
+- Pennebaker, J.W., Boyd, R.L., Jordan, K., & Blackburn, K. (2015). [*The development and psychometric properties of LIWC2015*](https://www.liwc.net/). University of Texas at Austin. The dictionary model behind the word-to-category mapping, and the word-length summary variables stylized here.
+- Tweedie, F.J., & Baayen, R.H. (1998). [*How variable may a constant be? Measures of lexical richness in perspective*](https://doi.org/10.1023/A:1001749303136). Computers and the Humanities, 32(5), 323-352. The type-token ratio and related lexical diversity measures.
+- Yarkoni, T. (2010). [*Personality in 100,000 words: A large-scale analysis of personality and word use among bloggers*](https://doi.org/10.1016/j.jrp.2010.04.001). Journal of Research in Personality, 44(3), 363-373. The word-category to trait weights for the Big Five.
+- Pennebaker, J.W., & King, L.A. (1999). [*Linguistic styles: Language use as an individual difference*](https://doi.org/10.1037/0022-3514.77.6.1296). Journal of Personality and Social Psychology, 77(6), 1296-1312. The finding that function words carry stable personality signals.
+- Higgins, E.T. (1997). [*Beyond pleasure and pain*](https://doi.org/10.1037/0003-066X.52.12.1280). American Psychologist, 52(12), 1280-1300. Regulatory Focus Theory, promotion versus prevention.
+- Cacioppo, J.T., & Petty, R.E. (1982). [*The need for cognition*](https://doi.org/10.1037/0022-3514.42.1.116). Journal of Personality and Social Psychology, 42(1), 116-131. The need for cognition construct.
+- Webster, D.M., & Kruglanski, A.W. (1994). [*Individual differences in need for cognitive closure*](https://doi.org/10.1037/0022-3514.67.6.1049). Journal of Personality and Social Psychology, 67(6), 1049-1062. Need for closure, read from certainty versus tentative language.
+- Schwartz, S.H. (1992). [*Universals in the content and structure of values: Theoretical advances and empirical tests in 20 countries*](https://doi.org/10.1016/S0065-2601(08)60281-6). Advances in Experimental Social Psychology, 25, 1-65. The Schwartz Value Survey behind the value orientations.
 - Schler, J., Koppel, M., Argamon, S., & Pennebaker, J.W. (2006). *Effects of age and gender on blogging*. AAAI Spring Symposium on Computational Approaches to Analyzing Weblogs. The Blog Authorship Corpus used for percentile calibration.
