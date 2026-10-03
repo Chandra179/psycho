@@ -62,9 +62,9 @@ the sample.
 ### 3. Read your profile
 
 Each dimension is inferred from those counts and combined into a profile with
-confidence intervals and short narrative prose. The profile is saved on your
-device, so you can come back to it, and the evidence is kept alongside every
-score so any result can be traced back to the words that produced it.
+confidence intervals and short narrative prose. The profile is saved, so you can come back to it, and the evidence is kept
+alongside every score so any result can be traced back to the words that
+produced it.
 
 ## Main features
 
@@ -97,7 +97,9 @@ Each word is looked up in a LIWC-style psycholinguistic dictionary, and the
 categories it belongs to are tallied into percentages over the whole corpus:
 how much emotion language, cognitive language, social language, and so on. The
 share of words that hit any category at all is the coverage rate: the main
-signal for how well the dictionary fits the text.
+signal for how well the dictionary fits the text. Alongside the category
+counts, simple stylometric measures (lexical diversity, word length) feed the
+same feature vector.
 
 ### Big Five regression
 
@@ -165,3 +167,15 @@ the scores, the evidence behind them, and the narrative, all kept together in
 one database file. Past analyses remain available across restarts, and your
 entire history can be backed up by copying a single file. The analysis itself
 calls no external service.
+
+## References
+
+- Pennebaker, J.W., Boyd, R.L., Jordan, K., & Blackburn, K. (2015). *The development and psychometric properties of LIWC2015*. University of Texas at Austin. The dictionary model behind the word-to-category mapping, and the word-length summary variables stylized here.
+- Tweedie, F.J., & Baayen, R.H. (1998). *How variable may a constant be? Measures of lexical richness in corpus*. Literary and Linguistic Computing, 13(3), 23-30. The type-token ratio and related lexical diversity measures.
+- Yarkoni, T. (2010). *Personality in 100,000 words: A large-scale analysis of personality and word use among bloggers*. Journal of Research in Personality. The word-category to trait weights for the Big Five.
+- Pennebaker, J.W., & King, L.A. (1999). *Linguistic styles: Language use as an individual difference*. Journal of Personality and Social Psychology. The finding that function words carry stable personality signals.
+- Higgins, E.T. (1997). *Beyond pleasure and pain*. American Psychologist, 52(12), 1280-1300. Regulatory Focus Theory, promotion versus prevention.
+- Cacioppo, J.T., & Petty, R.E. (1982). *The need for cognition*. Journal of Personality and Social Psychology, 42(1), 116-131. The need for cognition construct.
+- Webster, D.M., & Kruglanski, A.W. (1994). *Individual differences in need for cognitive closure*. Journal of Personality and Social Psychology. Need for closure, read from certainty versus tentative language.
+- Schwartz, S.H. (1992). *Universals in the content and structure of values: Theoretical advances and empirical tests in 20 countries*. Advances in Experimental Social Psychology. The Schwartz Value Survey behind the value orientations.
+- Schler, J., Koppel, M., Argamon, S., & Pennebaker, J.W. (2006). *Effects of age and gender on blogging*. AAAI Spring Symposium on Computational Approaches to Analyzing Weblogs. The Blog Authorship Corpus used for percentile calibration.
