@@ -25,9 +25,9 @@ func testAnalysis() *Analysis {
 			"neuroticism": {Score: 0.3, Percentile: 8},
 			// agreeableness deliberately absent: must be skipped, not zero-filled.
 		},
-		Values:         map[string]float64{"value_universalism": 0.88, "value_achievement": 0.18},
-		ValueEvidence:  map[string][]string{"value_universalism": {"just", "world"}},
-		Summary:        SummaryVariables{AnalyticalThinking: 0.16, Clout: 0.06, Authenticity: 0.71, EmotionalTone: 0.48},
+		Values:        map[string]float64{"value_universalism": 0.88, "value_achievement": 0.18},
+		ValueEvidence: map[string][]string{"value_universalism": {"just", "world"}},
+		Summary:       SummaryVariables{AnalyticalThinking: 0.16, Clout: 0.06, Authenticity: 0.71, EmotionalTone: 0.48},
 	}
 }
 
@@ -191,5 +191,17 @@ func TestAnalysisOutputRoundTrip(t *testing.T) {
 	}
 	if len(a.ValueEvidence["value_universalism"]) != 1 || a.ValueEvidence["value_universalism"][0] != "just" {
 		t.Fatalf("value evidence lost in round trip: %+v", a.ValueEvidence)
+	}
+}
+
+func TestFormHandlerRejectsBadSourceDate(t *testing.T) {
+	fields := url.Values{
+		"text":        {"a perfectly fine sample of text"},
+		"consent":     {"on"},
+		"source_date": {"not-a-date"},
+	}
+	rec := postForm("", fields, true)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("invalid source_date must 400, got %d", rec.Code)
 	}
 }

@@ -61,7 +61,7 @@ func TestTemplateNarrativeGenerator_GeneratesAllSections(t *testing.T) {
 		"high",
 		"98th percentile",
 		"95% CI",
-		"Not a clinical assessment",
+		"Template-based synthesis, not a clinical assessment",
 	}
 	for _, want := range checks {
 		if !strings.Contains(narrative, want) {
@@ -125,26 +125,26 @@ func TestTemplateNarrativeGenerator_EdgeScores(t *testing.T) {
 	}
 }
 
-func TestSummaryLabel(t *testing.T) {
-	if got := summaryLabel(0.70, "high", "low"); got != "high" {
-		t.Errorf("summaryLabel(0.70) = %q; want high", got)
+func TestSummaryBandFormal(t *testing.T) {
+	if got := analyze.SummaryBandFormal("clout", 0.70); got != "confident/dominant" {
+		t.Errorf("SummaryBandFormal(clout, 0.70) = %q; want confident/dominant", got)
 	}
-	if got := summaryLabel(0.30, "high", "low"); got != "low" {
-		t.Errorf("summaryLabel(0.30) = %q; want low", got)
+	if got := analyze.SummaryBandFormal("clout", 0.30); got != "submissive/uncertain" {
+		t.Errorf("SummaryBandFormal(clout, 0.30) = %q; want submissive/uncertain", got)
 	}
-	if got := summaryLabel(0.50, "high", "low"); got != "moderate" {
-		t.Errorf("summaryLabel(0.50) = %q; want moderate", got)
+	if got := analyze.SummaryBandFormal("clout", 0.50); got != "moderate" {
+		t.Errorf("SummaryBandFormal(clout, 0.50) = %q; want moderate", got)
 	}
-}
-
-func TestToneLabel(t *testing.T) {
-	if got := toneLabel(0.70); got != "positive" {
-		t.Errorf("toneLabel(0.70) = %q; want positive", got)
+	if got := analyze.SummaryBandCompact("clout", 0.70); got != "confident" {
+		t.Errorf("SummaryBandCompact(clout, 0.70) = %q; want confident", got)
 	}
-	if got := toneLabel(0.30); got != "negative" {
-		t.Errorf("toneLabel(0.30) = %q; want negative", got)
+	if got := analyze.SummaryTone(0.70); got != "positive" {
+		t.Errorf("SummaryTone(0.70) = %q; want positive", got)
 	}
-	if got := toneLabel(0.50); got != "neutral" {
-		t.Errorf("toneLabel(0.50) = %q; want neutral", got)
+	if got := analyze.SummaryTone(0.30); got != "negative" {
+		t.Errorf("SummaryTone(0.30) = %q; want negative", got)
+	}
+	if got := analyze.SummaryTone(0.50); got != "neutral" {
+		t.Errorf("SummaryTone(0.50) = %q; want neutral", got)
 	}
 }

@@ -12,6 +12,7 @@ import (
 	"math"
 	"path/filepath"
 	"sort"
+	"sync"
 	"time"
 
 	"psycho/modules/analyze"
@@ -64,9 +65,9 @@ var traitBlurbs = map[string][2]string{
 	"extraversion":       {"Outgoing, energized by social interaction, assertive", "Reserved, prefers solitude or small groups, low-key"},
 	"agreeableness":      {"Cooperative, trusting, considerate of others' needs", "Competitive, skeptical, prioritizes own interests"},
 	"neuroticism":        {"Prone to worry, more reactive to stress, emotionally sensitive", "Emotionally stable, calm under pressure, resilient"},
-	"regulatory_focus":   {"Promotion-focused — pursues gains, ideals, and opportunities", "Prevention-focused — avoids losses, prioritizes safety and duty"},
+	"regulatory_focus":   {"Focused on gains, ideals, and new opportunities", "Focused on safety, duty, and avoiding losses"},
 	"need_for_cognition": {"Enjoys effortful thinking, seeks out complex problems", "Prefers simple, quick answers over deep deliberation"},
-	"cognitive_style":    {"Analytical — breaks things down, reasons step by step", "Intuitive — relies on gut feel and holistic impressions"},
+	"cognitive_style":    {"Breaks things down and reasons step by step", "Relies on gut feel and holistic impressions"},
 	"need_for_closure":   {"Prefers clear answers, uncomfortable with ambiguity, decides quickly", "Comfortable with open questions, willing to keep deliberating"},
 }
 
@@ -172,10 +173,10 @@ func BuildReport(a *Analysis) ReportView {
 	}
 
 	v.Summary = []SummaryCard{
-		{"Analytical thinking", summaryLabel(a.Summary.AnalyticalThinking, "analytical", "intuitive")},
-		{"Clout", summaryLabel(a.Summary.Clout, "confident", "reserved")},
-		{"Authenticity", summaryLabel(a.Summary.Authenticity, "personal", "guarded")},
-		{"Emotional tone", toneLabel(a.Summary.EmotionalTone)},
+		{"Analytical thinking", analyze.SummaryBandCompact("analytical_thinking", a.Summary.AnalyticalThinking)},
+		{"Clout", analyze.SummaryBandCompact("clout", a.Summary.Clout)},
+		{"Authenticity", analyze.SummaryBandCompact("authenticity", a.Summary.Authenticity)},
+		{"Emotional tone", analyze.SummaryTone(a.Summary.EmotionalTone)},
 	}
 
 	for _, k := range traitOrder {
@@ -227,7 +228,10 @@ func generateSnapshot(a *Analysis) string {
 		top = TraitView{Name: analyze.DimensionDisplayName(k), Percentile: t.Percentile}
 	}
 
-	out := fmt.Sprintf("The strongest signal in this piece of writing is %s — higher than %d%% of people.",
+	if top.Name == "" {
+		return "The analysis could not extract trait signals from this text. See the receipts below for what it did find."
+	}
+	out := fmt.Sprintf("The strongest signal in this piece of writing is %s, higher than %d%% of people.",
 		top.Name, top.Percentile)
 	out += fmt.Sprintf(" The voice reads %s (%.2f), comes across %s (clout %.2f), and leans %s (%.2f).",
 		bandPhrase(s.Authenticity, "personal and honest", "even-keeled", "guarded and distant"), s.Authenticity,
@@ -267,16 +271,6 @@ func round2(f float64) float64 {
 	return float64(int(f*100)) / 100
 }
 
-func summaryLabel(score float64, high, low string) string {
-	switch analyze.HighModerateLow(score) {
-	case "high":
-		return high
-	case "low":
-		return low
-	}
-	return "moderate"
-}
-
 // bandPhrase picks wording for each band of a [0,1] score.
 func bandPhrase(score float64, high, mid, low string) string {
 	switch analyze.HighModerateLow(score) {
@@ -288,15 +282,9 @@ func bandPhrase(score float64, high, mid, low string) string {
 	return mid
 }
 
-func toneLabel(score float64) string {
-	if analyze.HighModerateLow(score) == "high" {
-		return "positive"
-	}
-	if analyze.HighModerateLow(score) == "low" {
-		return "negative"
-	}
-	return "neutral"
-}
+// Template sets are parsed once per templates directory and reused; a
+// running server holds exactly one process-lifetime directory.
+var tplCache sync.Map // templatesDir|mode -> *template.Template
 
 // RenderAnalysis renders the report to w. With fullPage true it emits a
 // complete standalone HTML document (no-JS fallback, CLI); otherwise just
@@ -304,19 +292,20 @@ func toneLabel(score float64) string {
 func RenderAnalysis(templatesDir string, a *Analysis, w io.Writer, fullPage bool) error {
 	v := BuildReport(a)
 	v.GeneratedAt = time.Now().Format("January 2, 2006")
+
+	name, files := "report-body", []string{filepath.Join(templatesDir, "report.html")}
 	if fullPage {
-		tpl, err := template.ParseFiles(
-			filepath.Join(templatesDir, "report-page.html"),
-			filepath.Join(templatesDir, "report.html"),
-		)
+		name = "report-page"
+		files = []string{filepath.Join(templatesDir, "report-page.html"), files[0]}
+	}
+	key := templatesDir + "|" + name
+	tplAny, ok := tplCache.Load(key)
+	if !ok {
+		tpl, err := template.ParseFiles(files...)
 		if err != nil {
 			return fmt.Errorf("parse templates: %w", err)
 		}
-		return tpl.ExecuteTemplate(w, "report-page", v)
+		tplAny, _ = tplCache.LoadOrStore(key, tpl)
 	}
-	tpl, err := template.ParseFiles(filepath.Join(templatesDir, "report.html"))
-	if err != nil {
-		return fmt.Errorf("parse template: %w", err)
-	}
-	return tpl.ExecuteTemplate(w, "report-body", v)
+	return tplAny.(*template.Template).ExecuteTemplate(w, name, v)
 }
