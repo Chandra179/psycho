@@ -62,6 +62,7 @@ func MakeHandleAnalyzeDir(
 	analyzeFn AnalyzeFunc,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		r.Body = http.MaxBytesReader(w, r.Body, 64<<10) // the dir request is tiny JSON; refuse anything bigger
 		req, err := middleware.DecodeAndValidate[AnalyzeDirRequest](r)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -122,9 +123,15 @@ func MakeHandleAnalyzeDir(
 
 // urlFetchClient bounds every fetch in time and refuses redirects to
 // loopback, private, or link-local addresses, so a public URL cannot be
-// used to probe the local network or cloud metadata endpoints.
+// used to probe the local network or cloud metadata endpoints. The Dial
+// hook re-validates the resolved IP at connection time: pre-fetch DNS
+// checks alone are TOCTOU-vulnerable to rebinding answers that flip to a
+// private address between validation and dial.
 var urlFetchClient = &http.Client{
 	Timeout: 15 * time.Second,
+	Transport: &http.Transport{
+		DialContext: dialCheckedAddr,
+	},
 	CheckRedirect: func(req *http.Request, via []*http.Request) error {
 		if len(via) >= 5 {
 			return fmt.Errorf("too many redirects")
@@ -134,6 +141,30 @@ var urlFetchClient = &http.Client{
 		}
 		return nil
 	},
+}
+
+// dialCheckedAddr resolves addr's host itself, rejects any private address,
+// and dials the validated IP. TLS still uses the URL's hostname for SNI and
+// certificate verification, so this cannot be abused to bypass certs.
+func dialCheckedAddr(ctx context.Context, network, addr string) (net.Conn, error) {
+	host, port, err := net.SplitHostPort(addr)
+	if err != nil {
+		return nil, fmt.Errorf("split dial address: %w", err)
+	}
+	ips, err := net.DefaultResolver.LookupIPAddr(ctx, host)
+	if err != nil {
+		return nil, fmt.Errorf("resolve host: %w", err)
+	}
+	if len(ips) == 0 {
+		return nil, fmt.Errorf("host %q resolved to no addresses", host)
+	}
+	for _, ip := range ips {
+		if err := rejectPrivateIP(ip.IP); err != nil {
+			return nil, err
+		}
+	}
+	var dialer net.Dialer
+	return dialer.DialContext(ctx, network, net.JoinHostPort(ips[0].IP.String(), port))
 }
 
 // FetchURLText downloads a URL and returns its body as text, capped at

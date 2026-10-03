@@ -23,6 +23,10 @@ func NewDependencies(cfg Config, logger *zlogger.Logger) (*Dependencies, error) 
 	if err != nil {
 		return nil, fmt.Errorf("open db: %w", err)
 	}
+	// SQLite allows a single writer; multiple connections would race on
+	// concurrent analyses and surface SQLITE_BUSY as HTTP 500s. One
+	// connection serializes everything at negligible cost for this workload.
+	db.SetMaxOpenConns(1)
 	if err := db.Ping(); err != nil {
 		return nil, fmt.Errorf("ping db: %w", err)
 	}

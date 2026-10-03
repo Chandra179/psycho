@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
+	"time"
 
 	"psycho/modules/ingest"
 	"psycho/zlogger"
@@ -25,6 +26,9 @@ func MakeHandleReportForm(
 	analyzeFn ingest.AnalyzeFunc,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// Same bound as the JSON API: reject oversized bodies before
+		// ParseForm reads them into memory.
+		r.Body = http.MaxBytesReader(w, r.Body, int64(maxTextSize)+4096)
 		if err := r.ParseForm(); err != nil {
 			http.Error(w, "invalid form", http.StatusBadRequest)
 			return
@@ -56,7 +60,17 @@ func MakeHandleReportForm(
 			return
 		}
 
-		out, err := analyzeFn(r.Context(), sourceType, r.PostFormValue("source_date"), text)
+		// Match the JSON API's validation (datetime=2006-01-02) so the DB
+		// never stores an unparseable date.
+		sourceDate := r.PostFormValue("source_date")
+		if sourceDate != "" {
+			if _, err := time.Parse("2006-01-02", sourceDate); err != nil {
+				http.Error(w, "Invalid written-on date — use YYYY-MM-DD.", http.StatusBadRequest)
+				return
+			}
+		}
+
+		out, err := analyzeFn(r.Context(), sourceType, sourceDate, text)
 		if err != nil {
 			logger.Error(r.Context(), "analysis failed", zlogger.Field{Key: "error", Value: err.Error()})
 			http.Error(w, "Something went wrong while analyzing — please try again.", http.StatusInternalServerError)

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 
 	"gopkg.in/yaml.v3"
@@ -60,5 +61,24 @@ func Load(path string) (*Config, error) {
 	if err := yaml.NewDecoder(f).Decode(&cfg); err != nil {
 		return nil, err
 	}
+	if err := cfg.validate(); err != nil {
+		return nil, err
+	}
 	return &cfg, nil
+}
+
+// validate fails fast on a zero-value or partial config: without this, an
+// empty port makes the server listen on a random one and an empty
+// dictionary path fails later with a confusing error.
+func (c *Config) validate() error {
+	if c.App.HTTP.Port == "" {
+		return fmt.Errorf("config: app.http.port is required")
+	}
+	if c.Analyze.DictionaryPath == "" {
+		return fmt.Errorf("config: analyze.dictionary_path is required")
+	}
+	if c.Profile.DBPath == "" {
+		return fmt.Errorf("config: profile.db_path is required")
+	}
+	return nil
 }

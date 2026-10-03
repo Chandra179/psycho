@@ -38,6 +38,11 @@ func MakeHandleAnalyze(
 	analyzeFn ingest.AnalyzeFunc,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// Bound the decoded body before parsing: MaxTextSize applies to the
+		// extracted text, and the JSON envelope adds little — without this,
+		// an oversized body is read into memory in full before the size
+		// check can reject it.
+		r.Body = http.MaxBytesReader(w, r.Body, int64(maxTextSize)+4096)
 		req, err := middleware.DecodeAndValidate[AnalyzeRequest](r)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
