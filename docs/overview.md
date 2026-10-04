@@ -1,35 +1,32 @@
 ---
 title: "Psycho"
-description: "Psycho is a personality profiler that extracts auditable psychological traits from text."
-seoTitle: "Psycho: Auditable Personality Profiling from Text"
-seoDescription: "Psycho is a personality profiler that extracts Big Five traits, motivations, and values from writing with a transparent, fully auditable method."
-answerSummary: "Psycho is a personality profiler that extracts auditable psychological traits from text."
+description: "Psycho estimates psychological traits from text and shows the evidence behind each score."
+seoTitle: "Psycho: Personality Profiling from Text"
+seoDescription: "Psycho estimates Big Five traits, motivations, and values from writing using a dictionary-based method."
+answerSummary: "Psycho estimates psychological traits from text and shows the evidence behind each score."
 tags: [system-design, nlp, psycholinguistics]
 links:
   github: "https://github.com/Chandra179/psycho"
 created: 2026-09-29
 ---
 
-# Psycho: Personality Profiling with Full Auditability
+# Psycho: Personality Profiling from Text
 
-Psycho is an application that reads a sample of someone's writing
-and describes the psychological structure behind it: Big Five trait scores,
-motivational and cognitive tendencies, and value orientations. Every score
-comes with an honest confidence level and the linguistic evidence that
-produced it, so nothing is a verdict handed down by a black box.
+Psycho analyzes a writing sample and estimates Big Five traits, motivational
+and cognitive tendencies, and value orientations. Each score includes a
+confidence level and the linguistic evidence used to calculate it.
 
 It is useful for:
 
-- journaling and self-reflection over your own writing;
-- seeing how style and emphasis shift across a corpus of blogs, emails, or chat logs;
+- reflecting on your own writing;
+- comparing style and emphasis across blogs, emails, or chat logs;
 - research on the relationship between language use and personality;
 - writing-sample analysis where the reasoning behind a score matters; and
-- any text a person owns and wants to understand through a psycholinguistic lens.
+- analyzing text you own using psycholinguistic methods.
 
-Everything runs in one small application: one process, one embedded database,
-no accounts, and no external calls in the analysis pipeline. Psycho is
-not a clinical instrument; diagnosis and mental-health assessment are explicit
-non-goals.
+Psycho runs as one process and stores data in an embedded database. It requires
+no account and makes no external calls during analysis. It is not a clinical
+instrument and does not provide diagnoses or mental-health assessments.
 
 ## How it works
 
@@ -40,83 +37,82 @@ your writing → clean and organize → read word by word → infer tendencies �
                                   dictionary            every score
 ```
 
-You give Psycho text, and it gives you back a written profile: scores with
-rough score ranges, the evidence behind each one, and a short narrative
-summary. The profile can be read on screen or exported as a PDF report.
+Psycho returns a profile with estimated scores, score ranges, supporting
+evidence, and a short summary. You can view it on screen or export it as a PDF.
 
 ### 1. Add your writing
 
-You provide a sample of writing, for example saved blog posts, emails, or
-chat logs. Psycho checks that the sample is long enough to say anything
-meaningful, cleans it up, and preserves its structure: paragraphs, sentences,
-and rhythm all survive intact.
+You provide a sample, such as saved blog posts, emails, or chat logs. Psycho
+checks its length, normalizes the text, and preserves paragraph and sentence
+structure.
 
-### 2. Psycho reads it like a linguist
+### 2. Analyze the text
 
-Every word is looked up in a psycholinguistic dictionary that maps words to
-psychological categories. From those lookups Psycho counts how often each
-category appears, measures stylistic habits, and records how much of the text
-the dictionary actually covered, the main signal for how well the tool fits
-the sample.
+Psycho looks up words in a psycholinguistic dictionary that maps them to
+categories. It counts category usage, measures stylistic features, and records
+the share of text covered by the dictionary. Coverage indicates how well the
+dictionary represents the sample.
 
 ### 3. Read your profile
 
-Each dimension is inferred from those counts and combined into a profile with
-rough score ranges and short narrative prose. The profile is saved, so you can come back to it, and the evidence is kept
-alongside every score so any result can be traced back to the words that
-produced it.
+Psycho combines the counts into a profile with estimated score ranges and a
+short summary. It saves the profile and the evidence associated with each
+score, so results can be traced to the words that contributed to them.
 
 ## Main features
 
-- **Private by design**: no accounts, and the analysis pipeline makes no external calls.
-- **No black-box AI**: scores come from a transparent, dictionary-based method, so the same text always produces the same result and every score can be explained.
+- **Local analysis**: no accounts, and the analysis pipeline makes no external calls.
+- **Dictionary-based scoring**: the same text produces the same result under the same model, dictionary, and calibration; scores include their supporting evidence.
 - **Big Five (OCEAN) traits**: openness, conscientiousness, extraversion, agreeableness, and neuroticism, estimated from word-use patterns.
 - **Regulatory Focus**: whether the writing leans toward promotion (gains, aspirations) or prevention (safety, obligations).
 - **Need for Cognition**: the writer's tendency toward effortful, analytic thinking.
 - **Need for Closure**: comfort with definite answers versus ambiguity.
 - **Cognitive style**: systematic versus intuitive processing markers.
 - **Schwartz value orientations**: which values the writing emphasizes, from a cross-cultural framework.
-- **Rough score ranges on every score**: ranges depend on text length and dictionary coverage, without a validated probability of correctness.
-- **Full auditability**: every output is kept with the linguistic evidence that produced it.
-- **Honest warnings**: short samples or poorly covered text widen the intervals and raise flags instead of failing silently.
+- **Score ranges**: ranges depend on text length and dictionary coverage; they are not validated probabilities of correctness.
+- **Evidence for scores**: outputs include the linguistic evidence used to calculate them.
+- **Quality flags**: short samples or low dictionary coverage widen the ranges and may trigger a warning.
 - **Reports you can keep**: a PDF report to save or print, plus the single on-screen report.
-- **Your whole history in one place**: past analyses persist and can be re-read or re-exported anytime.
+- **Saved analyses**: past analyses can be viewed or exported again.
 
 ## Algorithms
 
 ### Text normalization
 
-Formatting is stripped while paragraph structure is preserved, and the text is
-segmented into sentences and paragraphs. Downstream stages work on a clean
-document with reliable boundaries, so feature counts are not distorted by
-formatting artifacts.
+Formatting is removed while paragraph structure is preserved. The text is
+segmented into sentences and paragraphs to reduce formatting effects on
+feature counts.
 
 ### Dictionary mapping
 
-Each word is looked up in a LIWC-style psycholinguistic dictionary, and the
-categories it belongs to are tallied into percentages over the whole corpus:
-how much emotion language, cognitive language, social language, and so on. The
-share of words that hit any category at all is the coverage rate: the main
-signal for how well the dictionary fits the text. Alongside the category
-counts, simple stylometric measures (lexical diversity, word length) feed the
-same feature vector.
+Each word is matched against a LIWC-style psycholinguistic dictionary. The
+category counts are converted to percentages for the full sample, covering
+features such as emotion, cognition, and social language. Coverage is the share
+of words matched by at least one category. The feature vector also includes
+stylometric measures such as lexical diversity and word length.
 
 ### Big Five correlation-weighted heuristic
 
-The Big Five scorer uses a correlation-weighted heuristic inspired by language associations (Yarkoni, 2010). It scales correlations using assumed trait and category standard deviations, rather than fitted regression coefficients. Deterministic category ordering makes the same text reproducible under the same model, dictionary and calibration. The other language measures are project-defined proxies for constructs; they are not official LIWC algorithms or validated personality tests.
+The Big Five scorer uses a correlation-weighted heuristic inspired by language associations (Yarkoni, 2010). It scales correlations using assumed trait and category standard deviations rather than fitted regression coefficients. With the same model, dictionary, and calibration, category ordering makes results reproducible. Other language measures are project-defined proxies, not official LIWC algorithms or validated personality tests.
 
 ### Regulatory Focus
 
-Words marking gains, aspirations, and advancement are counted separately from
-words marking safety, duty, and loss avoidance (Higgins, 1997). The project assigns weights to these categories to produce a text proxy and label; Higgins (1997) supports the construct rather than this word-list scoring formula.
+Words associated with gains and aspirations are counted separately from words
+associated with safety and duty (Higgins, 1997). Project-defined weights turn
+these counts into a text proxy and label. Higgins (1997) supports the construct,
+not this word-list scoring formula.
 
 ### Need for Cognition
 
-The project assigns weights to analytic and intuitive word categories as a proxy for effortful thinking. Cacioppo and Petty (1982) support the construct, not these word lists or weights.
+The project weights analytic and intuitive word categories as a proxy for
+effortful thinking. Cacioppo and Petty (1982) support the construct, not these
+word lists or weights.
 
 ### Need for Closure
 
-The project weights certainty percentages positively and tentative percentages negatively as a text proxy. Webster and Kruglanski (1994) describe the need for closure construct, not this scoring formula.
+The project weights certainty language positively and tentative language
+negatively as a text proxy. Webster and Kruglanski (1994) describe the construct,
+not this scoring formula.
 
 ### Schwartz values
 
@@ -126,43 +122,41 @@ co-occur in text.
 
 ### Rough score ranges
 
-Every score carries an interval that widens or narrows with the evidence:
-longer samples generally produce narrower ranges, and text the dictionary barely
-recognizes produces wider ones. Very short samples always receive a
-low-confidence flag; fewer than 10 normalized Unicode characters or no letters/numbers are rejected. These ranges use project assumptions and are not validated confidence intervals. Scores are reported as
-percentiles relative to a measured reference text sample, a sample of about
-4,000 blog posts (the Blog Authorship Corpus), so "60th percentile" means
-"higher than 60% of comparable texts in that reference sample."
+Each score has a range based on the amount of evidence. Longer samples
+generally have narrower ranges, while low dictionary coverage widens them.
+Very short samples receive a low-confidence flag. Samples with fewer than 10
+normalized Unicode characters or no letters or numbers are rejected. The ranges
+use project assumptions and are not validated confidence intervals. Scores are
+percentiles relative to about 4,000 blog posts in the Blog Authorship Corpus.
+A 60th-percentile score is higher than 60% of texts in that reference sample.
 
 ## Current evidence
 
-Psycho is early stage. The speed number below is measured by the automated
-benchmark on a single development machine, a regression signal, not
-production evidence, while the rest remain design targets.
+Psycho is early stage. The speed figure below comes from an automated benchmark
+on one development machine. It is for tracking regressions, not a production
+measurement. Other figures are design targets.
 
 | Area | Current status |
 |---|---|
-| Speed | a 5,000-word corpus analyzes in a median of **5 ms** (p95: **11 ms**) on the benchmark machine, far inside the **under 5 seconds** design target |
+| Speed | a 5,000-word corpus analyzes in a median of **5 ms** (p95: **11 ms**) on the benchmark machine; the design target is **under 5 seconds** |
 | Usage | designed for 1–10 analyses per minute, personal, single-user pacing |
 | Storage | about **10 MB** per analyzed subject, including the text, the evidence, and the profile |
-| Short samples | below 500 words results are flagged low-confidence; invalid text is rejected |
-| Quality | every stage is covered by an automated test suite, including text fixtures with known linguistic profiles that pin exact feature counts, word-to-category placements, and the direction of every dimension; the dictionary recognizes about **58%** of words in typical test samples (2,155 words across 36 categories) |
-| Measured accuracy | scored against **2,442 retained essays** from a local CSV of 2,467 rows with binary questionnaire labels; exact local provenance remains unverified, trait-ranking AUC ranged from **0.524 to 0.554**, close to chance (0.5); these results do not validate individual predictions or promise improvement from dictionary growth |
+| Short samples | samples below 500 words are flagged low-confidence; invalid text is rejected |
+| Quality | automated tests check feature counts, word-to-category mappings, and score directions; the dictionary matches about **58%** of words in typical test samples (2,155 words across 36 categories) |
+| Measured accuracy | evaluated on **2,442 essays** from a local CSV of 2,467 rows with binary questionnaire labels; provenance is unverified. Trait-ranking AUC ranged from **0.524 to 0.554**, near chance (0.5). These results do not validate individual predictions or show that a larger dictionary would improve accuracy. |
 
-An automated validation suite runs these known-profile text samples through
-the full pipeline on every test run, so a change that flips a score's
-direction or distorts a word count fails loudly; latency percentiles are
-recorded alongside each run.
+An automated validation suite runs known-profile samples through the full
+pipeline. It checks score directions and feature counts, and records latency
+percentiles.
 
-The separate [offline supervised experiment](offline-supervised.md) measures learned models on held-out essay authors. It has not replaced the product's heuristic scores.
+The separate [offline supervised experiment](offline-supervised.md) evaluates learned models on held-out essay authors.
 
 ## Your data
 
-Each analysis is a permanent record: the text you submitted, the word counts,
-the scores, the evidence behind them, and the narrative, all kept together in
-one database file. Past analyses remain available across restarts, and your
-entire history can be backed up by copying a single file. The analysis itself
-calls no external service.
+Each analysis stores the submitted text, word counts, scores, supporting
+evidence, and summary in one database file. Analyses remain available after
+restarts, and you can back them up by copying that file. Analysis makes no
+external service calls.
 
 ## References
 
