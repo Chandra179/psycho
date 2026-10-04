@@ -124,7 +124,7 @@ Percentiles are measured, not assumed. `cmd/calibrate` runs the production infer
 
 ### **Measured accuracy** (`cmd/evaluate`)
 
-`cmd/evaluate` scores a labeled corpus with the production inference path (raw scores; calibration is monotone and cannot change ranking) and reports the Spearman rank correlation and AUC of each Big Five score against ground truth. On the Essays corpus (Pennebaker & King, 1999; 2,442 essays over 200 words, binary median-split labels; measured 2026-10-01, dictionary at 2,155 words / 36 categories):
+`cmd/evaluate` scores a labeled corpus with the production inference path (raw scores; calibration is monotone and cannot change ranking) and reports the Spearman rank correlation and AUC of each Big Five score against ground truth. On the local Essays CSV (2,467 source rows; 2,442 retained at a minimum of 200 normalized tokens; binary questionnaire labels; measured 2026-10-01, dictionary at 2,155 words / 36 categories). The dataset family is associated with Pennebaker & King (1999), but the exact local version and label cutoffs lack accompanying provenance:
 
 | trait | Spearman ρ | AUC | AUC 95% CI (bootstrap) |
 |---|---|---|---|
@@ -137,6 +137,10 @@ Percentiles are measured, not assumed. `cmd/calibrate` runs the production infer
 The aggregate AUCs in this evaluation are modestly above chance. This does not validate individual category associations, prediction formulas, or rough score ranges. The scores are a correlation-weighted heuristic, not a fitted regression model. The evaluation applies only to this dictionary, corpus and labeling scheme.
 
 **Breadth experiment (2026-10-01):** growing the dictionary from 1,471 to 2,155 words raised sample coverage from 55.8% to 57.8% but left the AUCs unchanged (all deltas inside overlapping bootstrap CIs). The discriminating signal in this corpus sits in closed-class function words (articles, prepositions, pronouns), which were already near-complete; generic content-word additions add coverage and evidence richness but not rank accuracy. The next lever is *discriminative* vocabulary (words selected because their usage varies with the traits, as LIWC's lists were), not more breadth for its own sake.
+
+### Offline supervised experiment (`cmd/train`)
+
+The Go-only experiment fits five regularized logistic classifiers with independent fitting, probability-calibration, and test authors. It preserves production scoring and records provenance as unverified. See [the fixed protocol and transition requirements](offline-supervised.md) and [the aggregate held-out findings](research/supervised-findings.md). Historical whole-corpus heuristic metrics above and the smaller supervised test sample must not be compared directly; the experiment measures both methods on identical test authors.
 
 ***
 

@@ -45,3 +45,12 @@ func DictionaryFingerprint(data []byte) string {
 	sum := sha256.Sum256(data)
 	return hex.EncodeToString(sum[:])
 }
+
+// FeatureProcessingFingerprint identifies shared normalization/extraction
+// semantics without tying offline learned models to heuristic coefficients.
+func FeatureProcessingFingerprint() string {
+	spec := map[string]any{"features": modelSpecification()["features"], "offline_inputs": "sorted dictionary category percentages only; no summary proxies"}
+	data, _ := json.Marshal(spec)
+	sum := sha256.Sum256(data)
+	return hex.EncodeToString(sum[:])
+}

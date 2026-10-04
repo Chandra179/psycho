@@ -4,7 +4,7 @@
   <img src="docs/images/report.png" width="70%" alt="The Psycho report: trait cards with bars and percentiles, values with matched words, and a collapsible evidence section">
 </p>
 
-A small Go service that extracts the psychological structure of a person from their writing and presents it with full auditability: every trait, cognitive label, and value assignment is traceable to specific linguistic evidence, with explicit confidence levels.
+A small Go service for exploring language patterns through a dictionary-based psychological profiling heuristic. Reports expose the formulas and matching-word evidence behind recorded scores.
 
 Inference is dictionary-based (LIWC-style), no LLM in the core inference path. Single-user, no auth, everything runs in one process against an embedded SQLite database.
 
@@ -70,3 +70,15 @@ Calibration requires the active dictionary hash and model fingerprint, all nine 
 ```sh
 go run ./cmd/calibrate -corpus corpus -out config/calibration.json
 ```
+
+## Offline supervised experiment
+
+Train and evaluate five regularized logistic classifiers using a local Essays CSV:
+
+```sh
+go run ./cmd/train -csv corpus-eval/essays.csv -out testresults/supervised
+```
+
+The Go-only workflow uses pinned Gonum 0.17.0, separate fitting/calibration/test authors, and 5,000 paired bootstrap samples. It writes aggregate JSON/Markdown reports and a local model artifact. The probability target is the CSV's positive questionnaire label, with local provenance marked unverified. This experiment does not change production inference or APIs.
+
+See [offline method and release considerations](docs/offline-supervised.md) and the [measured aggregate findings](docs/research/supervised-findings.md). Essays, author-level data, and model artifacts stay gitignored; only aggregate findings are committed.

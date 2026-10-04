@@ -14,6 +14,10 @@ run:
 test:
 	go test ./... -v
 
+# Offline experiment; corpus and model artifacts stay local and gitignored.
+train:
+	go run ./cmd/train -csv corpus-eval/essays.csv -out testresults/supervised
+
 test-curl:
 	@TMP=$$(mktemp); \
 	curl -s -X POST http://localhost:8080/analyze-dir \

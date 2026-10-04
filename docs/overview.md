@@ -147,12 +147,14 @@ production evidence, while the rest remain design targets.
 | Storage | about **10 MB** per analyzed subject, including the text, the evidence, and the profile |
 | Short samples | below 500 words results are flagged low-confidence; invalid text is rejected |
 | Quality | every stage is covered by an automated test suite, including text fixtures with known linguistic profiles that pin exact feature counts, word-to-category placements, and the direction of every dimension; the dictionary recognizes about **58%** of words in typical test samples (2,155 words across 36 categories) |
-| Measured accuracy | scored against a public corpus of **2,442 essays** with ground-truth personality ratings, trait-ranking AUC ranged from **0.524 to 0.554**, close to chance (0.5); these results do not validate individual predictions or promise improvement from dictionary growth |
+| Measured accuracy | scored against **2,442 retained essays** from a local CSV of 2,467 rows with binary questionnaire labels; exact local provenance remains unverified, trait-ranking AUC ranged from **0.524 to 0.554**, close to chance (0.5); these results do not validate individual predictions or promise improvement from dictionary growth |
 
 An automated validation suite runs these known-profile text samples through
 the full pipeline on every test run, so a change that flips a score's
 direction or distorts a word count fails loudly; latency percentiles are
 recorded alongside each run.
+
+The separate [offline supervised experiment](offline-supervised.md) measures learned models on held-out essay authors. It has not replaced the product's heuristic scores.
 
 ## Your data
 

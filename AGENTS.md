@@ -18,6 +18,7 @@ Run `go test ./...` for the unit and integration tests (under `modules/` and `te
 cmd/psycho/main.go         # entrypoint, starts HTTP server
 cmd/rendertemplates/       # renders HTML report previews from an analysis JSON
 cmd/calibrate/             # derives config/calibration.json from a reference corpus
+cmd/train/                 # offline supervised fitting, calibration and held-out evaluation
 modules/<name>/            # one flat Go package per domain module
   config.go                # YAML config structs
   dependencies.go          # wire deps, load config, construct services
@@ -25,6 +26,7 @@ modules/<name>/            # one flat Go package per domain module
   <concern>.go             # one file per domain concern (bigfive.go, storage.go, ...)
 modules/pipeline/          # the analysis flow: normalize → extract → infer → persist
 modules/report/            # the single HTML report: view builder + templates, POST /report form handler
+modules/supervised/        # offline corpus validation, logistic training, metrics and model artifacts
 modules/server/            # composes all modules, registers routes
 middleware/                # stdlib middleware stack (http.Handler adapter)
   chain.go                 # middleware.Chain(handler, mw...)
@@ -86,3 +88,9 @@ Multi-stage `Containerfile`, `CGO_ENABLED=0`, Alpine runtime. Run: `make up` (po
 - `.env` is gitignored.
 - `vendor/` is gitignored. Use `make vendor` when adding deps.
 - Local, gitignored datasets and artifacts: `corpus/` (labeled essays for calibration and accuracy checks), `corpus-eval/` (label CSV), `testresults/` (outputs of `cmd/evaluate` / `cmd/calibrate`), `psycho.db` (runtime database). The tools work without them; `cmd/calibrate` and `cmd/evaluate` need the corpus.
+
+`cmd/train` is an offline experiment, not production inference. Preserve its
+frozen author partitions: fitting selects regularization, calibration fits
+probabilities, and final-test labels only evaluate. Do not tune against final
+test findings. Raw participant rows and trained model artifacts remain local;
+commit only aggregate reports and identify unverified dataset provenance.

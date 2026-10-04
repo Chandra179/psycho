@@ -20,7 +20,6 @@
 package main
 
 import (
-	"encoding/csv"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -33,6 +32,7 @@ import (
 
 	"psycho/modules/analyze"
 	"psycho/modules/ingest"
+	"psycho/modules/supervised"
 )
 
 type traitResult struct {
@@ -189,34 +189,19 @@ func main() {
 	}
 }
 
-// readLabeledCSV parses the essays CSV. The corpus is cp1252-encoded
-// (typographic quotes), so high bytes are mapped to their Unicode forms
-// before tokenizing.
+// readLabeledCSV shares strict corpus validation with the offline trainer.
 func readLabeledCSV(path string) ([]map[string]string, error) {
-	raw, err := os.ReadFile(path)
+	corpus, err := supervised.ReadCorpus(path)
 	if err != nil {
-		return nil, fmt.Errorf("read corpus: %w", err)
+		return nil, err
 	}
-	r := csv.NewReader(strings.NewReader(cp1252ToUTF8(string(raw))))
-	r.FieldsPerRecord = -1
-	records, err := r.ReadAll()
-	if err != nil {
-		return nil, fmt.Errorf("parse corpus: %w", err)
-	}
-	if len(records) < 2 {
-		return nil, fmt.Errorf("corpus has %d records, need header + rows", len(records))
-	}
-
-	header := make([]string, len(records[0]))
-	for i, h := range records[0] {
-		header[i] = strings.TrimPrefix(strings.TrimSpace(h), "#")
-	}
-	var rows []map[string]string
-	for _, rec := range records[1:] {
-		row := make(map[string]string, len(header))
-		for i, v := range rec {
-			if i < len(header) {
-				row[header[i]] = v
+	rows := make([]map[string]string, 0, len(corpus.Essays))
+	for _, essay := range corpus.Essays {
+		row := map[string]string{"AUTHID": essay.Author, "TEXT": essay.Text}
+		for j, trait := range supervised.Traits() {
+			row[trait.Column] = "n"
+			if essay.Labels[j] {
+				row[trait.Column] = "y"
 			}
 		}
 		rows = append(rows, row)
@@ -240,41 +225,10 @@ func dimensionScore(dim string, s *analyze.BigFiveScores) float64 {
 	return math.NaN()
 }
 
-// cp1252ToUTF8 decodes cp1252 bytes to UTF-8: control-range high bytes
-// (0x80–0x9F) via the standard table, remaining high bytes as latin-1.
-// Operates on bytes — the input is not valid UTF-8, so ranging over runes
-// would have already collapsed them to U+FFFD.
+// Kept for the existing encoding regression test.
 func cp1252ToUTF8(s string) string {
-	cp1252High := []rune{
-		0x20AC, 0x81, 0x201A, 0x0192, 0x201E, 0x2026, 0x2020, 0x2021,
-		0x02C6, 0x2030, 0x0160, 0x2039, 0x0152, 0x8D, 0x017D, 0x8F,
-		0x90, 0x2018, 0x2019, 0x201C, 0x201D, 0x2022, 0x2013, 0x2014,
-		0x02DC, 0x2122, 0x0161, 0x203A, 0x0153, 0x9D, 0x017E, 0x9F,
-	}
-	needs := false
-	for i := 0; i < len(s); i++ {
-		if s[i] >= 0x80 {
-			needs = true
-			break
-		}
-	}
-	if !needs {
-		return s
-	}
-	var b strings.Builder
-	b.Grow(len(s) + 8)
-	for i := 0; i < len(s); i++ {
-		c := s[i]
-		switch {
-		case c >= 0x80 && c <= 0x9F:
-			b.WriteRune(cp1252High[c-0x80])
-		case c >= 0xA0:
-			b.WriteRune(rune(c))
-		default:
-			b.WriteByte(c)
-		}
-	}
-	return b.String()
+	decoded, _, _ := supervised.DecodeCorpus([]byte(s))
+	return decoded
 }
 
 func round4(v float64) float64 {
