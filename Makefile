@@ -1,3 +1,7 @@
+assets:
+	npm ci --ignore-scripts
+	npm run build:assets
+
 vendor:
 	go mod tidy && go mod vendor
 

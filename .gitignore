@@ -50,3 +50,6 @@ corpus-eval/
 # Session-day report outputs — may contain participant writing; never commit
 session-kit/
 report-output/
+
+# Browser asset build dependencies
+node_modules/

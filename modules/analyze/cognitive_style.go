@@ -1,14 +1,11 @@
 package analyze
 
-import "math"
-
 // Cognitive style coefficients distinguish systematic (central-route) from
 // intuitive (peripheral-route) processing based on language patterns.
 // Higher = systematic/analytical; lower = intuitive/heuristic.
 //
 // Systematic markers: cognitive process words, causal reasoning, complex
-// vocabulary (computed as the share of words longer than six letters —
-// LIWC's Sixltr), definitive claims, and analytical language indicate
+// vocabulary (a legacy byte-length proxy for words longer than six bytes), definitive claims, and analytical language indicate
 // deliberate elaboration.
 //
 // Intuitive markers: perceptual/sensory language, personal pronouns,
@@ -25,7 +22,7 @@ import "math"
 // processing style. The weights reflect directional hypotheses consistent
 // with the ELM framework.
 // bigWordsWeight applies to vocabulary complexity, measured as the
-// percentage of words longer than six letters (LIWC's Sixltr). Unlike the
+// percentage of words longer than six bytes, not Unicode letter counts. Unlike the
 // category coefficients below, that signal is computed on the feature
 // vector rather than looked up in the dictionary.
 const bigWordsWeight = 0.012
@@ -47,19 +44,11 @@ var cognitiveStyleCoefficients = map[string]float64{
 // ComputeCognitiveStyle computes a cognitive processing style score from
 // category percentages plus the computed long-word ratio.
 func ComputeCognitiveStyle(fv FeatureVector) float64 {
-	score := 0.50
-	for cat, weight := range cognitiveStyleCoefficients {
-		pct := fv.CategoryPercents[Category(cat)]
-		score += weight * pct
-	}
-	score += bigWordsWeight * fv.BigWordRatio * 100
-	if score < 0 {
-		return 0
-	}
-	if score > 1 {
-		return 1
-	}
-	return math.Round(score*100) / 100
+	return ComputeCognitiveStyleCalculation(fv).FinalScore
+}
+
+func ComputeCognitiveStyleCalculation(fv FeatureVector) *ScoreCalculation {
+	return computeWeightedScore(fv, cognitiveStyleCoefficients, bigWordsWeight)
 }
 
 // ComputeCognitiveStyleLabel returns a human-readable label for the score.

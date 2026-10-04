@@ -57,6 +57,13 @@ func NewHandler(cfg *config.Config, logger *zlogger.Logger) (http.Handler, error
 		http.ServeFile(w, r, filepath.Join(templatesDir, "index.html"))
 	})
 
+	// Serve a fixed asset allowlist, never a directory or arbitrary path.
+	for _, file := range []string{"app.css", "app.js", "htmx.min.js"} {
+		mux.HandleFunc("GET /assets/"+file, func(w http.ResponseWriter, r *http.Request) {
+			http.ServeFile(w, r, filepath.Join("assets", file))
+		})
+	}
+
 	mux.HandleFunc("POST /report", report.MakeHandleReportForm(cfg.Ingest.MaxTextSize, templatesDir, logger, pipe.Run))
 
 	mux.HandleFunc("GET /analysis/{id}/pdf", profile.MakeHandleExportPDF(profileDeps.Storage, profileDeps.PDFGenerator, logger))
@@ -74,5 +81,5 @@ func NewHandler(cfg *config.Config, logger *zlogger.Logger) (http.Handler, error
 		middleware.Timeout(middleware.TimeoutConfig{Duration: time.Duration(cfg.Middleware.TimeoutInSec) * time.Second}),
 	)
 
-	return chain, nil
+	return middleware.BrowserSecurity(chain), nil
 }

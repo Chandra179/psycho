@@ -13,14 +13,25 @@ Inference is dictionary-based (LIWC-style), no LLM in the core inference path. S
 * Text ingestion from a directory, with normalisation and segmentation
 * Psycholinguistic feature extraction against a bundled dictionary
 * Trait inference: Big Five (OCEAN), Regulatory Focus, Need for Cognition, Need for Closure, cognitive style, and Schwartz value orientations
-* Confidence intervals on every score
+* Project-defined rough score ranges, not validated confidence intervals
 * Structured JSON output and PDF report export (`GET /analysis/{id}/pdf`)
 * Single-report browser flow (Tailwind + HTMX): paste text at the root URL, the report swaps in on the same page, download it as PDF. Every score ships with its evidence trail, and self-writing consent is required
 * Config file path overridable via `PSYCHO_CONFIG`
 
 ## Getting started
 
-Requires Go 1.27.
+Requires Go 1.27. Generated browser assets are committed; serving and exporting reports requires no Node runtime.
+
+Rebuild browser assets after changing templates, report color mappings, CSS or JavaScript:
+
+```sh
+npm ci --ignore-scripts
+npm run build:assets
+```
+
+Tailwind is pinned to 3.4.17 and HTMX to 2.0.4 in the lockfile. Scripts and styles are served locally with CSP; standalone CLI HTML exports embed the compiled CSS. Tailwind scans the Go report mappings as well as HTML/JavaScript.
+
+The pinned Tailwind version depends on `braces` 3.0.3, which has a build-time stack-exhaustion advisory (GHSA-vfj7-8cjw-p6xm) and no patched compatible release. Build inputs must remain project-controlled. Node dependencies are excluded from the production image; the deployed app serves only generated CSS and scripts.
 
 ```sh
 make build   # go build ./...
@@ -47,3 +58,15 @@ make down   # stop and remove the container
 * [docs/overview.md](docs/overview.md): plain-language tour of what Psycho does and how to read a report
 * [docs/prd.md](docs/prd.md): product requirements (goal, non-goals, constraints, core features)
 * [docs/system-design.md](docs/system-design.md): architecture, storage, module boundaries, and the research references each inference is based on
+
+## Scoring and input contract
+
+Inputs are normalized once in the pipeline: repeated Unicode whitespace becomes a single space within paragraphs, blank-line paragraph breaks are preserved, and markup tags are stripped. Fewer than 10 normalized Unicode characters or no letters/numbers returns HTTP 400 before scoring or saving. Transport byte limits still apply.
+
+Big Five scores use a correlation-weighted heuristic with assumed scaling, not fitted regression coefficients. Other measures are project-defined proxies. The optional `calculation_details` object records exact counts, denominators, weights, baselines, contribution order, calibration, clamping/rounding, summary formulas, value percentages, rough ranges and percentile operations. Old records without it show recorded results with an explicit notice.
+
+Calibration requires the active dictionary hash and model fingerprint, all nine dimensions, and 99 finite sorted quantiles per dimension. Regenerate after a dictionary or model change:
+
+```sh
+go run ./cmd/calibrate -corpus corpus -out config/calibration.json
+```

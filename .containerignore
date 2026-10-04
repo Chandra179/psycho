@@ -1,0 +1,11 @@
+.git
+.env
+node_modules
+corpus
+corpus-eval
+testresults
+psycho.db*
+profile-*
+session-kit
+report-output
+.zcode

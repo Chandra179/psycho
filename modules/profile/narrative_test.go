@@ -60,8 +60,8 @@ func TestTemplateNarrativeGenerator_GeneratesAllSections(t *testing.T) {
 		"promotion_focus",
 		"high",
 		"98th percentile",
-		"95% CI",
-		"Template-based synthesis, not a clinical assessment",
+		"rough score range",
+		"Project-defined text proxies, not validated personality or clinical measures",
 	}
 	for _, want := range checks {
 		if !strings.Contains(narrative, want) {

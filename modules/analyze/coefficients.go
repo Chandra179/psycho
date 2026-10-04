@@ -1,9 +1,12 @@
 package analyze
 
-// Regression coefficients derived from Yarkoni (2010) Table 1 Spearman
+// Correlation-weighted heuristic inspired by Yarkoni (2010) Table 1 Spearman
 // correlations (ρ), converted to per-percentage-point weights on a [0,1]
 // trait scale using the formula β ≈ ρ × (SD_trait / SD_category) / trait_range
 // where SD_trait ≈ 0.15, SD_category ≈ 2.5 pp, trait_range = 1.
+// These scales are project assumptions. Zero-order correlations are not
+// fitted multiple-regression coefficients; neither this formula nor these
+// scores are validated by that paper.
 //
 // Source:
 //   Yarkoni, T. (2010). Personality in 100,000 words: A large-scale analysis
@@ -47,7 +50,7 @@ var coefficients = map[string]TraitWeights{
 	// paper's sample size, leaving no empirical basis for a weight.
 }
 
-// TraitWeights holds per-trait regression weights for a single category.
+// TraitWeights holds per-trait heuristic weights for a single category.
 type TraitWeights struct {
 	Openness          float64
 	Conscientiousness float64

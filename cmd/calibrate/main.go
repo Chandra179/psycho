@@ -13,8 +13,6 @@
 package main
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -82,13 +80,8 @@ func main() {
 		fatal(err)
 	}
 
-	// Pin the calibration to the dictionary it was built from so stale
-	// calibration files are detectable (see test/calibration_test.go).
-	dictSum, err := sha256File("modules/analyze/dictionary.json")
-	if err != nil {
-		fatal(err)
-	}
-	cal.DictionarySHA256 = dictSum
+	// Pin both dictionary content and the compiled scoring specification.
+	cal.DictionarySHA256 = analyze.DictionaryFingerprint(data)
 
 	out, err := json.MarshalIndent(cal, "", "  ")
 	if err != nil {
@@ -130,15 +123,6 @@ func readCorpus(dir string) ([]string, error) {
 		return nil, fmt.Errorf("no .txt files found in %s", dir)
 	}
 	return texts, nil
-}
-
-func sha256File(path string) (string, error) {
-	b, err := os.ReadFile(path)
-	if err != nil {
-		return "", err
-	}
-	sum := sha256.Sum256(b)
-	return hex.EncodeToString(sum[:]), nil
 }
 
 func fatal(err error) {

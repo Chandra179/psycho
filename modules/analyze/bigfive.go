@@ -1,8 +1,12 @@
 package analyze
 
-import "math"
+import (
+	"maps"
+	"math"
+	"slices"
+)
 
-// bigFiveModel implements TraitModel using hardcoded regression coefficients.
+// bigFiveModel implements a correlation-weighted heuristic with fixed weights.
 type bigFiveModel struct{}
 
 func NewBigFiveModel() TraitModel {
@@ -11,8 +15,13 @@ func NewBigFiveModel() TraitModel {
 
 func (m *bigFiveModel) Infer(fv FeatureVector) BigFiveScores {
 	s := intercepts
+	s.Calculations = make(map[string]*ScoreCalculation, 5)
+	for _, dim := range dimensionKeys[:5] {
+		s.Calculations[dim] = newScoreCalculation(dimensionValue(dim, &s))
+	}
 
-	for catName, weights := range coefficients {
+	for _, catName := range slices.Sorted(maps.Keys(coefficients)) {
+		weights := coefficients[catName]
 		cat := Category(catName)
 		pct := fv.CategoryPercents[cat]
 		s.Openness += weights.Openness * pct
@@ -20,14 +29,15 @@ func (m *bigFiveModel) Infer(fv FeatureVector) BigFiveScores {
 		s.Extraversion += weights.Extraversion * pct
 		s.Agreeableness += weights.Agreeableness * pct
 		s.Neuroticism += weights.Neuroticism * pct
+		for _, dim := range dimensionKeys[:5] {
+			w := weights.weightFor(dim)
+			s.Calculations[dim].addTerm(fv, catName, pct, w, w*pct)
+		}
 	}
 
-	// Clamp to [0, 1]
-	s.Openness = clamp(s.Openness)
-	s.Conscientiousness = clamp(s.Conscientiousness)
-	s.Extraversion = clamp(s.Extraversion)
-	s.Agreeableness = clamp(s.Agreeableness)
-	s.Neuroticism = clamp(s.Neuroticism)
+	for _, dim := range dimensionKeys[:5] {
+		setDimensionValue(dim, &s, s.Calculations[dim].finish(dimensionValue(dim, &s)))
+	}
 
 	return s
 }

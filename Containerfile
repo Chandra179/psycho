@@ -16,6 +16,8 @@ COPY --from=builder /app/main /app/main
 COPY config/ /app/config/
 COPY modules/analyze/dictionary.json /app/modules/analyze/dictionary.json
 COPY samples/ /app/samples/
+COPY templates/ /app/templates/
+COPY assets/ /app/assets/
 
 EXPOSE 8080
 ENTRYPOINT ["/app/main"]

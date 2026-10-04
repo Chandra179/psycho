@@ -1,6 +1,7 @@
 {
   "corpus": "Blog Authorship Corpus (Schler et al. 2006; blogger.com, Aug 2004) - 4,010-post sample via github.com/mdibaiee/blogs-corpus",
-  "generated_at": "2026-10-01T15:11:38Z",
+  "generated_at": "2026-10-04T07:22:13Z",
+  "model_fingerprint": "cac7d79cf9d49b93db278061dd0b1b2696fba94611cbde2bbd6e1f577cbe59a2",
   "dictionary_sha256": "d2deb97e744d62b06eb3127f48b84da99bb5e92c66e3e7518c3aa5b0575beaa3",
   "dimensions": {
     "agreeableness": {

@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"psycho/modules/analyze"
+	"psycho/modules/ingest"
 	"psycho/zlogger"
 )
 
@@ -150,6 +151,8 @@ func (s *Storage) GetAnalysis(id string) (*SavedAnalysis, error) {
 	a.Summary = prof.Summary
 	a.Values = prof.Values
 	a.ValueEvidence = prof.ValueEvidence
+	a.PercentileReference = prof.PercentileReference
+	a.CalculationDetails = prof.CalculationDetails
 	a.Narrative = prof.Narrative
 	return &a, nil
 }
@@ -157,18 +160,20 @@ func (s *Storage) GetAnalysis(id string) (*SavedAnalysis, error) {
 // SavedAnalysis is the full stored analysis as returned by the retrieval
 // endpoint.
 type SavedAnalysis struct {
-	ID             string                   `json:"id"`
-	SourceType     string                   `json:"source_type"`
-	SourceDate     string                   `json:"source_date,omitempty"`
-	WordCount      int                      `json:"word_count"`
-	Coverage       float64                  `json:"dictionary_coverage"`
-	Features       map[string]float64       `json:"features"`
-	Scores         map[string]TraitResult   `json:"scores"`
-	Values         map[string]float64       `json:"values,omitempty"`
-	ValueEvidence  map[string][]string      `json:"value_evidence,omitempty"`
-	Summary        analyze.SummaryVariables `json:"summary"`
-	Narrative      string                   `json:"narrative,omitempty"`
-	ConfidenceFlag string                   `json:"confidence_flag"`
-	ProfileVersion int                      `json:"profile_version"`
-	CreatedAt      string                   `json:"created_at"`
+	ID                  string                      `json:"id"`
+	SourceType          string                      `json:"source_type"`
+	SourceDate          string                      `json:"source_date,omitempty"`
+	WordCount           int                         `json:"word_count"`
+	Coverage            float64                     `json:"dictionary_coverage"`
+	Features            map[string]float64          `json:"features"`
+	Scores              map[string]TraitResult      `json:"scores"`
+	Values              map[string]float64          `json:"values,omitempty"`
+	ValueEvidence       map[string][]string         `json:"value_evidence,omitempty"`
+	PercentileReference *ingest.PercentileReference `json:"percentile_reference,omitempty"`
+	CalculationDetails  *analyze.CalculationDetails `json:"calculation_details,omitempty"`
+	Summary             analyze.SummaryVariables    `json:"summary"`
+	Narrative           string                      `json:"narrative,omitempty"`
+	ConfidenceFlag      string                      `json:"confidence_flag"`
+	ProfileVersion      int                         `json:"profile_version"`
+	CreatedAt           string                      `json:"created_at"`
 }

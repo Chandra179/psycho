@@ -1,0 +1,11 @@
+{
+  "name": "psycho-browser-assets",
+  "private": true,
+  "scripts": {
+    "build:assets": "tailwindcss -c tailwind.config.cjs -i web/app.css -o assets/app.css --minify && node scripts/copy-assets.cjs"
+  },
+  "devDependencies": {
+    "htmx.org": "2.0.4",
+    "tailwindcss": "3.4.17"
+  }
+}

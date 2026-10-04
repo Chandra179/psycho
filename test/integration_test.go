@@ -47,6 +47,29 @@ func newTestPipeline(t *testing.T) (*pipeline.Pipeline, *profile.Dependencies) {
 	return pipe, profileDeps
 }
 
+func hasMatchedWordSamples(traits map[string]any) bool {
+	for _, traitValue := range traits {
+		trait, ok := traitValue.(map[string]any)
+		if !ok {
+			continue
+		}
+		rows, ok := trait["evidence"].([]any)
+		if !ok {
+			continue
+		}
+		for _, rowValue := range rows {
+			row, ok := rowValue.(map[string]any)
+			if !ok {
+				continue
+			}
+			if words, ok := row["matched_words"].([]any); ok && len(words) > 0 {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func TestFullPipeline(t *testing.T) {
 	logger := zlogger.New("dev")
 
@@ -127,6 +150,12 @@ func TestFullPipeline(t *testing.T) {
 	if len(result.Traits) != 9 {
 		t.Errorf("len(Traits) = %d; want 9", len(result.Traits))
 	}
+	if result.PercentileReference == nil || result.PercentileReference.Method != ingest.PercentileMethodNormalApproximation {
+		t.Errorf("uncalibrated API response should describe normal-approximation percentiles: %+v", result.PercentileReference)
+	}
+	if !hasMatchedWordSamples(result.Traits) {
+		t.Error("/analyze response should include matched-word evidence samples")
+	}
 
 	for traitName, traitAny := range result.Traits {
 		trait := traitAny.(map[string]any)
@@ -150,6 +179,9 @@ func TestFullPipeline(t *testing.T) {
 	}
 	if saved.WordCount != result.WordCount {
 		t.Errorf("saved WordCount = %d; want %d", saved.WordCount, result.WordCount)
+	}
+	if saved.PercentileReference == nil || saved.PercentileReference.Method != ingest.PercentileMethodNormalApproximation {
+		t.Errorf("saved analysis lost percentile-reference metadata: %+v", saved.PercentileReference)
 	}
 }
 
@@ -209,6 +241,12 @@ func TestFullPipelineAnalyzeDir(t *testing.T) {
 	}
 	if len(result.Traits) != 9 {
 		t.Errorf("len(Traits) = %d; want 9", len(result.Traits))
+	}
+	if result.PercentileReference == nil || result.PercentileReference.Method != ingest.PercentileMethodNormalApproximation {
+		t.Errorf("/analyze-dir response should describe normal-approximation percentiles: %+v", result.PercentileReference)
+	}
+	if !hasMatchedWordSamples(result.Traits) {
+		t.Error("/analyze-dir response should include matched-word evidence samples")
 	}
 
 	if len(result.Values) != 10 {
@@ -464,6 +502,9 @@ func TestGetAnalysisEndpoint(t *testing.T) {
 	}
 	if saved.Narrative == "" {
 		t.Error("saved.Narrative is empty")
+	}
+	if saved.PercentileReference == nil || saved.PercentileReference.Method != ingest.PercentileMethodNormalApproximation {
+		t.Errorf("saved API result lost percentile-reference metadata: %+v", saved.PercentileReference)
 	}
 	if saved.CreatedAt == "" {
 		t.Error("saved.CreatedAt is empty")

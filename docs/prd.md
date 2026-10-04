@@ -34,17 +34,17 @@ A self-contained system that extracts the psychological structure of a person fr
 
 ### **Feature 1: Text Ingestion & Psychometric Analysis**
 
-**What it does:** User submits text via direct paste, URL, or directory import. System normalises, extracts psycholinguistic features, and outputs Big Five trait scores, Regulatory Focus, Need for Cognition, cognitive style labels, and value orientations with confidence intervals.
+**What it does:** User submits text via direct paste, URL, or directory import. System normalises, extracts psycholinguistic features, and outputs Big Five trait scores, Regulatory Focus, Need for Cognition, cognitive style labels, and value orientations with rough score ranges.
 
 **Risks we tolerate:**
 
 * No authentication on the ingestion endpoint. Anyone who can reach the server port can submit text.
-* Analysis may be unreliable for texts <500 words. System warns but does not block submission.
+* Analysis may be unreliable for texts <500 words. The system warns; fewer than 10 normalized Unicode characters or no letters/numbers are rejected.
 * Single‑threaded processing. Texts >50,000 words may take >30 seconds. No progress indicator in MVP.
 
 **Trusted sources:**
 
-* LIWC2015 dictionary (Pennebaker et al., 2015) – validated mapping of words to psychological categories.
+* LIWC2015 research (Pennebaker et al., 2015) motivates dictionary-based categories; this project uses its own lexicon and summary proxies.
 * Big Five language correlates (Yarkoni, 2010; Pennebaker & King, 1999) – Spearman correlations linking LIWC categories to personality traits, implemented in `coefficients.go`.
 * Regulatory Focus (Higgins, 1997) – promotion/prevention word markers in `regfocus.go`.
 * Need for Cognition (Cacioppo & Petty, 1982) – analytic/intuitive word markers in `needcog.go`.
@@ -58,19 +58,19 @@ A self-contained system that extracts the psychological structure of a person fr
 
 * Build `ingest` module: paste handler, URL fetch, directory import. Normalise text, extract metadata.
 * Build `analyze` module: load dictionary, tokenise, compute category percentages and stylometrics.
-* Implement Big Five inference using published regression coefficients (hardcoded for MVP).
+* Implement Big Five inference using fixed correlation-weighted heuristic weights with assumed scaling.
 * Write unit tests for normalizer, dictionary lookup, and trait inference.
-* Write integration test: paste 1,000‑word sample → receive Big Five scores with confidence intervals.
+* Write integration test: paste 1,000‑word sample → receive Big Five scores with rough score ranges.
 
-**Checkpoint:** User pastes text. System returns Big Five scores with confidence intervals. No UI beyond JSON output.
+**Checkpoint:** User pastes text. System returns Big Five scores with rough score ranges. No UI beyond JSON output.
 
 **Phase 2: Extended Dimensions & Profile Synthesis**
 
 * Add Regulatory Focus (Higgins, 1997) inference: promotion/prevention word markers, output score + label.
 * Add Need for Cognition (Cacioppo & Petty, 1982) inference: analytic/intuitive word markers, output score + label.
-* Build `profile` module: aggregate all scores, compute confidence intervals, generate structured output.
+* Build `profile` module: aggregate all scores, compute rough score ranges, generate structured output.
 * Implement `NarrativeGenerator` with template‑based (no LLM) implementation.
 * Add cognitive style and value orientation inference when word-lists are compiled.
 * Unit tests for each new inference model + updated integration test for 7 dimensions.
 
-**Checkpoint:** System returns Big Five + Regulatory Focus + Need for Cognition with confidence intervals. JSON output.
+**Checkpoint:** System returns Big Five + Regulatory Focus + Need for Cognition with rough score ranges. JSON output.

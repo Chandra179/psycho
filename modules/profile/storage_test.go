@@ -1,11 +1,40 @@
 package profile
 
 import (
+	"reflect"
 	"testing"
 
 	"psycho/modules/analyze"
 	"psycho/zlogger"
 )
+
+func TestCalculationDetailsAndSQLInjectionBoundAsData(t *testing.T) {
+	db := openTestDB(t)
+	s := NewStorage(db, zlogger.New("prod"))
+	if err := s.Migrate(); err != nil {
+		t.Fatal(err)
+	}
+	attack := "x'); DROP TABLE analyses; --"
+	details := &analyze.CalculationDetails{ModelFingerprint: "recorded", Traits: map[string]*analyze.ScoreCalculation{"openness": {Baseline: .5, FinalScore: .52}}, CategoryCounts: map[analyze.Category]int{"article": 3}}
+	p := Profile{AnalysisID: attack, CalculationDetails: details, Narrative: "<script>alert(1)</script>"}
+	if _, err := s.SaveAnalysis(attack, attack, 10, .5, analyze.FeatureVector{}, p); err != nil {
+		t.Fatal(err)
+	}
+	got, err := s.GetAnalysis(attack)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.SourceType != attack || got.SourceDate != attack || !reflect.DeepEqual(details, got.CalculationDetails) {
+		t.Fatal("JSON or SQL input changed")
+	}
+	if _, err := s.GetAnalysis("' OR 1=1 --"); err == nil {
+		t.Fatal("injection selected a row")
+	}
+	var count int
+	if err := db.QueryRow("SELECT COUNT(*) FROM analyses").Scan(&count); err != nil || count != 1 {
+		t.Fatal("injection damaged database")
+	}
+}
 
 func TestStorageMigrateAndSave(t *testing.T) {
 	db := openTestDB(t)

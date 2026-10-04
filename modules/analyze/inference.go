@@ -1,6 +1,6 @@
 package analyze
 
-// BigFiveScores holds the raw regression output for all dimensions.
+// BigFiveScores holds the raw heuristic output for all dimensions.
 type BigFiveScores struct {
 	Openness          float64
 	Conscientiousness float64
@@ -12,6 +12,7 @@ type BigFiveScores struct {
 	CognitiveStyle    float64
 	NeedForClosure    float64
 	Values            map[string]float64
+	Calculations      map[string]*ScoreCalculation
 }
 
 // TraitModel is the interface for personality inference.

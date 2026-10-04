@@ -2,6 +2,7 @@ package analyze
 
 import (
 	"math"
+	"slices"
 	"sort"
 )
 
@@ -14,10 +15,11 @@ const MaxEvidenceWords = 10
 // applied to it, and their product. Sorted lists of these are the audit
 // trail behind a score — every number in a report traces back to one.
 type Contribution struct {
-	Category     string  `json:"category"`
-	WordPercent  float64 `json:"word_percent"`
-	Weight       float64 `json:"weight"`
-	Contribution float64 `json:"contribution"`
+	Category     string   `json:"category"`
+	WordPercent  float64  `json:"word_percent"`
+	Weight       float64  `json:"weight"`
+	Contribution float64  `json:"contribution"`
+	MatchedWords []string `json:"matched_words,omitempty"`
 }
 
 // BigFiveEvidence returns the contributions behind one Big Five trait,
@@ -31,7 +33,7 @@ func BigFiveEvidence(trait string, fv FeatureVector) []Contribution {
 		if w == 0 || pct == 0 {
 			continue
 		}
-		out = append(out, newContribution(catName, pct, w))
+		out = append(out, newContribution(catName, pct, w, fv.Evidence[Category(catName)]))
 	}
 	sortContributions(out)
 	return out
@@ -54,7 +56,7 @@ func NeedForClosureEvidence(fv FeatureVector) []Contribution {
 func CognitiveStyleEvidence(fv FeatureVector) []Contribution {
 	out := dimensionEvidence(cognitiveStyleCoefficients, fv)
 	if fv.BigWordRatio > 0 {
-		out = append(out, newContribution("long_word_ratio", fv.BigWordRatio*100, bigWordsWeight))
+		out = append(out, newContribution("long_word_ratio", fv.BigWordRatio*100, bigWordsWeight, nil))
 		sortContributions(out)
 	}
 	return out
@@ -67,24 +69,32 @@ func dimensionEvidence(weights map[string]float64, fv FeatureVector) []Contribut
 		if w == 0 || pct == 0 {
 			continue
 		}
-		out = append(out, newContribution(catName, pct, w))
+		out = append(out, newContribution(catName, pct, w, fv.Evidence[Category(catName)]))
 	}
 	sortContributions(out)
 	return out
 }
 
-func newContribution(category string, wordPercent, weight float64) Contribution {
+func newContribution(category string, wordPercent, weight float64, matchedWords []string) Contribution {
+	if len(matchedWords) > MaxEvidenceWords {
+		matchedWords = matchedWords[:MaxEvidenceWords]
+	}
 	return Contribution{
 		Category:     category,
 		WordPercent:  round2(wordPercent),
 		Weight:       weight,
 		Contribution: round4(weight * wordPercent),
+		MatchedWords: slices.Clone(matchedWords),
 	}
 }
 
 func sortContributions(out []Contribution) {
 	sort.Slice(out, func(i, j int) bool {
-		return math.Abs(out[i].Contribution) > math.Abs(out[j].Contribution)
+		a, b := math.Abs(out[i].Contribution), math.Abs(out[j].Contribution)
+		if a == b {
+			return out[i].Category < out[j].Category
+		}
+		return a > b
 	})
 }
 

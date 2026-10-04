@@ -51,13 +51,24 @@ func (p *Pipeline) Run(ctx context.Context, sourceType, sourceDate, text string)
 	}
 
 	doc := ingest.NewNormalizer().Normalize(text)
+	if err := ingest.ValidateDocument(doc); err != nil {
+		return ingest.AnalysisOutput{}, err
+	}
 	features, coverage := p.extractor.Extract(doc)
 
 	scores := p.model.Infer(features)
-	scores.RegulatoryFocus = analyze.ComputeRegulatoryFocus(features)
-	scores.NeedForCognition = analyze.ComputeNeedForCognition(features)
-	scores.CognitiveStyle = analyze.ComputeCognitiveStyle(features)
-	scores.NeedForClosure = analyze.ComputeNeedForClosure(features)
+	if scores.Calculations == nil {
+		scores.Calculations = make(map[string]*analyze.ScoreCalculation)
+	}
+	scores.Calculations["regulatory_focus"] = analyze.ComputeRegulatoryFocusCalculation(features)
+	scores.Calculations["need_for_cognition"] = analyze.ComputeNeedForCognitionCalculation(features)
+	scores.Calculations["cognitive_style"] = analyze.ComputeCognitiveStyleCalculation(features)
+	scores.Calculations["need_for_closure"] = analyze.ComputeNeedForClosureCalculation(features)
+	scores.RegulatoryFocus = scores.Calculations["regulatory_focus"].FinalScore
+	scores.NeedForCognition = scores.Calculations["need_for_cognition"].FinalScore
+	scores.CognitiveStyle = scores.Calculations["cognitive_style"].FinalScore
+	scores.NeedForClosure = scores.Calculations["need_for_closure"].FinalScore
+
 	scores.Values = analyze.ComputeSchwartzValues(features)
 
 	// Recenter scores against the calibration corpus before aggregation so
@@ -68,6 +79,7 @@ func (p *Pipeline) Run(ctx context.Context, sourceType, sourceDate, text string)
 	}
 
 	prof := p.aggregator.Aggregate(scores, features, doc.WordCount, coverage)
+	prof.PercentileReference = percentileReference(p.calibration)
 	prof.Narrative = p.narrative.GenerateSynthesis(prof)
 
 	if err := ctx.Err(); err != nil {
@@ -85,14 +97,27 @@ func (p *Pipeline) Run(ctx context.Context, sourceType, sourceDate, text string)
 	}
 
 	return ingest.AnalysisOutput{
-		AnalysisID:         analysisID,
-		WordCount:          doc.WordCount,
-		DictionaryCoverage: coverage,
-		ConfidenceFlag:     prof.ConfidenceFlag,
-		Traits:             traits,
-		Values:             prof.Values,
-		ValueEvidence:      prof.ValueEvidence,
-		Summary:            prof.Summary,
-		Narrative:          prof.Narrative,
+		AnalysisID:          analysisID,
+		WordCount:           doc.WordCount,
+		DictionaryCoverage:  coverage,
+		ConfidenceFlag:      prof.ConfidenceFlag,
+		Traits:              traits,
+		Values:              prof.Values,
+		ValueEvidence:       prof.ValueEvidence,
+		PercentileReference: prof.PercentileReference,
+		CalculationDetails:  prof.CalculationDetails,
+		Summary:             prof.Summary,
+		Narrative:           prof.Narrative,
 	}, nil
+}
+
+func percentileReference(calibration *analyze.Calibration) *ingest.PercentileReference {
+	if calibration == nil {
+		return &ingest.PercentileReference{Method: ingest.PercentileMethodNormalApproximation}
+	}
+	return &ingest.PercentileReference{
+		Method:     ingest.PercentileMethodEmpirical,
+		Corpus:     calibration.Corpus,
+		SampleSize: calibration.SampleSize(),
+	}
 }

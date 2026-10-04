@@ -43,6 +43,12 @@ func NewDependencies(cfg Config, logger *zlogger.Logger) (*Dependencies, error) 
 		if err != nil {
 			return nil, fmt.Errorf("load calibration: %w", err)
 		}
+		if cal.DictionarySHA256 != DictionaryFingerprint(data) {
+			return nil, fmt.Errorf("calibration dictionary fingerprint mismatch; rerun cmd/calibrate for the configured dictionary")
+		}
+		if cal.ModelFingerprint != ModelFingerprint() {
+			return nil, fmt.Errorf("calibration model fingerprint mismatch; rerun cmd/calibrate")
+		}
 		logger.Info(context.Background(), "calibration loaded",
 			zlogger.Field{Key: "path", Value: cfg.CalibrationPath},
 			zlogger.Field{Key: "corpus", Value: cal.Corpus},

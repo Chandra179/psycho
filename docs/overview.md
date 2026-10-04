@@ -41,7 +41,7 @@ your writing → clean and organize → read word by word → infer tendencies �
 ```
 
 You give Psycho text, and it gives you back a written profile: scores with
-confidence intervals, the evidence behind each one, and a short narrative
+rough score ranges, the evidence behind each one, and a short narrative
 summary. The profile can be read on screen or exported as a PDF report.
 
 ### 1. Add your writing
@@ -62,7 +62,7 @@ the sample.
 ### 3. Read your profile
 
 Each dimension is inferred from those counts and combined into a profile with
-confidence intervals and short narrative prose. The profile is saved, so you can come back to it, and the evidence is kept
+rough score ranges and short narrative prose. The profile is saved, so you can come back to it, and the evidence is kept
 alongside every score so any result can be traced back to the words that
 produced it.
 
@@ -76,7 +76,7 @@ produced it.
 - **Need for Closure**: comfort with definite answers versus ambiguity.
 - **Cognitive style**: systematic versus intuitive processing markers.
 - **Schwartz value orientations**: which values the writing emphasizes, from a cross-cultural framework.
-- **Confidence intervals on every score**: the profile always states how much it should be trusted.
+- **Rough score ranges on every score**: ranges depend on text length and dictionary coverage, without a validated probability of correctness.
 - **Full auditability**: every output is kept with the linguistic evidence that produced it.
 - **Honest warnings**: short samples or poorly covered text widen the intervals and raise flags instead of failing silently.
 - **Reports you can keep**: a PDF report to save or print, plus the single on-screen report.
@@ -101,28 +101,22 @@ signal for how well the dictionary fits the text. Alongside the category
 counts, simple stylometric measures (lexical diversity, word length) feed the
 same feature vector.
 
-### Big Five regression
+### Big Five correlation-weighted heuristic
 
-The category percentages are weighted by published correlations between word
-use and personality (Yarkoni, 2010; Pennebaker & King, 1999). Because the
-weights come from large-scale studies rather than opinion, the same text
-always produces the same, reproducible scores.
+The Big Five scorer uses a correlation-weighted heuristic inspired by language associations (Yarkoni, 2010). It scales correlations using assumed trait and category standard deviations, rather than fitted regression coefficients. Deterministic category ordering makes the same text reproducible under the same model, dictionary and calibration. The other language measures are project-defined proxies for constructs; they are not official LIWC algorithms or validated personality tests.
 
 ### Regulatory Focus
 
 Words marking gains, aspirations, and advancement are counted separately from
-words marking safety, duty, and loss avoidance (Higgins, 1997). The balance
-between the two produces a promotion-versus-prevention score and label.
+words marking safety, duty, and loss avoidance (Higgins, 1997). The project assigns weights to these categories to produce a text proxy and label; Higgins (1997) supports the construct rather than this word-list scoring formula.
 
 ### Need for Cognition
 
-Markers of analytic and intuitive processing (Cacioppo & Petty, 1982) are
-tallied into a score for the writer's tendency toward effortful thinking.
+The project assigns weights to analytic and intuitive word categories as a proxy for effortful thinking. Cacioppo and Petty (1982) support the construct, not these word lists or weights.
 
 ### Need for Closure
 
-The ratio of certainty words to tentative words (Webster & Kruglanski, 1994)
-estimates the writer's preference for definite answers over ambiguity.
+The project weights certainty percentages positively and tentative percentages negatively as a text proxy. Webster and Kruglanski (1994) describe the need for closure construct, not this scoring formula.
 
 ### Schwartz values
 
@@ -130,13 +124,13 @@ Value keywords are grouped by the Schwartz Value Survey framework (Schwartz,
 1992), a cross-cultural model of human values, and adapted for how values
 co-occur in text.
 
-### Confidence intervals
+### Rough score ranges
 
 Every score carries an interval that widens or narrows with the evidence:
-longer samples produce tighter intervals, and text the dictionary barely
+longer samples generally produce narrower ranges, and text the dictionary barely
 recognizes produces wider ones. Very short samples always receive a
-low-confidence flag rather than being rejected. Scores are reported as
-percentiles relative to a measured reference population, a sample of about
+low-confidence flag; fewer than 10 normalized Unicode characters or no letters/numbers are rejected. These ranges use project assumptions and are not validated confidence intervals. Scores are reported as
+percentiles relative to a measured reference text sample, a sample of about
 4,000 blog posts (the Blog Authorship Corpus), so "60th percentile" means
 "higher than 60% of comparable texts in that reference sample."
 
@@ -151,9 +145,9 @@ production evidence, while the rest remain design targets.
 | Speed | a 5,000-word corpus analyzes in a median of **5 ms** (p95: **11 ms**) on the benchmark machine, far inside the **under 5 seconds** design target |
 | Usage | designed for 1–10 analyses per minute, personal, single-user pacing |
 | Storage | about **10 MB** per analyzed subject, including the text, the evidence, and the profile |
-| Short samples | below 500 words results are flagged low-confidence, never blocked |
+| Short samples | below 500 words results are flagged low-confidence; invalid text is rejected |
 | Quality | every stage is covered by an automated test suite, including text fixtures with known linguistic profiles that pin exact feature counts, word-to-category placements, and the direction of every dimension; the dictionary recognizes about **58%** of words in typical test samples (2,155 words across 36 categories) |
-| Measured accuracy | scored against a public corpus of **2,442 essays** with ground-truth personality ratings, all five Big Five dimensions rank people **above chance** (AUC 0.52–0.56, each confidence interval excluding coin-flip); the right direction everywhere, with honest, modest effect sizes that dictionary growth is expected to improve |
+| Measured accuracy | scored against a public corpus of **2,442 essays** with ground-truth personality ratings, trait-ranking AUC ranged from **0.524 to 0.554**, close to chance (0.5); these results do not validate individual predictions or promise improvement from dictionary growth |
 
 An automated validation suite runs these known-profile text samples through
 the full pipeline on every test run, so a change that flips a score's
@@ -172,10 +166,10 @@ calls no external service.
 
 - Pennebaker, J.W., Boyd, R.L., Jordan, K., & Blackburn, K. (2015). [*The development and psychometric properties of LIWC2015*](https://www.liwc.net/). University of Texas at Austin. The dictionary model behind the word-to-category mapping, and the word-length summary variables stylized here.
 - Tweedie, F.J., & Baayen, R.H. (1998). [*How variable may a constant be? Measures of lexical richness in perspective*](https://doi.org/10.1023/A:1001749303136). Computers and the Humanities, 32(5), 323-352. The type-token ratio and related lexical diversity measures.
-- Yarkoni, T. (2010). [*Personality in 100,000 words: A large-scale analysis of personality and word use among bloggers*](https://doi.org/10.1016/j.jrp.2010.04.001). Journal of Research in Personality, 44(3), 363-373. The word-category to trait weights for the Big Five.
+- Yarkoni, T. (2010). [*Personality in 100,000 words: A large-scale analysis of personality and word use among bloggers*](https://doi.org/10.1016/j.jrp.2010.04.001). Journal of Research in Personality, 44(3), 363-373. Language-category associations inspiring the Big Five heuristic, not fitted weights.
 - Pennebaker, J.W., & King, L.A. (1999). [*Linguistic styles: Language use as an individual difference*](https://doi.org/10.1037/0022-3514.77.6.1296). Journal of Personality and Social Psychology, 77(6), 1296-1312. The finding that function words carry stable personality signals.
 - Higgins, E.T. (1997). [*Beyond pleasure and pain*](https://doi.org/10.1037/0003-066X.52.12.1280). American Psychologist, 52(12), 1280-1300. Regulatory Focus Theory, promotion versus prevention.
 - Cacioppo, J.T., & Petty, R.E. (1982). [*The need for cognition*](https://doi.org/10.1037/0022-3514.42.1.116). Journal of Personality and Social Psychology, 42(1), 116-131. The need for cognition construct.
-- Webster, D.M., & Kruglanski, A.W. (1994). [*Individual differences in need for cognitive closure*](https://doi.org/10.1037/0022-3514.67.6.1049). Journal of Personality and Social Psychology, 67(6), 1049-1062. Need for closure, read from certainty versus tentative language.
+- Webster, D.M., & Kruglanski, A.W. (1994). [*Individual differences in need for cognitive closure*](https://doi.org/10.1037/0022-3514.67.6.1049). Journal of Personality and Social Psychology, 67(6), 1049-1062. The need for closure construct; the project's text mapping is a proxy.
 - Schwartz, S.H. (1992). [*Universals in the content and structure of values: Theoretical advances and empirical tests in 20 countries*](https://doi.org/10.1016/S0065-2601(08)60281-6). Advances in Experimental Social Psychology, 25, 1-65. The Schwartz Value Survey behind the value orientations.
 - Schler, J., Koppel, M., Argamon, S., & Pennebaker, J.W. (2006). *Effects of age and gender on blogging*. AAAI Spring Symposium on Computational Approaches to Analyzing Weblogs. The Blog Authorship Corpus used for percentile calibration.

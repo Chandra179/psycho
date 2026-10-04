@@ -1,42 +1,48 @@
 {{define "report-body"}}
-<div class="max-w-2xl mx-auto px-6 py-10">
+<div class="w-full max-w-[60rem] mx-auto px-4 sm:px-6 lg:px-8 py-10">
 
   <header class="flex flex-wrap items-start justify-between gap-3">
     <div>
-      <p class="text-[11px] tracking-[0.25em] uppercase text-teal-700 font-semibold">Psycho · personal reading</p>
-      <h1 class="font-serif text-4xl mt-2">Your personality reading</h1>
+      <p class="text-[11px] tracking-[0.25em] uppercase text-teal-700 font-semibold">Psycho · writing profile</p>
+      <h1 class="font-serif text-4xl mt-2">Your writing profile</h1>
       <div class="flex flex-wrap items-center gap-3 mt-3">
         <span class="inline-flex items-center rounded-full bg-teal-50 text-teal-800 px-3 py-1 text-xs font-medium ring-1 ring-teal-600/20">Reading quality: {{.Quality}}</span>
         <span class="text-sm text-stone-500">{{.GeneratedAt}} · {{.WordCount}} words</span>
       </div>
     </div>
-    <a href="/analysis/{{.AnalysisID}}/pdf"
-       class="inline-flex items-center rounded-full bg-stone-900 text-white px-4 py-2 text-xs font-medium hover:bg-stone-700 transition">
-      Download PDF
-    </a>
+    <nav aria-label="Report actions" class="flex items-center gap-2">
+      <a href="/" class="inline-flex items-center rounded-full border border-stone-300 bg-white px-4 py-2 text-xs font-medium text-stone-700 hover:bg-stone-100 transition">
+        New reading
+      </a>
+      <a href="/analysis/{{.AnalysisID}}/pdf"
+         class="inline-flex items-center rounded-full bg-stone-900 text-white px-4 py-2 text-xs font-medium hover:bg-stone-700 transition">
+        Download PDF
+      </a>
+    </nav>
   </header>
 
   <section class="mt-8">
-    <h2 class="font-serif text-xl">The snapshot</h2>
-    <p class="mt-3 leading-relaxed text-stone-700">{{.Snapshot}}</p>
+    <h2 class="font-serif text-xl">Summary of text signals</h2>
+    <p class="mt-3 max-w-prose leading-relaxed text-stone-700">{{.Snapshot}}</p>
   </section>
 
   <section class="mt-10">
     <h2 class="font-serif text-xl mb-4">What the words say</h2>
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
       {{range .Traits}}
       <div class="bg-white rounded-2xl border border-stone-200 shadow-sm p-5">
         <div class="flex items-center justify-between gap-2">
           <h3 class="font-medium">{{.Name}}</h3>
           <span class="text-[11px] uppercase tracking-wider rounded-full px-2 py-0.5 font-medium {{.ChipClass}}">{{.Label}}</span>
         </div>
-        <div class="relative h-2 rounded-full bg-stone-100 mt-4">
+        <p class="text-sm text-stone-700 mt-3">Estimated text score: <b>{{.Score100}}/100</b></p>
+        <div role="progressbar" aria-label="{{.Name}} score" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{.Score100}}" class="relative h-2 rounded-full bg-stone-100 mt-2">
           <div class="absolute inset-y-0 left-0 rounded-full bg-teal-500" style="width:{{.Score100}}%"></div>
           <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-0.5 h-3.5 bg-stone-300 rounded"></div>
         </div>
-        <p class="text-sm mt-3">Higher than <b>{{.Percentile}}%</b> of people</p>
-        {{if .HasCI}}<p class="text-xs text-stone-500 mt-0.5">could plausibly land anywhere from {{.CILo}} to {{.CIHi}}</p>{{end}}
-        <p class="text-sm text-stone-600 mt-2 italic">{{.Blurb}}</p>
+        <p class="text-sm mt-3">{{.PercentileText}}</p>
+        {{if .HasScoreRange}}<p class="text-xs text-stone-600 mt-1">Rough score range: {{.ScoreRangeLow}}–{{.ScoreRangeHigh}}/100</p>{{end}}
+        <p class="text-sm text-stone-600 mt-2">{{.SignalDescription}}</p>
       </div>
       {{end}}
     </div>
@@ -46,14 +52,14 @@
   <section class="mt-10">
     <h2 class="font-serif text-xl mb-2">What you value</h2>
     <p class="text-xs text-stone-500 mb-2">Ranked by how often value-related words appear. Bars are relative to your top value.</p>
-    <div class="bg-white rounded-2xl border border-stone-200 shadow-sm px-5 py-2">
+    <div class="bg-white rounded-2xl border border-stone-200 shadow-sm px-4 sm:px-5 py-2">
       {{range .Values}}
-      <div class="flex items-center gap-3 py-2.5 border-b border-stone-100 last:border-0">
-        <span class="w-6 h-6 rounded-full bg-teal-600 text-white text-xs grid place-items-center flex-none">{{.Rank}}</span>
-        <span class="w-32 text-sm font-medium flex-none">{{.Name}}</span>
-        <span class="flex-1 h-1.5 bg-stone-100 rounded-full overflow-hidden"><span class="block h-full bg-teal-400 rounded-full" style="width:{{.RelWidth}}%"></span></span>
-        <span class="text-xs text-stone-400 tabular-nums w-12 text-right flex-none">{{.Percent}}%</span>
-        {{if .Words}}<span class="hidden sm:block text-xs text-stone-400 w-36 text-right flex-none truncate">seen in: {{range $i, $w := .Words}}{{if $i}}, {{end}}{{$w}}{{end}}</span>{{end}}
+      <div class="grid grid-cols-[1.5rem_minmax(0,1fr)_3rem] items-center gap-x-3 gap-y-2 py-3 border-b border-stone-100 last:border-0 sm:grid-cols-[1.5rem_8rem_minmax(0,1fr)_3rem_9rem]">
+        <span class="row-start-1 col-start-1 w-6 h-6 rounded-full bg-teal-600 text-white text-xs grid place-items-center">{{.Rank}}</span>
+        <span class="row-start-1 col-start-2 min-w-0 text-sm font-medium break-words">{{.Name}}</span>
+        <span class="row-start-2 col-start-2 col-span-2 w-full h-1.5 bg-stone-100 rounded-full overflow-hidden sm:row-start-1 sm:col-start-3 sm:col-span-1"><span class="block h-full bg-teal-400 rounded-full" style="width:{{.RelWidth}}%"></span></span>
+        <span class="row-start-1 col-start-3 text-xs text-stone-500 tabular-nums text-right sm:col-start-4">{{.Percent}}%</span>
+        {{if .Words}}<span class="hidden sm:block sm:col-start-5 sm:row-start-1 text-xs text-stone-500 text-right truncate">seen in: {{range $i, $w := .Words}}{{if $i}}, {{end}}{{$w}}{{end}}</span>{{end}}
       </div>
       {{end}}
     </div>
@@ -62,11 +68,12 @@
 
   <section class="mt-10">
     <h2 class="font-serif text-xl mb-4">At a glance</h2>
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
       {{range .Summary}}
-      <div class="bg-white rounded-xl border border-stone-200 p-4 text-center">
-        <div class="font-serif text-lg">{{.Label}}</div>
-        <div class="text-[11px] uppercase tracking-wider text-stone-400 mt-1">{{.Name}}</div>
+      <div class="bg-white rounded-2xl border border-stone-200 shadow-sm p-4 text-center">
+        <div class="font-serif text-lg">{{.Score100}}/100</div>
+        <div class="text-[11px] uppercase tracking-wider text-stone-500 mt-1">{{.Band}}</div>
+        <div class="text-xs text-stone-600 mt-1">{{.Name}}</div>
       </div>
       {{end}}
     </div>
@@ -74,39 +81,77 @@
 
   <details class="group mt-10 bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden">
     <summary class="cursor-pointer select-none px-5 py-4 flex items-center justify-between text-sm font-medium text-stone-700 hover:bg-stone-50">
-      Show the evidence behind every score
-      <span class="group-open:rotate-180 transition-transform text-stone-400">⌄</span>
+      Show the full score calculation and word examples
+      <span aria-hidden="true" class="group-open:rotate-180 transition-transform text-stone-400">⌄</span>
     </summary>
     <div class="px-5 pb-5">
-      <p class="text-xs text-stone-500 mb-3">{{.WordCount}} words · {{.Coverage}}% dictionary coverage · dictionary-based (LIWC-style) · analysis {{.AnalysisID}}</p>
-      <table class="w-full text-sm">
-        <thead>
-          <tr class="text-[11px] uppercase tracking-wider text-stone-400 border-b border-stone-200">
-            <th class="py-2 pr-3 text-left font-medium">Trait</th>
-            <th class="py-2 pr-3 text-left font-medium">Category</th>
-            <th class="py-2 pr-3 text-right font-medium">% of words</th>
-            <th class="py-2 pr-3 text-right font-medium">× weight</th>
-            <th class="py-2 text-right font-medium">= contribution</th>
-          </tr>
-        </thead>
-        <tbody>
-          {{range .Traits}}{{$t := .}}{{range .Evidence}}
-          <tr class="border-b border-stone-50">
-            <td class="py-1.5 pr-3">{{$t.Name}}</td>
-            <td class="py-1.5 pr-3 text-stone-600">{{.Category}}</td>
-            <td class="py-1.5 pr-3 tabular-nums text-right">{{printf "%.1f" .WordPercent}}%</td>
-            <td class="py-1.5 pr-3 tabular-nums text-right">{{printf "%+.3f" .Weight}}</td>
-            <td class="py-1.5 tabular-nums text-right {{if lt .Contribution 0.0}}text-rose-600{{end}}">{{printf "%+.3f" .Contribution}}</td>
-          </tr>
-          {{end}}{{end}}
-        </tbody>
-      </table>
-      <p class="text-xs text-stone-500 mt-3">Each row: how often a word category appeared, the direction and strength it pulls the score, and its net effect. Positive contributions push the trait up, negative pull it down. This table is the whole calculation.</p>
+      <p class="max-w-prose text-xs leading-relaxed text-stone-600 mb-3">{{.PercentileReferenceDescription}}</p>
+      <p class="text-xs text-stone-500 mb-3">{{.WordCount}} words · {{.Coverage}}% dictionary coverage · analysis {{.AnalysisID}}</p>
+      {{if not .CalculationJSON}}<p class="max-w-prose text-sm text-amber-800 mb-4">Complete calculation details were not recorded for this saved analysis. Its recorded scores and evidence are shown below; missing operands are not reconstructed using the current model.</p>{{end}}
+      <div role="region" aria-label="Score evidence table, scroll horizontally to see all columns" tabindex="0" class="-mx-5 overflow-x-auto px-5 pb-1 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-teal-500">
+        <table class="w-full min-w-[50rem] text-sm">
+          <thead>
+            <tr class="text-[11px] uppercase tracking-wider text-stone-500 border-b border-stone-200">
+              <th scope="col" class="py-2 pr-3 text-left font-medium">Trait</th>
+              <th scope="col" class="py-2 pr-3 text-left font-medium">Category</th>
+              <th scope="col" class="py-2 pr-3 text-right font-medium">Matches / words</th>
+              <th scope="col" class="py-2 pr-3 text-right font-medium">% of words</th>
+              <th scope="col" class="py-2 pr-3 text-right font-medium">× weight</th>
+              <th scope="col" class="py-2 text-right font-medium">= contribution</th>
+              <th scope="col" class="py-2 pl-3 text-left font-medium">Matched word examples</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{range .Traits}}{{$t := .}}
+            {{if .Calculation}}
+            <tr class="border-b border-stone-200 bg-stone-50">
+              <th scope="row" class="py-2 pr-3 text-left font-medium">{{.Name}}</th>
+              <td colspan="6" class="py-2 text-xs leading-relaxed tabular-nums">Baseline {{printf "%.4f" .Calculation.Baseline}} + contributions {{printf "%+.4f" .Calculation.ContributionTotal}} → clamp and round {{printf "%.2f" .Calculation.ModelScore}}; calibration {{printf "%+.4f" .Calculation.CalibrationOffset}}{{if not .Calculation.CalibrationApplied}} (not applied){{end}} → final {{printf "%.2f" .Calculation.FinalScore}}</td>
+            </tr>
+            {{end}}{{range .Evidence}}
+            <tr class="border-b border-stone-50">
+              <td class="py-1.5 pr-3">{{$t.Name}}</td>
+              <td class="py-1.5 pr-3 text-stone-600">{{.Category}}</td>
+              <td class="py-1.5 pr-3 tabular-nums text-right">{{if $t.Calculation}}{{.MatchedCount}} / {{.TotalWords}}{{else}}Not recorded{{end}}</td>
+              <td class="py-1.5 pr-3 tabular-nums text-right">{{printf "%.2f" .WordPercent}}%</td>
+              <td class="py-1.5 pr-3 tabular-nums text-right">{{printf "%+.3f" .Weight}}</td>
+              <td class="py-1.5 tabular-nums text-right text-stone-700">{{printf "%+.3f" .Contribution}}</td>
+              <td class="py-1.5 pl-3 text-stone-600">
+                {{if .MatchedWords}}
+                <div class="flex flex-wrap gap-1">
+                  {{range .MatchedWords}}<span class="rounded bg-stone-100 px-1.5 py-0.5 text-xs">{{.}}</span>{{end}}
+                </div>
+                {{else if and $t.Calculation (eq .MatchedCount 0)}}
+                No matching words in this category
+                {{else if eq .Category "long_word_ratio"}}
+                Words longer than six bytes (legacy model proxy)
+                {{else}}
+                <span class="text-stone-500">Examples unavailable for this saved result</span>
+                {{end}}
+              </td>
+            </tr>
+            {{end}}{{end}}
+          </tbody>
+        </table>
+      </div>
+      <div class="max-w-prose text-xs leading-relaxed text-stone-600 mt-4 space-y-2">
+        <p>Table values are rounded for display. Scores use a 0–1 scale internally and are shown out of 100. The expanded recorded details below retain full floating-point precision, formulas and operation order. Calculations clamp to 0–1, then round half away from zero to two decimals before and after calibration.</p>
+        <p>Each row shows a category's share of all words, multiplied by the model's weight to produce its contribution. The score also includes a baseline and, when configured, a calibration adjustment. Matched words are normalized examples, capped at 10 per category; the percentage uses all matches.</p>
+        <p>The rough score range is estimated from text length and dictionary coverage. It is not a percentile range or a statistically validated confidence interval.</p>
+        <p>Big Five scores use a correlation-weighted heuristic with assumed scaling. The other text measures and rough ranges are project-defined proxies. Research supports associations and constructs, not these particular prediction formulas. This is an experimental language-pattern estimate, not a validated individual personality measure. In a separate evaluation on 2,442 essays, trait-ranking AUC ranged from 0.524 to 0.554 across the five dimensions; 0.5 is chance.</p>
+      </div>
+      {{if .CalculationJSON}}
+      <details class="mt-5 border-t border-stone-200 pt-4">
+        <summary class="cursor-pointer text-sm font-medium text-stone-700">Exact recorded inputs, formulas and results</summary>
+        <pre class="mt-3 rounded-xl bg-stone-50 p-4 text-xs leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{{.CalculationJSON}}</pre>
+      </details>
+      {{end}}
+      <p class="max-w-prose text-xs leading-relaxed text-stone-600 mt-4">References: <a class="underline" href="https://doi.org/10.1016/j.jrp.2010.04.001">Yarkoni (2010), language and Big Five associations</a>; <a class="underline" href="https://doi.org/10.1037/0003-066X.52.12.1280">Higgins (1997), regulatory focus</a>; <a class="underline" href="https://doi.org/10.1037/0022-3514.42.1.116">Cacioppo and Petty (1982), need for cognition</a>; <a class="underline" href="https://doi.org/10.1037/0022-3514.67.6.1049">Webster and Kruglanski (1994), need for closure</a>. These sources do not validate this project's weights or proxies.</p>
     </div>
   </details>
 
-  <footer class="mt-10 pt-6 border-t border-stone-200 text-xs text-stone-400 flex flex-wrap justify-between gap-2">
-    <span>Statistical estimates from word usage, for fun and self-reflection. Not a clinical or diagnostic assessment.</span>
+  <footer class="mt-10 pt-6 border-t border-stone-200 text-xs text-stone-500 flex flex-wrap justify-between gap-2">
+    <span>Experimental language-based estimates for self-reflection. Not a validated personality or clinical assessment.</span>
     <span>{{.AnalysisID}}</span>
   </footer>
 

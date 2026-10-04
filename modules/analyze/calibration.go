@@ -9,7 +9,7 @@ import (
 
 // DimensionCalibration holds the empirical reference distribution for one
 // trait dimension, measured over a calibration corpus. Offset is added to
-// the raw regression score so the corpus average lands at 0.50; Quantiles
+// the raw heuristic score so the corpus average lands at 0.50; Quantiles
 // holds the 1st–99th percentile scores of the offset-adjusted corpus, which
 // is what Percentile lookups interpolate over. Mean/SD/N are informational.
 type DimensionCalibration struct {
@@ -20,7 +20,7 @@ type DimensionCalibration struct {
 	N         int       `json:"n"`
 }
 
-// Calibration is the empirical reference that turns raw regression scores
+// Calibration is the empirical reference that turns raw heuristic scores
 // into interpretable absolute numbers: corpus-mean-centered scores and
 // distribution-free percentiles. A nil *Calibration means "uncalibrated" —
 // callers fall back to the fixed 0.50 intercepts and the normal
@@ -31,8 +31,23 @@ type DimensionCalibration struct {
 type Calibration struct {
 	Corpus           string                          `json:"corpus"`
 	GeneratedAt      string                          `json:"generated_at"`
+	ModelFingerprint string                          `json:"model_fingerprint"`
 	DictionarySHA256 string                          `json:"dictionary_sha256,omitempty"`
 	Dimensions       map[string]DimensionCalibration `json:"dimensions"`
+}
+
+// SampleSize returns the number of reference texts used by this calibration.
+// Calibration dimensions are built from the same corpus sample.
+func (c *Calibration) SampleSize() int {
+	if c == nil {
+		return 0
+	}
+	for _, dim := range dimensionKeys {
+		if d, ok := c.Dimensions[dim]; ok {
+			return d.N
+		}
+	}
+	return 0
 }
 
 // LoadCalibration parses calibration JSON produced by cmd/calibrate.
@@ -41,19 +56,38 @@ func LoadCalibration(data []byte) (*Calibration, error) {
 	if err := json.Unmarshal(data, &c); err != nil {
 		return nil, fmt.Errorf("parse calibration: %w", err)
 	}
-	if len(c.Dimensions) == 0 {
-		return nil, fmt.Errorf("calibration has no dimensions")
+	if c.ModelFingerprint == "" {
+		return nil, fmt.Errorf("calibration has no model_fingerprint; rerun cmd/calibrate")
 	}
-	for name, d := range c.Dimensions {
-		if len(d.Quantiles) == 0 {
-			return nil, fmt.Errorf("calibration dimension %q has no quantiles", name)
+	if len(c.Dimensions) != len(dimensionKeys) {
+		return nil, fmt.Errorf("calibration must cover all %d dimensions", len(dimensionKeys))
+	}
+	sampleSize := 0
+	for _, name := range dimensionKeys {
+		d, ok := c.Dimensions[name]
+		if !ok {
+			return nil, fmt.Errorf("calibration is missing dimension %q", name)
 		}
-		for i := 1; i < len(d.Quantiles); i++ {
-			if d.Quantiles[i] < d.Quantiles[i-1] {
+		if d.N < 2 || (sampleSize != 0 && d.N != sampleSize) {
+			return nil, fmt.Errorf("calibration dimension %q has an invalid or inconsistent sample size", name)
+		}
+		sampleSize = d.N
+		if len(d.Quantiles) != 99 {
+			return nil, fmt.Errorf("calibration dimension %q must have 99 quantiles", name)
+		}
+		if !finite(d.Offset) || !finite(d.Mean) || d.Mean < 0 || d.Mean > 1 || !finite(d.SD) || d.SD < 0 {
+			return nil, fmt.Errorf("calibration dimension %q has invalid statistics", name)
+		}
+		for i, q := range d.Quantiles {
+			if !finite(q) || q < 0 || q > 1 {
+				return nil, fmt.Errorf("calibration dimension %q has invalid quantile %d", name, i+1)
+			}
+			if i > 0 && q < d.Quantiles[i-1] {
 				return nil, fmt.Errorf("calibration dimension %q quantiles not sorted", name)
 			}
 		}
 	}
+
 	return &c, nil
 }
 
@@ -118,13 +152,14 @@ func BuildCalibration(corpus, generatedAt string, samples []BigFiveScores) (*Cal
 	}
 
 	return &Calibration{
-		Corpus:      corpus,
-		GeneratedAt: generatedAt,
-		Dimensions:  dimensions,
+		Corpus:           corpus,
+		ModelFingerprint: ModelFingerprint(),
+		GeneratedAt:      generatedAt,
+		Dimensions:       dimensions,
 	}, nil
 }
 
-// AdjustScores recenters raw regression scores so the calibration corpus
+// AdjustScores recenters raw heuristic scores so the calibration corpus
 // averages 0.50 per dimension. Input scores must come from the production
 // path (clamped and rounded by Infer / the Compute* functions); the output
 // is clamped and rounded the same way.
@@ -134,7 +169,16 @@ func (c *Calibration) AdjustScores(scores *BigFiveScores) {
 		if !ok {
 			continue
 		}
-		setDimensionValue(dim, scores, clamp(dimensionValue(dim, scores)+d.Offset))
+		unrounded := dimensionValue(dim, scores) + d.Offset
+		final := clamp(unrounded)
+		setDimensionValue(dim, scores, final)
+		if trace := scores.Calculations[dim]; trace != nil {
+			trace.CalibrationApplied = true
+			trace.CalibrationOffset = d.Offset
+			trace.CalibratedUnroundedScore = unrounded
+			trace.CalibratedClampedScore = math.Max(0, math.Min(1, unrounded))
+			trace.FinalScore = final
+		}
 	}
 }
 
@@ -142,38 +186,70 @@ func (c *Calibration) AdjustScores(scores *BigFiveScores) {
 // clamped to [1, 99]. ok is false when the dimension is not covered by this
 // calibration; callers fall back to their default.
 func (c *Calibration) Percentile(dim string, score float64) (int, bool) {
+	p, _, ok := c.PercentileWithDetails(dim, score)
+	return p, ok
+}
+
+// PercentileWithDetails records the branch and operands of the actual lookup.
+func (c *Calibration) PercentileWithDetails(dim string, score float64) (int, PercentileCalculation, bool) {
 	d, ok := c.Dimensions[dim]
+	lookup := &EmpiricalPercentileCalculation{SampleSize: d.N}
+	trace := PercentileCalculation{Method: "empirical", Score: score, EmpiricalLookup: lookup}
 	if !ok || len(d.Quantiles) == 0 {
-		return 0, false
+		return 0, trace, false
 	}
 	q := d.Quantiles
-	if score < q[0] {
-		return 1, true
+	finish := func(p int) (int, PercentileCalculation, bool) {
+		trace.UnclampedPercentile = p
+		trace.Percentile = clampPercentile(p)
+		return trace.Percentile, trace, true
 	}
-	if score > q[len(q)-1] {
-		return 99, true
-	}
-
-	// Quantiles[i] is the (i+1)-th percentile. Count where the score falls.
 	nLess, nEq := 0, 0
 	for _, v := range q {
-		switch {
-		case v < score:
+		if v < score {
 			nLess++
-		case v == score:
+		} else if v == score {
 			nEq++
 		}
 	}
-	if nEq > 0 {
-		// Score coincides with a quantile (or a run of them — near-constant
-		// dimensions produce ties): take the middle of the occupied range.
-		return clampPercentile(nLess + (nEq+1)/2), true
+	lookup.QuantilesBelow = nLess
+	lookup.EqualQuantiles = nEq
+	if score < q[0] {
+		trace.Formula = "score < first quantile: percentile = 1"
+		lookup.LowerScore = q[0]
+		lookup.LowerPercentile = 1
+		lookup.UpperScore = q[0]
+		lookup.UpperPercentile = 1
+		return finish(1)
 	}
-	// Strictly between q[nLess-1] (percentile nLess) and q[nLess] (the next).
+	if score > q[len(q)-1] {
+		trace.Formula = "score > last quantile: percentile = 99"
+		lookup.UpperScore = q[len(q)-1]
+		lookup.UpperPercentile = 99
+		lookup.LowerScore = q[len(q)-1]
+		lookup.LowerPercentile = 99
+		return finish(99)
+	}
+	if nEq > 0 {
+		trace.Formula = "percentile = clamp(quantiles_below + integer_floor((equal_quantiles + 1) / 2), 1, 99)"
+		lookup.LowerPercentile = nLess + 1
+		lookup.UpperPercentile = nLess + nEq
+		lookup.LowerScore = score
+		lookup.UpperScore = score
+		return finish(nLess + (nEq+1)/2)
+	}
 	prev, next := q[nLess-1], q[nLess]
 	frac := (score - prev) / (next - prev)
-	return clampPercentile(nLess + int(math.Round(frac))), true
+	trace.Formula = "fraction = (score - lower_score) / (upper_score - lower_score); percentile = clamp(lower_percentile + round(fraction), 1, 99)"
+	lookup.LowerScore = prev
+	lookup.UpperScore = next
+	lookup.LowerPercentile = nLess
+	lookup.UpperPercentile = nLess + 1
+	lookup.Fraction = frac
+	return finish(nLess + int(math.Round(frac)))
 }
+
+func finite(v float64) bool { return !math.IsNaN(v) && !math.IsInf(v, 0) }
 
 func clampPercentile(p int) int {
 	if p < 1 {

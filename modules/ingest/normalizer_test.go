@@ -1,9 +1,28 @@
 package ingest
 
 import (
+	"errors"
 	"strings"
 	"testing"
 )
+
+func TestNormalizedTextValidation(t *testing.T) {
+	n := NewNormalizer()
+	for _, text := range []string{"", "          ", "\t\t\t", "\n\n\n", "\u00a0\u2003\u202f\u3000", "...!!!???---", "<p> </p><div>\t</div>", "ééééééééé"} {
+		if err := ValidateDocument(n.Normalize(text)); !errors.Is(err, ErrInvalidText) {
+			t.Errorf("accepted invalid text %q: %v", text, err)
+		}
+	}
+	for _, text := range []string{"abcdefghij", "éééééééééé", "1234567890", "  This\t is   valid\n\nAnother paragraph.  "} {
+		if err := ValidateDocument(n.Normalize(text)); err != nil {
+			t.Errorf("rejected valid text %q: %v", text, err)
+		}
+	}
+	doc := n.Normalize(" \u2003first\t\t line \r\nsecond  line\r\n \t\r\n next\u00a0\u00a0paragraph ")
+	if doc.RawText != "first line second line\n\nnext paragraph" || doc.ParagraphCount != 2 {
+		t.Fatalf("whitespace/paragraph handling: %+v", doc)
+	}
+}
 
 func TestStripHTMLTags(t *testing.T) {
 	html := "<p>Hello <b>world</b>!</p>"

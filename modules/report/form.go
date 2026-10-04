@@ -2,8 +2,8 @@ package report
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
-	"strings"
 	"time"
 
 	"psycho/modules/ingest"
@@ -37,15 +37,12 @@ func MakeHandleReportForm(
 		// The MVP accepts only the writer's own text; the checkbox is the
 		// consent record (see discovery issue #22 for the third-party stance).
 		if r.PostFormValue("consent") != "on" {
-			http.Error(w, "Please confirm the writing is your own — the consent box is required.", http.StatusBadRequest)
+			http.Error(w, "Please confirm the writing is your own; the consent box is required.", http.StatusBadRequest)
 			return
 		}
 
-		text := strings.TrimSpace(r.PostFormValue("text"))
-		if len(text) < 10 {
-			http.Error(w, "Text must be at least 10 characters.", http.StatusBadRequest)
-			return
-		}
+		text := r.PostFormValue("text")
+
 		if maxTextSize > 0 && len(text) > maxTextSize {
 			http.Error(w, "Text exceeds the maximum size.", http.StatusBadRequest)
 			return
@@ -65,15 +62,19 @@ func MakeHandleReportForm(
 		sourceDate := r.PostFormValue("source_date")
 		if sourceDate != "" {
 			if _, err := time.Parse("2006-01-02", sourceDate); err != nil {
-				http.Error(w, "Invalid written-on date — use YYYY-MM-DD.", http.StatusBadRequest)
+				http.Error(w, "Invalid written-on date; use YYYY-MM-DD.", http.StatusBadRequest)
 				return
 			}
 		}
 
 		out, err := analyzeFn(r.Context(), sourceType, sourceDate, text)
 		if err != nil {
+			if errors.Is(err, ingest.ErrInvalidText) {
+				http.Error(w, ingest.ErrInvalidText.Error(), http.StatusBadRequest)
+				return
+			}
 			logger.Error(r.Context(), "analysis failed", zlogger.Field{Key: "error", Value: err.Error()})
-			http.Error(w, "Something went wrong while analyzing — please try again.", http.StatusInternalServerError)
+			http.Error(w, "Something went wrong while analyzing; please try again.", http.StatusInternalServerError)
 			return
 		}
 
@@ -82,13 +83,13 @@ func MakeHandleReportForm(
 		blob, err := json.Marshal(out)
 		if err != nil {
 			logger.Error(r.Context(), "failed to encode analysis", zlogger.Field{Key: "error", Value: err.Error()})
-			http.Error(w, "Something went wrong while analyzing — please try again.", http.StatusInternalServerError)
+			http.Error(w, "Something went wrong while analyzing; please try again.", http.StatusInternalServerError)
 			return
 		}
 		var a Analysis
 		if err := json.Unmarshal(blob, &a); err != nil {
 			logger.Error(r.Context(), "failed to decode analysis", zlogger.Field{Key: "error", Value: err.Error()})
-			http.Error(w, "Something went wrong while analyzing — please try again.", http.StatusInternalServerError)
+			http.Error(w, "Something went wrong while analyzing; please try again.", http.StatusInternalServerError)
 			return
 		}
 

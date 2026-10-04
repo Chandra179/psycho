@@ -1,8 +1,10 @@
 package ingest
 
 import (
+	"errors"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 )
 
 // Document holds normalized text with metadata.
@@ -69,7 +71,7 @@ func stripHTMLTags(s string) string {
 func normalizeWhitespace(s string) string {
 	lines := strings.Split(s, "\n")
 	for i, line := range lines {
-		lines[i] = strings.TrimSpace(line)
+		lines[i] = strings.Join(strings.Fields(line), " ")
 	}
 	// Group consecutive non-blank lines into paragraphs separated by blank lines.
 	var paragraphs []string
@@ -141,3 +143,22 @@ func uniqueWordCount(words []string) int {
 	}
 	return len(seen)
 }
+
+// ErrInvalidText is shared by all transports. Validation happens after
+// normalization in the pipeline, before inference or persistence.
+var ErrInvalidText = errors.New("text must contain letters or numbers and at least 10 normalized characters")
+
+func ValidateDocument(doc Document) error {
+	if utf8.RuneCountInString(doc.RawText) < 10 {
+		return ErrInvalidText
+	}
+	for _, r := range doc.RawText {
+		if unicode.IsLetter(r) || unicode.IsNumber(r) {
+			return nil
+		}
+	}
+	return ErrInvalidText
+}
+
+// TokenizeWords is the common tokenizer used for document and feature counts.
+func TokenizeWords(s string) []string { return tokenizeWords(s) }

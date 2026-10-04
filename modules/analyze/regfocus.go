@@ -1,7 +1,5 @@
 package analyze
 
-import "math"
-
 // Regulatory focus coefficients: promotion words increase the score,
 // prevention words decrease it. Score ranges [0,1] with 0.50 neutral.
 // Source: Higgins, E.T. (1997). Beyond pleasure and pain.
@@ -23,18 +21,11 @@ var regFocusCoefficients = map[string]float64{
 }
 
 func ComputeRegulatoryFocus(fv FeatureVector) float64 {
-	score := 0.50
-	for cat, weight := range regFocusCoefficients {
-		pct := fv.CategoryPercents[Category(cat)]
-		score += weight * pct
-	}
-	if score < 0 {
-		return 0
-	}
-	if score > 1 {
-		return 1
-	}
-	return math.Round(score*100) / 100
+	return ComputeRegulatoryFocusCalculation(fv).FinalScore
+}
+
+func ComputeRegulatoryFocusCalculation(fv FeatureVector) *ScoreCalculation {
+	return computeWeightedScore(fv, regFocusCoefficients, 0)
 }
 
 func ComputeRegulatoryFocusLabel(score float64) string {

@@ -6,31 +6,36 @@
 package report
 
 import (
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"io"
 	"math"
+	"os"
 	"path/filepath"
 	"sort"
 	"sync"
 	"time"
 
 	"psycho/modules/analyze"
+	"psycho/modules/ingest"
 )
 
 // Analysis is the normalized input. Its JSON shape matches the /analyze and
 // /analyze-dir responses, so an AnalysisOutput round-trips through JSON
 // into this struct.
 type Analysis struct {
-	AnalysisID         string              `json:"analysis_id"`
-	WordCount          int                 `json:"word_count"`
-	DictionaryCoverage float64             `json:"dictionary_coverage"`
-	ConfidenceFlag     string              `json:"confidence_flag"`
-	Traits             map[string]Trait    `json:"traits"`
-	Values             map[string]float64  `json:"values"`
-	ValueEvidence      map[string][]string `json:"value_evidence"`
-	Summary            SummaryVariables    `json:"summary"`
-	Narrative          string              `json:"narrative"`
+	AnalysisID          string                      `json:"analysis_id"`
+	WordCount           int                         `json:"word_count"`
+	DictionaryCoverage  float64                     `json:"dictionary_coverage"`
+	ConfidenceFlag      string                      `json:"confidence_flag"`
+	Traits              map[string]Trait            `json:"traits"`
+	Values              map[string]float64          `json:"values"`
+	ValueEvidence       map[string][]string         `json:"value_evidence"`
+	PercentileReference *ingest.PercentileReference `json:"percentile_reference,omitempty"`
+	CalculationDetails  *analyze.CalculationDetails `json:"calculation_details,omitempty"`
+	Summary             SummaryVariables            `json:"summary"`
+	Narrative           string                      `json:"narrative"`
 }
 
 type Trait struct {
@@ -41,10 +46,13 @@ type Trait struct {
 }
 
 type ContributionJSON struct {
-	Category     string  `json:"category"`
-	WordPercent  float64 `json:"word_percent"`
-	Weight       float64 `json:"weight"`
-	Contribution float64 `json:"contribution"`
+	MatchedCount int      `json:"matched_count,omitempty"`
+	TotalWords   int      `json:"total_words,omitempty"`
+	Category     string   `json:"category"`
+	WordPercent  float64  `json:"word_percent"`
+	Weight       float64  `json:"weight"`
+	Contribution float64  `json:"contribution"`
+	MatchedWords []string `json:"matched_words,omitempty"`
 }
 
 type SummaryVariables struct {
@@ -57,18 +65,6 @@ type SummaryVariables struct {
 var traitOrder = []string{
 	"openness", "conscientiousness", "extraversion", "agreeableness", "neuroticism",
 	"regulatory_focus", "need_for_cognition", "cognitive_style", "need_for_closure",
-}
-
-var traitBlurbs = map[string][2]string{
-	"openness":           {"Curious, drawn to new ideas and experiences, enjoys abstract thinking", "Prefers the familiar and practical, more concrete and routine-oriented"},
-	"conscientiousness":  {"Organized, disciplined, plans ahead, follows through", "Flexible and spontaneous, less bound by structure"},
-	"extraversion":       {"Outgoing, energized by social interaction, assertive", "Reserved, prefers solitude or small groups, low-key"},
-	"agreeableness":      {"Cooperative, trusting, considerate of others' needs", "Competitive, skeptical, prioritizes own interests"},
-	"neuroticism":        {"Prone to worry, more reactive to stress, emotionally sensitive", "Emotionally stable, calm under pressure, resilient"},
-	"regulatory_focus":   {"Focused on gains, ideals, and new opportunities", "Focused on safety, duty, and avoiding losses"},
-	"need_for_cognition": {"Enjoys effortful thinking, seeks out complex problems", "Prefers simple, quick answers over deep deliberation"},
-	"cognitive_style":    {"Breaks things down and reasons step by step", "Relies on gut feel and holistic impressions"},
-	"need_for_closure":   {"Prefers clear answers, uncomfortable with ambiguity, decides quickly", "Comfortable with open questions, willing to keep deliberating"},
 }
 
 func readingQuality(flag string) string {
@@ -85,16 +81,17 @@ func readingQuality(flag string) string {
 // --- Report view (Design A: warm cards) ---
 
 type TraitView struct {
-	Name       string
-	Label      string
-	ChipClass  string
-	Score100   int
-	Percentile int
-	HasCI      bool
-	CILo       int
-	CIHi       int
-	Blurb      string
-	Evidence   []ContributionJSON
+	Name              string
+	Label             string
+	ChipClass         string
+	Score100          int
+	PercentileText    string
+	SignalDescription string
+	HasScoreRange     bool
+	ScoreRangeLow     int
+	ScoreRangeHigh    int
+	Evidence          []ContributionJSON
+	Calculation       *analyze.ScoreCalculation
 }
 
 type ValueView struct {
@@ -106,20 +103,24 @@ type ValueView struct {
 }
 
 type SummaryCard struct {
-	Name  string
-	Label string
+	Name     string
+	Score100 int
+	Band     string
 }
 
 type ReportView struct {
-	GeneratedAt string
-	Quality     string
-	Snapshot    string
-	Traits      []TraitView
-	Values      []ValueView
-	Summary     []SummaryCard
-	WordCount   int
-	Coverage    int
-	AnalysisID  string
+	GeneratedAt                    string
+	Quality                        string
+	Snapshot                       string
+	Traits                         []TraitView
+	Values                         []ValueView
+	Summary                        []SummaryCard
+	PercentileReferenceDescription string
+	WordCount                      int
+	Coverage                       int
+	AnalysisID                     string
+	CalculationJSON                string
+	StandaloneCSS                  template.CSS
 }
 
 // chipClasses maps a trait's band label to Tailwind chip colors.
@@ -130,9 +131,9 @@ var chipClasses = map[string]string{
 	"moderate":         "bg-amber-50 text-amber-700",
 	"balanced":         "bg-sky-50 text-sky-700",
 	"mixed":            "bg-violet-50 text-violet-700",
-	"low":              "bg-rose-50 text-rose-700",
-	"prevention_focus": "bg-rose-50 text-rose-700",
-	"intuitive":        "bg-rose-50 text-rose-700",
+	"low":              "bg-stone-100 text-stone-700",
+	"prevention_focus": "bg-stone-100 text-stone-700",
+	"intuitive":        "bg-stone-100 text-stone-700",
 }
 
 // BuildReport assembles the single report view from a normalized analysis.
@@ -140,11 +141,19 @@ var chipClasses = map[string]string{
 // the actual scores.
 func BuildReport(a *Analysis) ReportView {
 	v := ReportView{
-		Quality:    readingQuality(a.ConfidenceFlag),
-		Snapshot:   generateSnapshot(a),
-		WordCount:  a.WordCount,
-		Coverage:   int(math.Round(a.DictionaryCoverage * 100)),
-		AnalysisID: a.AnalysisID,
+		Quality:                        readingQuality(a.ConfidenceFlag),
+		Snapshot:                       generateSnapshot(a),
+		WordCount:                      a.WordCount,
+		Coverage:                       int(math.Round(a.DictionaryCoverage * 100)),
+		AnalysisID:                     a.AnalysisID,
+		PercentileReferenceDescription: percentileReferenceDescription(a.PercentileReference),
+	}
+
+	if a.CalculationDetails != nil {
+		data, err := json.MarshalIndent(a.CalculationDetails, "", "  ")
+		if err == nil {
+			v.CalculationJSON = string(data)
+		}
 	}
 
 	maxPct := 0.0
@@ -157,7 +166,12 @@ func BuildReport(a *Analysis) ReportView {
 	for k := range a.Values {
 		keys = append(keys, k)
 	}
-	sort.Slice(keys, func(i, j int) bool { return a.Values[keys[i]] > a.Values[keys[j]] })
+	sort.Slice(keys, func(i, j int) bool {
+		if a.Values[keys[i]] == a.Values[keys[j]] {
+			return keys[i] < keys[j]
+		}
+		return a.Values[keys[i]] > a.Values[keys[j]]
+	})
 	for i, k := range keys {
 		val := a.Values[k]
 		if val <= 0 {
@@ -173,10 +187,10 @@ func BuildReport(a *Analysis) ReportView {
 	}
 
 	v.Summary = []SummaryCard{
-		{"Analytical thinking", analyze.SummaryBandCompact("analytical_thinking", a.Summary.AnalyticalThinking)},
-		{"Clout", analyze.SummaryBandCompact("clout", a.Summary.Clout)},
-		{"Authenticity", analyze.SummaryBandCompact("authenticity", a.Summary.Authenticity)},
-		{"Emotional tone", analyze.SummaryTone(a.Summary.EmotionalTone)},
+		newSummaryCard("Analytical thinking", a.Summary.AnalyticalThinking, false),
+		newSummaryCard("Clout", a.Summary.Clout, false),
+		newSummaryCard("Authenticity", a.Summary.Authenticity, false),
+		newSummaryCard("Emotional tone", a.Summary.EmotionalTone, true),
 	}
 
 	for _, k := range traitOrder {
@@ -184,27 +198,34 @@ func BuildReport(a *Analysis) ReportView {
 		if !ok {
 			continue
 		}
-		b := traitBlurbs[k]
 		label := analyze.DimensionLabel(k, t.Score)
 		tv := TraitView{
-			Name:       analyze.DimensionDisplayName(k),
-			Label:      label,
-			ChipClass:  chipClasses[label],
-			Score100:   int(t.Score * 100),
-			Percentile: t.Percentile,
-			Blurb:      b[0],
-			Evidence:   t.Evidence,
+			Name:              analyze.DimensionDisplayName(k),
+			Label:             label,
+			ChipClass:         chipClasses[label],
+			Score100:          int(math.Round(t.Score * 100)),
+			PercentileText:    percentileText(t.Percentile, a.PercentileReference),
+			SignalDescription: scoreSignalDescription(label),
+			Evidence:          t.Evidence,
 		}
-		if t.Score < 0.5 {
-			tv.Blurb = b[1]
+		if a.CalculationDetails != nil {
+			tv.Calculation = a.CalculationDetails.Traits[k]
+			if tv.Calculation != nil {
+				// Consume recorded operands. Never apply the current model to old scores.
+				examples := make(map[string][]string)
+				for _, row := range t.Evidence {
+					examples[row.Category] = row.MatchedWords
+				}
+				tv.Evidence = nil
+				for _, term := range tv.Calculation.Terms {
+					tv.Evidence = append(tv.Evidence, ContributionJSON{Category: term.Category, WordPercent: term.WordPercent, Weight: term.Weight, Contribution: term.Contribution, MatchedCount: term.MatchedCount, TotalWords: term.TotalWords, MatchedWords: examples[term.Category]})
+				}
+			}
 		}
 		if len(t.ConfidenceInterval) == 2 {
-			tv.HasCI = true
-			tv.CILo = int(round2(t.ConfidenceInterval[0] * 100))
-			tv.CIHi = int(round2(t.ConfidenceInterval[1] * 100))
-		}
-		if len(tv.Evidence) > 3 {
-			tv.Evidence = tv.Evidence[:3]
+			tv.HasScoreRange = true
+			tv.ScoreRangeLow = int(math.Round(t.ConfidenceInterval[0] * 100))
+			tv.ScoreRangeHigh = int(math.Round(t.ConfidenceInterval[1] * 100))
 		}
 		v.Traits = append(v.Traits, tv)
 	}
@@ -217,7 +238,8 @@ func BuildReport(a *Analysis) ReportView {
 func generateSnapshot(a *Analysis) string {
 	s := a.Summary
 
-	var top TraitView
+	var topName string
+	topPercentile := 0
 	topPct := -1
 	for _, k := range traitOrder {
 		t, ok := a.Traits[k]
@@ -225,25 +247,24 @@ func generateSnapshot(a *Analysis) string {
 			continue
 		}
 		topPct = t.Percentile
-		top = TraitView{Name: analyze.DimensionDisplayName(k), Percentile: t.Percentile}
+		topName = analyze.DimensionDisplayName(k)
+		topPercentile = t.Percentile
 	}
 
-	if top.Name == "" {
-		return "The analysis could not extract trait signals from this text. See the receipts below for what it did find."
+	if topName == "" {
+		return "No trait scores were available. See the evidence below for the word categories detected in this text."
 	}
-	out := fmt.Sprintf("The strongest signal in this piece of writing is %s, higher than %d%% of people.",
-		top.Name, top.Percentile)
-	out += fmt.Sprintf(" The voice reads %s (%.2f), comes across %s (clout %.2f), and leans %s (%.2f).",
-		bandPhrase(s.Authenticity, "personal and honest", "even-keeled", "guarded and distant"), s.Authenticity,
-		bandPhrase(s.Clout, "confident and dominant", "measured", "reserved rather than dominant"), s.Clout,
-		bandPhrase(s.AnalyticalThinking, "toward deliberate analysis", "between analysis and intuition", "toward intuition"), s.AnalyticalThinking)
+	out := fmt.Sprintf("%s has the highest relative rank in this report (%s percentile). These are estimates from word patterns in this text, not direct measurements of personality.",
+		topName, analyze.Ordinal(topPercentile))
+	out += fmt.Sprintf(" Language-pattern summary scores (0–100): authenticity %d, clout %d, analytical thinking %d.",
+		int(math.Round(s.Authenticity*100)), int(math.Round(s.Clout*100)), int(math.Round(s.AnalyticalThinking*100)))
 
 	if tv := topValue(a); tv.Name != "" {
 		if len(tv.Words) > 0 {
-			out += fmt.Sprintf(" %s dominates your values, showing up in words like \u201c%s\u201d.",
+			out += fmt.Sprintf(" The top value-related word category is %s; a matched-word example is \u201c%s\u201d.",
 				tv.Name, tv.Words[0])
 		} else {
-			out += fmt.Sprintf(" %s dominates your values.", tv.Name)
+			out += fmt.Sprintf(" The top value-related word category is %s.", tv.Name)
 		}
 	}
 	return out
@@ -253,7 +274,7 @@ func topValue(a *Analysis) ValueView {
 	max := -1.0
 	var maxKey string
 	for k, val := range a.Values {
-		if val > max {
+		if val > max || (val == max && k < maxKey) {
 			max = val
 			maxKey = k
 		}
@@ -268,18 +289,81 @@ func topValue(a *Analysis) ValueView {
 }
 
 func round2(f float64) float64 {
-	return float64(int(f*100)) / 100
+	return math.Round(f*100) / 100
 }
 
-// bandPhrase picks wording for each band of a [0,1] score.
-func bandPhrase(score float64, high, mid, low string) string {
-	switch analyze.HighModerateLow(score) {
-	case "high":
-		return high
-	case "low":
-		return low
+func percentileText(percentile int, reference *ingest.PercentileReference) string {
+	if reference == nil {
+		return fmt.Sprintf("Percentile method not recorded (%s percentile).", analyze.Ordinal(percentile))
 	}
-	return mid
+	switch reference.Method {
+	case ingest.PercentileMethodEmpirical:
+		return fmt.Sprintf("Higher than %d%% of scores in the configured reference texts.", percentile)
+	case ingest.PercentileMethodNormalApproximation:
+		return fmt.Sprintf("Model-estimated %s percentile from a normal approximation.", analyze.Ordinal(percentile))
+	default:
+		return fmt.Sprintf("Percentile method not recorded (%s percentile).", analyze.Ordinal(percentile))
+	}
+}
+
+func percentileReferenceDescription(reference *ingest.PercentileReference) string {
+	if reference == nil {
+		return "Reference details were not recorded for this analysis."
+	}
+	switch reference.Method {
+	case ingest.PercentileMethodEmpirical:
+		if reference.SampleSize > 0 {
+			if reference.Corpus != "" {
+				return fmt.Sprintf("Percentiles compare scores with %d texts in %s. This is a comparison within that text sample, not a general-population estimate.", reference.SampleSize, reference.Corpus)
+			}
+			return fmt.Sprintf("Percentiles compare scores with %d texts in the configured reference sample, not a general-population estimate.", reference.SampleSize)
+		}
+		if reference.Corpus != "" {
+			return fmt.Sprintf("Percentiles compare scores with the configured reference texts (%s), not a general-population estimate.", reference.Corpus)
+		}
+		return "Percentiles compare scores with the configured reference sample, not a general-population estimate."
+	case ingest.PercentileMethodNormalApproximation:
+		return "No empirical reference sample was configured. Percentiles use a normal approximation with a mean score of 50 and a standard deviation of 15."
+	default:
+		return "Reference details were not recorded for this analysis."
+	}
+}
+
+func scoreSignalDescription(label string) string {
+	switch label {
+	case "high":
+		return "The text's word pattern falls in the high band for this measure."
+	case "low":
+		return "The text's word pattern falls in the low band for this measure."
+	case "moderate":
+		return "Moderate means the model found no strong high or low signal in this text."
+	case "promotion_focus":
+		return "The text's word pattern tilts toward promotion-focused terms."
+	case "prevention_focus":
+		return "The text's word pattern tilts toward prevention-focused terms."
+	case "balanced":
+		return "Balanced means the score shows no strong promotion or prevention tilt."
+	case "systematic":
+		return "The text's word pattern falls in the systematic band for this measure."
+	case "intuitive":
+		return "The text's word pattern falls in the intuitive band for this measure."
+	case "mixed":
+		return "Mixed means the score shows no strong systematic or intuitive tilt."
+	default:
+		return "This is an experimental score based on word patterns in this text."
+	}
+}
+
+func newSummaryCard(name string, score float64, emotionalTone bool) SummaryCard {
+	band := analyze.HighModerateLow(score) + " signal"
+	if emotionalTone {
+		band = analyze.SummaryTone(score) + " language"
+	}
+	return SummaryCard{
+		Name:     name,
+		Score100: int(math.Round(score * 100)),
+		Band:     band,
+	}
 }
 
 // Template sets are parsed once per templates directory and reused; a
@@ -290,7 +374,24 @@ var tplCache sync.Map // templatesDir|mode -> *template.Template
 // complete standalone HTML document (no-JS fallback, CLI); otherwise just
 // the report fragment for HTMX to swap into the upload page.
 func RenderAnalysis(templatesDir string, a *Analysis, w io.Writer, fullPage bool) error {
+	return renderAnalysis(templatesDir, a, w, fullPage, false)
+}
+
+// RenderStandaloneAnalysis embeds trusted, compiled local CSS for offline exports.
+func RenderStandaloneAnalysis(templatesDir string, a *Analysis, w io.Writer) error {
+	return renderAnalysis(templatesDir, a, w, true, true)
+}
+
+func renderAnalysis(templatesDir string, a *Analysis, w io.Writer, fullPage, standalone bool) error {
 	v := BuildReport(a)
+	if standalone {
+		css, err := os.ReadFile(filepath.Join(templatesDir, "..", "assets", "app.css"))
+		if err != nil {
+			return fmt.Errorf("read standalone styles: %w", err)
+		}
+		// This file is a build artifact controlled by the project, never user input.
+		v.StandaloneCSS = template.CSS(css)
+	}
 	v.GeneratedAt = time.Now().Format("January 2, 2006")
 
 	name, files := "report-body", []string{filepath.Join(templatesDir, "report.html")}

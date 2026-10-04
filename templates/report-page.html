@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Your personality reading · Psycho</title>
-<script src="https://cdn.tailwindcss.com"></script>
+<title>Your writing profile · Psycho</title>
+{{if .StandaloneCSS}}<style>{{.StandaloneCSS}}</style>{{else}}<link rel="stylesheet" href="/assets/app.css">{{end}}
 </head>
 <body class="bg-stone-50 text-stone-800 antialiased">
 {{template "report-body" .}}

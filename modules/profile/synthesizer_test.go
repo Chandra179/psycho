@@ -1,10 +1,35 @@
 package profile
 
 import (
+	"math"
 	"testing"
 
 	"psycho/modules/analyze"
 )
+
+func TestRangeAndNormalPercentileCalculationsReplay(t *testing.T) {
+	for _, n := range []int{10, 600, 1200, 10000, 1000000} {
+		for _, coverage := range []float64{.2, .5, .7, 1} {
+			width, r := computeRangeWithDetails(n, coverage)
+			raw := r.ErrorMultiplier * (r.BaseStandardError / math.Sqrt(float64(r.WordCount)/1000)) * r.CoverageMultiplier
+			if raw != r.UnboundedHalfWidth || width != math.Round(max(r.MinimumHalfWidth, min(r.MaximumHalfWidth, raw))*100)/100 {
+				t.Fatal("range cannot replay")
+			}
+			for _, score := range []float64{0, .01, .35, .50, .65, .99, 1} {
+				pct, p := normalPercentileWithDetails(score)
+				z := (p.Score - p.NormalApproximation.Mean) / p.NormalApproximation.SD
+				expected := max(1, min(99, int(math.Round(.5*(1+math.Erf(z/math.Sqrt2))*100))))
+				if pct != expected || p.NormalApproximation.Z != z {
+					t.Fatal("fallback percentile cannot replay")
+				}
+				trait, b := makeTraitResultWithDetails(score, width, pct, nil)
+				if b.Low != math.Round(max(0, score-width)*100)/100 || b.High != math.Round(min(1, score+width)*100)/100 || trait.ConfidenceInterval[0] != b.Low || trait.ConfidenceInterval[1] != b.High {
+					t.Fatal("bounds cannot replay")
+				}
+			}
+		}
+	}
+}
 
 func TestComputeConfidenceFlag(t *testing.T) {
 	if got := computeConfidenceFlag(400, 0.8); got != "low" {

@@ -28,7 +28,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	if err := report.RenderAnalysis("templates", &a, f, true); err != nil {
+	if err := report.RenderStandaloneAnalysis("templates", &a, f); err != nil {
 		f.Close()
 		panic(err)
 	}

@@ -3,6 +3,7 @@ package ingest
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -23,16 +24,30 @@ type AnalyzeDirRequest struct {
 }
 
 type AnalyzeDirResponse struct {
-	AnalysisID         string              `json:"analysis_id"`
-	WordCount          int                 `json:"word_count"`
-	DictionaryCoverage float64             `json:"dictionary_coverage"`
-	ConfidenceFlag     string              `json:"confidence_flag"`
-	Traits             map[string]any      `json:"traits"`
-	Values             map[string]float64  `json:"values"`
-	ValueEvidence      map[string][]string `json:"value_evidence,omitempty"`
-	FilesRead          int                 `json:"files_read"`
-	Summary            any                 `json:"summary"`
-	Narrative          string              `json:"narrative"`
+	AnalysisID          string               `json:"analysis_id"`
+	WordCount           int                  `json:"word_count"`
+	DictionaryCoverage  float64              `json:"dictionary_coverage"`
+	ConfidenceFlag      string               `json:"confidence_flag"`
+	Traits              map[string]any       `json:"traits"`
+	Values              map[string]float64   `json:"values"`
+	ValueEvidence       map[string][]string  `json:"value_evidence,omitempty"`
+	PercentileReference *PercentileReference `json:"percentile_reference,omitempty"`
+	CalculationDetails  any                  `json:"calculation_details,omitempty"`
+	FilesRead           int                  `json:"files_read"`
+	Summary             any                  `json:"summary"`
+	Narrative           string               `json:"narrative"`
+}
+
+const (
+	PercentileMethodEmpirical           = "empirical"
+	PercentileMethodNormalApproximation = "normal_approximation"
+)
+
+// PercentileReference describes how analysis percentiles were produced.
+type PercentileReference struct {
+	Method     string `json:"method"`
+	Corpus     string `json:"corpus,omitempty"`
+	SampleSize int    `json:"sample_size,omitempty"`
 }
 
 // AnalysisOutput is everything the HTTP layer needs to render a response
@@ -41,15 +56,17 @@ type AnalyzeDirResponse struct {
 // contract at this seam, so the tags below are load-bearing — consumers
 // (including the report renderer) decode this shape by its snake_case keys.
 type AnalysisOutput struct {
-	AnalysisID         string              `json:"analysis_id"`
-	WordCount          int                 `json:"word_count"`
-	DictionaryCoverage float64             `json:"dictionary_coverage"`
-	ConfidenceFlag     string              `json:"confidence_flag"`
-	Traits             map[string]any      `json:"traits"`
-	Values             map[string]float64  `json:"values"`
-	ValueEvidence      map[string][]string `json:"value_evidence,omitempty"`
-	Summary            any                 `json:"summary"`
-	Narrative          string              `json:"narrative,omitempty"`
+	AnalysisID          string               `json:"analysis_id"`
+	WordCount           int                  `json:"word_count"`
+	DictionaryCoverage  float64              `json:"dictionary_coverage"`
+	ConfidenceFlag      string               `json:"confidence_flag"`
+	Traits              map[string]any       `json:"traits"`
+	Values              map[string]float64   `json:"values"`
+	ValueEvidence       map[string][]string  `json:"value_evidence,omitempty"`
+	PercentileReference *PercentileReference `json:"percentile_reference,omitempty"`
+	CalculationDetails  any                  `json:"calculation_details,omitempty"`
+	Summary             any                  `json:"summary"`
+	Narrative           string               `json:"narrative,omitempty"`
 }
 
 // AnalyzeFunc is the seam the HTTP handlers call into. modules/server and
@@ -81,13 +98,12 @@ func MakeHandleAnalyzeDir(
 
 		text, filesRead, err := ReadDir(cfg.DirPath, cfg.MaxTextSize)
 		if err != nil {
+			if errors.Is(err, ErrInvalidText) {
+				http.Error(w, ErrInvalidText.Error(), http.StatusBadRequest)
+				return
+			}
 			logger.Error(r.Context(), "failed to read directory", zlogger.Field{Key: "error", Value: err.Error()})
 			http.Error(w, "failed to read directory: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		if len(text) < 10 {
-			http.Error(w, "combined text must be at least 10 characters", http.StatusBadRequest)
 			return
 		}
 
@@ -98,22 +114,28 @@ func MakeHandleAnalyzeDir(
 
 		out, err := analyzeFn(r.Context(), sourceType, req.SourceDate, text)
 		if err != nil {
+			if errors.Is(err, ErrInvalidText) {
+				http.Error(w, ErrInvalidText.Error(), http.StatusBadRequest)
+				return
+			}
 			logger.Error(r.Context(), "analysis failed", zlogger.Field{Key: "error", Value: err.Error()})
 			http.Error(w, "internal error", http.StatusInternalServerError)
 			return
 		}
 
 		resp := AnalyzeDirResponse{
-			AnalysisID:         out.AnalysisID,
-			WordCount:          out.WordCount,
-			DictionaryCoverage: out.DictionaryCoverage,
-			ConfidenceFlag:     out.ConfidenceFlag,
-			Traits:             out.Traits,
-			Values:             out.Values,
-			ValueEvidence:      out.ValueEvidence,
-			FilesRead:          filesRead,
-			Summary:            out.Summary,
-			Narrative:          out.Narrative,
+			AnalysisID:          out.AnalysisID,
+			WordCount:           out.WordCount,
+			DictionaryCoverage:  out.DictionaryCoverage,
+			ConfidenceFlag:      out.ConfidenceFlag,
+			Traits:              out.Traits,
+			Values:              out.Values,
+			ValueEvidence:       out.ValueEvidence,
+			PercentileReference: out.PercentileReference,
+			CalculationDetails:  out.CalculationDetails,
+			FilesRead:           filesRead,
+			Summary:             out.Summary,
+			Narrative:           out.Narrative,
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -259,14 +281,25 @@ func ReadDir(dirPath string, maxSize int) (string, int, error) {
 		if e.IsDir() || !strings.HasSuffix(strings.ToLower(e.Name()), ".txt") {
 			continue
 		}
-		b, err := os.ReadFile(filepath.Join(dirPath, e.Name()))
-		if err != nil {
-			return "", 0, fmt.Errorf("read file %s: %w", e.Name(), err)
-		}
 		if count > 0 {
 			builder.WriteString("\n\n")
 		}
-		builder.Write(b)
+		file, err := os.Open(filepath.Join(dirPath, e.Name()))
+		if err != nil {
+			return "", 0, fmt.Errorf("read file %s: %w", e.Name(), err)
+		}
+		var reader io.Reader = file
+		if maxSize > 0 {
+			reader = io.LimitReader(file, max(0, int64(maxSize)-int64(builder.Len())+1))
+		}
+		_, readErr := io.Copy(&builder, reader)
+		closeErr := file.Close()
+		if readErr != nil {
+			return "", 0, fmt.Errorf("read file %s: %w", e.Name(), readErr)
+		}
+		if closeErr != nil {
+			return "", 0, fmt.Errorf("close file %s: %w", e.Name(), closeErr)
+		}
 		count++
 		if maxSize > 0 && builder.Len() > maxSize {
 			break
@@ -274,7 +307,7 @@ func ReadDir(dirPath string, maxSize int) (string, int, error) {
 	}
 
 	if count == 0 {
-		return "", 0, fmt.Errorf("no .txt files found in %s", dirPath)
+		return "", 0, fmt.Errorf("no .txt files found in %s: %w", dirPath, ErrInvalidText)
 	}
 
 	return builder.String(), count, nil
