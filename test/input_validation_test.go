@@ -26,7 +26,7 @@ func TestInvalidTextHTTPPaths(t *testing.T) {
 		t.Fatalf("empty directory status: %d", w.Code)
 	}
 	for _, text := range []string{"", "               ", "\t\n\r\u2003\u00a0", "!!!!!!!!!!!!!!", "<p></p><div> </div>", "123456789"} {
-		payload, _ := json.Marshal(map[string]string{"source_type": "paste", "text": text})
+		payload, _ := json.Marshal(map[string]string{"text": text})
 		w := httptest.NewRecorder()
 		analyze.MakeHandleAnalyze(100000, logger, pipe.Run)(w, httptest.NewRequest("POST", "/analyze", strings.NewReader(string(payload))))
 		if w.Code != 400 {
@@ -67,7 +67,7 @@ func TestValidInputDetailsInBothAPIs(t *testing.T) {
 	}
 	handlers := []http.HandlerFunc{analyze.MakeHandleAnalyze(100000, logger, pipe.Run), ingest.MakeHandleAnalyzeDir(ingest.Config{DirPath: dir, MaxTextSize: 100000}, logger, pipe.Run)}
 	for _, h := range handlers {
-		payload, _ := json.Marshal(map[string]string{"text": text, "source_type": "paste"})
+		payload, _ := json.Marshal(map[string]string{"text": text})
 		w := httptest.NewRecorder()
 		h(w, httptest.NewRequest("POST", "/analyze", strings.NewReader(string(payload))))
 		if w.Code != 200 {

@@ -4,16 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"time"
 
 	"psycho/modules/ingest"
 	"psycho/zlogger"
 )
-
-// validSourceTypes mirrors the JSON API's source_type constraint.
-var validSourceTypes = map[string]bool{
-	"blog": true, "chat": true, "email": true, "paste": true, "file": true, "url": true,
-}
 
 // MakeHandleReportForm handles the browser upload form (POST /report): it
 // runs the analysis and returns the rendered report directly in the
@@ -48,26 +42,7 @@ func MakeHandleReportForm(
 			return
 		}
 
-		sourceType := r.PostFormValue("source_type")
-		if sourceType == "" {
-			sourceType = "paste"
-		}
-		if !validSourceTypes[sourceType] {
-			http.Error(w, "Invalid kind of writing.", http.StatusBadRequest)
-			return
-		}
-
-		// Match the JSON API's validation (datetime=2006-01-02) so the DB
-		// never stores an unparseable date.
-		sourceDate := r.PostFormValue("source_date")
-		if sourceDate != "" {
-			if _, err := time.Parse("2006-01-02", sourceDate); err != nil {
-				http.Error(w, "Invalid written-on date; use YYYY-MM-DD.", http.StatusBadRequest)
-				return
-			}
-		}
-
-		out, err := analyzeFn(r.Context(), sourceType, sourceDate, text)
+		out, err := analyzeFn(r.Context(), text)
 		if err != nil {
 			if errors.Is(err, ingest.ErrInvalidText) {
 				http.Error(w, ingest.ErrInvalidText.Error(), http.StatusBadRequest)

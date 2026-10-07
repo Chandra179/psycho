@@ -17,14 +17,14 @@ func TestCalculationDetailsAndSQLInjectionBoundAsData(t *testing.T) {
 	attack := "x'); DROP TABLE analyses; --"
 	details := &analyze.CalculationDetails{ModelFingerprint: "recorded", Traits: map[string]*analyze.ScoreCalculation{"openness": {Baseline: .5, FinalScore: .52}}, CategoryCounts: map[analyze.Category]int{"article": 3}}
 	p := Profile{AnalysisID: attack, CalculationDetails: details, Narrative: "<script>alert(1)</script>"}
-	if _, err := s.SaveAnalysis(attack, attack, 10, .5, analyze.FeatureVector{}, p); err != nil {
+	if _, err := s.SaveAnalysis(10, .5, analyze.FeatureVector{}, p); err != nil {
 		t.Fatal(err)
 	}
 	got, err := s.GetAnalysis(attack)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.SourceType != attack || got.SourceDate != attack || !reflect.DeepEqual(details, got.CalculationDetails) {
+	if !reflect.DeepEqual(details, got.CalculationDetails) {
 		t.Fatal("JSON or SQL input changed")
 	}
 	if _, err := s.GetAnalysis("' OR 1=1 --"); err == nil {
@@ -54,7 +54,7 @@ func TestStorageMigrateAndSave(t *testing.T) {
 		CategoryPercents: map[analyze.Category]float64{"positive_emotion": 5.0},
 	}
 
-	id, err := storage.SaveAnalysis("blog", "2024-03-15", 1000, 0.7, features, profile)
+	id, err := storage.SaveAnalysis(1000, 0.7, features, profile)
 	if err != nil {
 		t.Fatalf("SaveAnalysis: %v", err)
 	}
@@ -69,9 +69,6 @@ func TestStorageMigrateAndSave(t *testing.T) {
 	if saved.ConfidenceFlag != "high" {
 		t.Errorf("ConfidenceFlag = %q; want high", saved.ConfidenceFlag)
 	}
-	if saved.SourceDate != "2024-03-15" {
-		t.Errorf("SourceDate = %q; want 2024-03-15", saved.SourceDate)
-	}
 	if saved.WordCount != 1000 {
 		t.Errorf("WordCount = %d; want 1000", saved.WordCount)
 	}
@@ -82,7 +79,8 @@ func TestStorageMigrateAndSave(t *testing.T) {
 
 // TestStorageMigratesLegacySchema builds a pre-rename database (scores_json,
 // no source_date, no profile_version), runs Migrate, and verifies the
-// schema is brought forward without losing the stored row.
+// schema is brought forward without losing the stored row or retaining the
+// retired writing metadata columns.
 func TestStorageMigratesLegacySchema(t *testing.T) {
 	db := openTestDB(t)
 	legacy := `
@@ -111,7 +109,7 @@ CREATE TABLE analyses (
 		t.Fatalf("Migrate: %v", err)
 	}
 
-	for _, col := range []string{"profile_json", "profile_version", "source_date"} {
+	for _, col := range []string{"profile_json", "profile_version"} {
 		var count int
 		if err := db.QueryRow(
 			`SELECT COUNT(*) FROM pragma_table_info('analyses') WHERE name = ?`, col,
@@ -120,6 +118,17 @@ CREATE TABLE analyses (
 		}
 		if count != 1 {
 			t.Errorf("column %q missing after migration", col)
+		}
+	}
+	for _, col := range []string{"source_type", "source_date"} {
+		var count int
+		if err := db.QueryRow(
+			`SELECT COUNT(*) FROM pragma_table_info('analyses') WHERE name = ?`, col,
+		).Scan(&count); err != nil {
+			t.Fatalf("inspect retired metadata column: %v", err)
+		}
+		if count != 0 {
+			t.Errorf("retired metadata column %q should be removed after migration", col)
 		}
 	}
 	var scoresJSON int

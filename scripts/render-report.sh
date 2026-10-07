@@ -59,7 +59,7 @@ srv_pid=$!
 resp=""
 for _ in $(seq 1 60); do
   if resp="$(curl -fsS -X POST "http://localhost:$port/analyze-dir" \
-      -H 'Content-Type: application/json' -d '{"source_type":"file"}' 2>/dev/null)"; then
+      -H 'Content-Type: application/json' -d '{}' 2>/dev/null)"; then
     break
   fi
   sleep 0.5

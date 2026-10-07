@@ -30,7 +30,6 @@ func (s *Storage) Migrate() error {
 	q := `
 CREATE TABLE IF NOT EXISTS analyses (
 	id TEXT PRIMARY KEY,
-	source_type TEXT NOT NULL,
 	word_count INTEGER NOT NULL,
 	dictionary_coverage REAL NOT NULL,
 	features_json TEXT NOT NULL,
@@ -58,11 +57,15 @@ CREATE TABLE IF NOT EXISTS analyses (
 		}
 	}
 
-	if err := s.ensureColumn("source_date", `ALTER TABLE analyses ADD COLUMN source_date TEXT NOT NULL DEFAULT ''`); err != nil {
-		return fmt.Errorf("add source_date column: %w", err)
-	}
 	if err := s.ensureColumn("profile_version", `ALTER TABLE analyses ADD COLUMN profile_version INTEGER NOT NULL DEFAULT 1`); err != nil {
 		return fmt.Errorf("add profile_version column: %w", err)
+	}
+	// Remove the retired input metadata from existing databases as well as
+	// from the current schema. Existing analyses and their profile JSON remain.
+	for _, column := range []string{"source_date", "source_type"} {
+		if err := s.dropColumnIfExists(column); err != nil {
+			return fmt.Errorf("drop retired %s column: %w", column, err)
+		}
 	}
 	return nil
 }
@@ -91,8 +94,20 @@ func (s *Storage) ensureColumn(name, alter string) error {
 	return nil
 }
 
+func (s *Storage) dropColumnIfExists(name string) error {
+	ok, err := s.columnExists(name)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return nil
+	}
+	_, err = s.db.Exec("ALTER TABLE analyses DROP COLUMN " + name)
+	return err
+}
+
 // SaveAnalysis persists a profile and returns the analysis ID.
-func (s *Storage) SaveAnalysis(sourceType, sourceDate string, wordCount int, coverage float64, features analyze.FeatureVector, profile Profile) (string, error) {
+func (s *Storage) SaveAnalysis(wordCount int, coverage float64, features analyze.FeatureVector, profile Profile) (string, error) {
 	featuresJSON, err := json.Marshal(features.CategoryPercents)
 	if err != nil {
 		return "", fmt.Errorf("marshal features: %w", err)
@@ -103,9 +118,9 @@ func (s *Storage) SaveAnalysis(sourceType, sourceDate string, wordCount int, cov
 	}
 
 	_, err = s.db.Exec(
-		`INSERT INTO analyses (id, source_type, source_date, word_count, dictionary_coverage, features_json, profile_json, profile_version, confidence_flag)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		profile.AnalysisID, sourceType, sourceDate, wordCount, coverage, string(featuresJSON), string(profileJSON), profileSchemaVersion, profile.ConfidenceFlag,
+		`INSERT INTO analyses (id, word_count, dictionary_coverage, features_json, profile_json, profile_version, confidence_flag)
+		 VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		profile.AnalysisID, wordCount, coverage, string(featuresJSON), string(profileJSON), profileSchemaVersion, profile.ConfidenceFlag,
 	)
 	if err != nil {
 		return "", fmt.Errorf("insert analysis: %w", err)
@@ -134,9 +149,9 @@ func (s *Storage) GetAnalysis(id string) (*SavedAnalysis, error) {
 	var a SavedAnalysis
 	var featuresJSON, profileJSON string
 	err := s.db.QueryRow(
-		`SELECT id, source_type, source_date, word_count, dictionary_coverage, features_json, profile_json, profile_version, confidence_flag, created_at
+		`SELECT id, word_count, dictionary_coverage, features_json, profile_json, profile_version, confidence_flag, created_at
 		 FROM analyses WHERE id = ?`, id,
-	).Scan(&a.ID, &a.SourceType, &a.SourceDate, &a.WordCount, &a.Coverage, &featuresJSON, &profileJSON, &a.ProfileVersion, &a.ConfidenceFlag, &a.CreatedAt)
+	).Scan(&a.ID, &a.WordCount, &a.Coverage, &featuresJSON, &profileJSON, &a.ProfileVersion, &a.ConfidenceFlag, &a.CreatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -161,8 +176,6 @@ func (s *Storage) GetAnalysis(id string) (*SavedAnalysis, error) {
 // endpoint.
 type SavedAnalysis struct {
 	ID                  string                      `json:"id"`
-	SourceType          string                      `json:"source_type"`
-	SourceDate          string                      `json:"source_date,omitempty"`
 	WordCount           int                         `json:"word_count"`
 	Coverage            float64                     `json:"dictionary_coverage"`
 	Features            map[string]float64          `json:"features"`

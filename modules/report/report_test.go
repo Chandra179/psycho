@@ -257,7 +257,7 @@ func TestIndexUsesConversationWidthAndKeepsReportUnconstrained(t *testing.T) {
 }
 
 func stubAnalyzeFn(id string) ingest.AnalyzeFunc {
-	return func(_ context.Context, sourceType, sourceDate, text string) (ingest.AnalysisOutput, error) {
+	return func(_ context.Context, text string) (ingest.AnalysisOutput, error) {
 		traits := map[string]any{
 			"openness": Trait{Score: 0.7, Percentile: 91, ConfidenceInterval: []float64{0.45, 0.9},
 				Evidence: []ContributionJSON{{Category: "article", WordPercent: 9.3, Weight: -0.01, Contribution: -0.07, MatchedWords: []string{"the", "a"}}}},
@@ -328,7 +328,7 @@ func TestAnalysisOutputRoundTrip(t *testing.T) {
 	// The stub handler already exercises this via Marshal/Unmarshal, but
 	// assert the JSON contract explicitly: an AnalysisOutput encodes into a
 	// shape Analysis can decode.
-	res, err := stubAnalyzeFn("x")(nil, "paste", "", "text")
+	res, err := stubAnalyzeFn("x")(nil, "text")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -377,17 +377,5 @@ func TestLegacyPayloadWithoutOptionalEvidenceFields(t *testing.T) {
 		if !strings.Contains(rendered.String(), want) {
 			t.Errorf("legacy report missing available information %q", want)
 		}
-	}
-}
-
-func TestFormHandlerRejectsBadSourceDate(t *testing.T) {
-	fields := url.Values{
-		"text":        {"a perfectly fine sample of text"},
-		"consent":     {"on"},
-		"source_date": {"not-a-date"},
-	}
-	rec := postForm("", fields, true)
-	if rec.Code != http.StatusBadRequest {
-		t.Fatalf("invalid source_date must 400, got %d", rec.Code)
 	}
 }

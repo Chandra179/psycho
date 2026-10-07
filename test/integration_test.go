@@ -114,9 +114,7 @@ func TestFullPipeline(t *testing.T) {
 	}
 
 	payload := map[string]string{
-		"text":        text,
-		"source_type": "blog",
-		"source_date": "2024-03-15",
+		"text": text,
 	}
 	body, _ := json.Marshal(payload)
 
@@ -206,10 +204,7 @@ func TestFullPipelineAnalyzeDir(t *testing.T) {
 	server := httptest.NewServer(chain)
 	defer server.Close()
 
-	payload := map[string]string{
-		"source_type": "file",
-		"source_date": "2024-03-15",
-	}
+	payload := map[string]string{}
 	body, _ := json.Marshal(payload)
 
 	resp, err := http.Post(fmt.Sprintf("%s/analyze-dir", server.URL), "application/json", bytes.NewReader(body))
@@ -269,10 +264,7 @@ func TestAnalyzeDirWithDataSamples(t *testing.T) {
 	server := httptest.NewServer(chain)
 	defer server.Close()
 
-	payload := map[string]string{
-		"source_type": "file",
-		"source_date": "2025-05-17",
-	}
+	payload := map[string]string{}
 	body, _ := json.Marshal(payload)
 
 	resp, err := http.Post(fmt.Sprintf("%s/analyze-dir", server.URL), "application/json", bytes.NewReader(body))
@@ -389,10 +381,7 @@ func TestIndividualSamples(t *testing.T) {
 			t.Fatalf("read %s: %v", name, err)
 		}
 
-		payload := map[string]string{
-			"text":        string(text),
-			"source_type": "file",
-		}
+		payload := map[string]string{"text": string(text)}
 		body, _ := json.Marshal(payload)
 		resp, err := http.Post(fmt.Sprintf("%s/analyze", server.URL), "application/json", bytes.NewReader(body))
 		if err != nil {
@@ -460,7 +449,7 @@ func TestGetAnalysisEndpoint(t *testing.T) {
 	defer server.Close()
 
 	text := strings.Repeat("I think the article explains the theory about cities. ", 30)
-	payload := map[string]string{"text": text, "source_type": "blog"}
+	payload := map[string]string{"text": text}
 	body, _ := json.Marshal(payload)
 	resp, err := http.Post(fmt.Sprintf("%s/analyze", server.URL), "application/json", bytes.NewReader(body))
 	if err != nil {

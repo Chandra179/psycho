@@ -12,10 +12,8 @@ import (
 )
 
 type AnalyzeRequest struct {
-	Text       string `json:"text" validate:"omitempty"`
-	SourceType string `json:"source_type" validate:"required,oneof=blog chat email paste file url"`
-	SourceDate string `json:"source_date" validate:"omitempty,datetime=2006-01-02"`
-	SourceURL  string `json:"source_url" validate:"omitempty,url"`
+	Text      string `json:"text" validate:"omitempty"`
+	SourceURL string `json:"source_url" validate:"omitempty,url"`
 }
 
 type AnalyzeResponse struct {
@@ -58,11 +56,7 @@ func makeHandleAnalyze(maxTextSize int, logger *zlogger.Logger, analyzeFn ingest
 
 		text := req.Text
 
-		if req.SourceType == "url" {
-			if req.SourceURL == "" {
-				http.Error(w, "source_url is required when source_type=url", http.StatusBadRequest)
-				return
-			}
+		if req.SourceURL != "" {
 			fetched, err := fetchURL(req.SourceURL, maxTextSize)
 			if err != nil {
 				logger.Error(r.Context(), "url fetch failed", zlogger.Field{Key: "error", Value: err.Error()})
@@ -77,7 +71,7 @@ func makeHandleAnalyze(maxTextSize int, logger *zlogger.Logger, analyzeFn ingest
 			return
 		}
 
-		out, err := analyzeFn(r.Context(), req.SourceType, req.SourceDate, text)
+		out, err := analyzeFn(r.Context(), text)
 		if err != nil {
 			if errors.Is(err, ingest.ErrInvalidText) {
 				http.Error(w, ingest.ErrInvalidText.Error(), http.StatusBadRequest)

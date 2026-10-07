@@ -45,7 +45,7 @@ func New(
 // Run analyzes text end-to-end and persists the result. The context is
 // checked between stages so a request whose deadline has expired
 // (middleware.Timeout) stops before doing more work.
-func (p *Pipeline) Run(ctx context.Context, sourceType, sourceDate, text string) (ingest.AnalysisOutput, error) {
+func (p *Pipeline) Run(ctx context.Context, text string) (ingest.AnalysisOutput, error) {
 	if err := ctx.Err(); err != nil {
 		return ingest.AnalysisOutput{}, err
 	}
@@ -86,7 +86,7 @@ func (p *Pipeline) Run(ctx context.Context, sourceType, sourceDate, text string)
 		return ingest.AnalysisOutput{}, err
 	}
 
-	analysisID, err := p.storage.SaveAnalysis(sourceType, sourceDate, doc.WordCount, coverage, features, prof)
+	analysisID, err := p.storage.SaveAnalysis(doc.WordCount, coverage, features, prof)
 	if err != nil {
 		return ingest.AnalysisOutput{}, err
 	}

@@ -18,10 +18,7 @@ import (
 	"psycho/zlogger"
 )
 
-type AnalyzeDirRequest struct {
-	SourceType string `json:"source_type" validate:"omitempty,oneof=blog chat email paste file url"`
-	SourceDate string `json:"source_date" validate:"omitempty,datetime=2006-01-02"`
-}
+type AnalyzeDirRequest struct{}
 
 type AnalyzeDirResponse struct {
 	AnalysisID          string               `json:"analysis_id"`
@@ -71,7 +68,7 @@ type AnalysisOutput struct {
 
 // AnalyzeFunc is the seam the HTTP handlers call into. modules/server and
 // the tests wire it to a *pipeline.Pipeline.
-type AnalyzeFunc func(ctx context.Context, sourceType, sourceDate, text string) (AnalysisOutput, error)
+type AnalyzeFunc func(ctx context.Context, text string) (AnalysisOutput, error)
 
 func MakeHandleAnalyzeDir(
 	cfg Config,
@@ -80,7 +77,7 @@ func MakeHandleAnalyzeDir(
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		r.Body = http.MaxBytesReader(w, r.Body, 64<<10) // the dir request is tiny JSON; refuse anything bigger
-		req, err := middleware.DecodeAndValidate[AnalyzeDirRequest](r)
+		_, err := middleware.DecodeAndValidate[AnalyzeDirRequest](r)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -89,11 +86,6 @@ func MakeHandleAnalyzeDir(
 		if cfg.DirPath == "" {
 			http.Error(w, "dir_path not configured", http.StatusServiceUnavailable)
 			return
-		}
-
-		sourceType := req.SourceType
-		if sourceType == "" {
-			sourceType = "file"
 		}
 
 		text, filesRead, err := ReadDir(cfg.DirPath, cfg.MaxTextSize)
@@ -112,7 +104,7 @@ func MakeHandleAnalyzeDir(
 			return
 		}
 
-		out, err := analyzeFn(r.Context(), sourceType, req.SourceDate, text)
+		out, err := analyzeFn(r.Context(), text)
 		if err != nil {
 			if errors.Is(err, ErrInvalidText) {
 				http.Error(w, ErrInvalidText.Error(), http.StatusBadRequest)

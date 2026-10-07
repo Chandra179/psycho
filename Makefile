@@ -22,7 +22,7 @@ test-curl:
 	@TMP=$$(mktemp); \
 	curl -s -X POST http://localhost:8080/analyze-dir \
 		-H "Content-Type: application/json" \
-		-d '{"source_type": "file"}' > $$TMP; \
+		-d '{}' > $$TMP; \
 	jq . $$TMP; \
 	ID=$$(jq -r .analysis_id $$TMP); \
 	rm $$TMP; \
@@ -42,7 +42,7 @@ test-pdf:
 	@TMP=$$(mktemp); \
 	curl -s -X POST http://localhost:8080/analyze-dir \
 		-H "Content-Type: application/json" \
-		-d '{"source_type": "file"}' > $$TMP; \
+		-d '{}' > $$TMP; \
 	jq . $$TMP; \
 	ID=$$(jq -r .analysis_id $$TMP); \
 	if [ -z "$$ID" ] || [ "$$ID" = "null" ]; then \

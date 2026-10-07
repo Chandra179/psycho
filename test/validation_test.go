@@ -374,7 +374,7 @@ func TestLatencyBenchmarks(t *testing.T) {
 			scores.NeedForClosure = analyze.ComputeNeedForClosure(fv)
 			scores.Values = analyze.ComputeSchwartzValues(fv)
 			prof := vp.pd.Aggregator.Aggregate(scores, fv, doc.WordCount, coverage)
-			if _, err := vp.pd.Storage.SaveAnalysis("blog", "2026-09-29", doc.WordCount, coverage, fv, prof); err != nil {
+			if _, err := vp.pd.Storage.SaveAnalysis(doc.WordCount, coverage, fv, prof); err != nil {
 				t.Fatalf("save analysis: %v", err)
 			}
 			_ = vp.pd.NarrativeGenerator.GenerateSynthesis(prof)
