@@ -313,6 +313,11 @@ func TestFormHandlerRendersFragmentAndFullPage(t *testing.T) {
 	if !strings.Contains(rec.Body.String(), "Your writing profile") {
 		t.Error("fragment must contain the report body")
 	}
+	for _, want := range []string{"Text-based measures", `aria-label="Big Five bands"`, `id="band-openness" role="tooltip"`} {
+		if !strings.Contains(rec.Body.String(), want) {
+			t.Errorf("HTMX report is missing %q", want)
+		}
+	}
 
 	rec = postForm("", fields, false)
 	if rec.Code != http.StatusOK {
@@ -323,6 +328,11 @@ func TestFormHandlerRendersFragmentAndFullPage(t *testing.T) {
 	}
 	if !strings.Contains(rec.Body.String(), "Your writing profile") {
 		t.Error("full page must contain the report body")
+	}
+	for _, want := range []string{"Text-based measures", `aria-label="Big Five bands"`, `id="band-openness" role="tooltip"`} {
+		if !strings.Contains(rec.Body.String(), want) {
+			t.Errorf("full-page report is missing %q", want)
+		}
 	}
 }
 

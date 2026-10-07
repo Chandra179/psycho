@@ -117,7 +117,7 @@ type ReportView struct {
 	GeneratedAt                    string
 	Quality                        string
 	Traits                         []TraitView
-	BigFive, Additional            []TraitView
+	HasBigFive                     bool
 	Bands                          []analyze.ScoreBand
 	Values                         []ValueView
 	Summary                        []SummaryCard
@@ -243,9 +243,7 @@ func BuildReport(a *Analysis) ReportView {
 		}
 		v.Traits = append(v.Traits, tv)
 		if slices.Contains(traitOrder[:5], k) {
-			v.BigFive = append(v.BigFive, tv)
-		} else {
-			v.Additional = append(v.Additional, tv)
+			v.HasBigFive = true
 		}
 	}
 	return v

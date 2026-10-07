@@ -38,38 +38,35 @@
     </nav>
   </header>
 
-  <p class="mt-6 max-w-prose leading-relaxed text-stone-600">An experimental estimate from word patterns in this writing. Scores can reflect the topic and writing style; they do not directly measure your personality.</p>
+  <p class="mt-5 sm:mt-6 w-full text-[15px] sm:text-base leading-relaxed text-pretty text-stone-600">An experimental estimate from word patterns in this writing. Scores can reflect the topic and writing style; they do not directly measure your personality.</p>
 
-  {{if .BigFive}}
+  {{if .Traits}}
   <section class="mt-10">
-    <h2 class="font-serif text-xl mb-4">Big Five text signals</h2>
-    <div class="report-legend" role="group" aria-label="Big Five text-score bands">
-      <span class="text-xs text-stone-500">Bands</span>
-      {{range .Bands}}
-      <details class="report-band">
-        <summary aria-label="{{.Label}} band: {{.Range}} out of 100" aria-describedby="legend-{{.Label}}" class="rounded-lg border border-stone-200 bg-white px-2 py-1.5 text-xs text-stone-600">
-          <span class="capitalize">{{.Label}}</span> <span class="ml-1 tabular-nums text-stone-800">{{.Range}}</span>
-          <span id="legend-{{.Label}}" role="tooltip" class="report-tooltip">{{.Description}}</span>
-        </summary>
-      </details>
+    <h2 class="font-serif text-xl mb-2">Text-based measures</h2>
+    <div class="mb-4 flex flex-col gap-3">
+      <p class="w-full text-sm sm:text-[15px] leading-relaxed text-pretty text-stone-500">Measures beyond the Big Five are project-defined language proxies. Each score's band explanation follows its own scale.</p>
+      {{if .HasBigFive}}
+      <div class="report-legend mb-0 min-w-0 w-full" role="group" aria-label="Big Five bands">
+        <span class="shrink-0 whitespace-nowrap text-xs text-stone-500">Big Five bands</span>
+        {{range .Bands}}
+        <details class="report-band">
+          <summary aria-label="{{.Label}} band: {{.Range}} out of 100" aria-describedby="legend-{{.Label}}" class="whitespace-nowrap rounded-lg border border-stone-200 bg-white px-2 py-1.5 text-xs text-stone-600">
+            <span class="capitalize">{{.Label}}</span> <span class="ml-1 tabular-nums text-stone-800">{{.Range}}</span>
+            <span id="legend-{{.Label}}" role="tooltip" class="report-tooltip">{{.Description}}</span>
+          </summary>
+        </details>
+        {{end}}
+      </div>
       {{end}}
     </div>
-    <div class="rounded-2xl border border-stone-200 bg-white">{{range .BigFive}}{{template "report-score-row" .}}{{end}}</div>
-  </section>
-  {{end}}
-
-  {{if .Additional}}
-  <section class="mt-10">
-    <h2 class="font-serif text-xl mb-2">Additional text measures</h2>
-    <p class="max-w-prose text-xs text-stone-500 mb-4">Project-defined language proxies. Each band's explanation follows that measure's own scale.</p>
-    <div class="rounded-2xl border border-stone-200 bg-white">{{range .Additional}}{{template "report-score-row" .}}{{end}}</div>
+    <div class="rounded-2xl border border-stone-200 bg-white">{{range .Traits}}{{template "report-score-row" .}}{{end}}</div>
   </section>
   {{end}}
 
   {{if .Values}}
   <section class="mt-10">
     <h2 class="font-serif text-xl mb-2">Value-related language</h2>
-    <p class="max-w-prose text-xs text-stone-500 mb-4">Counts show how often dictionary words appear. Mentioning or rejecting a value both count. Open a category to see sampled examples in context; percentages use all matches.</p>
+    <p class="w-full text-sm sm:text-[15px] leading-relaxed text-pretty text-stone-500 mb-4">Counts show how often dictionary words appear. Mentioning or rejecting a value both count. Open a category to see sampled examples in context; percentages use all matches.</p>
     <div class="bg-white rounded-2xl border border-stone-200">
       {{range $i, $value := .Values}}
       <details class="report-value" {{if eq $i 0}}open{{end}}>
@@ -105,12 +102,12 @@
       <span aria-hidden="true" class="group-open:rotate-180 transition-transform text-stone-400">⌄</span>
     </summary>
     <div class="px-5 pb-5">
-      <p class="max-w-prose text-xs leading-relaxed text-stone-600 mb-3">{{.PercentileReferenceDescription}}</p>
+      <p class="w-full break-words text-xs leading-relaxed text-stone-600 mb-3">{{.PercentileReferenceDescription}}</p>
       <p class="text-xs text-stone-500 mb-3">{{.WordCount}} words · {{.Coverage}}% dictionary coverage · analysis {{.AnalysisID}}</p>
       <div class="space-y-2 mb-5 text-xs text-stone-600">
         {{range .Traits}}<p><strong class="font-medium text-stone-800">{{.Name}}</strong>: {{.PercentileText}}{{if .HasScoreRange}} Recorded heuristic bounds: {{.ScoreRangeLow}}–{{.ScoreRangeHigh}}/100 (unvalidated).{{end}}</p>{{end}}
       </div>
-      {{if not .CalculationJSON}}<p class="max-w-prose text-sm text-amber-800 mb-4">Complete calculation details were not recorded for this saved analysis. Its recorded scores and evidence are shown below; missing operands are not reconstructed using the current model.</p>{{end}}
+      {{if not .CalculationJSON}}<p class="w-full break-words text-sm text-amber-800 mb-4">Complete calculation details were not recorded for this saved analysis. Its recorded scores and evidence are shown below; missing operands are not reconstructed using the current model.</p>{{end}}
       <div role="region" aria-label="Score evidence table, scroll horizontally to see all columns" tabindex="0" class="-mx-5 overflow-x-auto px-5 pb-1 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-teal-500">
         <table class="w-full min-w-[50rem] text-sm">
           <thead>
@@ -157,7 +154,7 @@
           </tbody>
         </table>
       </div>
-      <div class="max-w-prose text-xs leading-relaxed text-stone-600 mt-4 space-y-2">
+      <div class="w-full break-words text-xs leading-relaxed text-stone-600 mt-4 space-y-2">
         <p>Table values are rounded for display. Scores use a 0–1 scale internally and are shown out of 100. The expanded recorded details below retain full floating-point precision, formulas and operation order. Calculations clamp to 0–1, then round half away from zero to two decimals before and after calibration.</p>
         <p>Each row shows a category's share of all words, multiplied by the model's weight to produce its contribution. The score also includes a baseline and, when configured, a calibration adjustment. Matched words are normalized examples, capped at 10 per category; the percentage uses all matches.</p>
         <p>Recorded heuristic bounds use assumed text-length and dictionary-coverage rules. They are unvalidated diagnostics, not a percentile range or a statistically validated confidence interval.</p>
@@ -165,12 +162,12 @@
         <p>Big Five scores use a correlation-weighted heuristic with assumed scaling. The other text measures and rough ranges are project-defined proxies. Research supports associations and constructs, not these particular prediction formulas. This is an experimental language-pattern estimate, not a validated individual personality measure. In a separate evaluation on 2,442 essays, trait-ranking AUC ranged from 0.524 to 0.554 across the five dimensions; 0.5 is chance.</p>
       </div>
       {{if .CalculationJSON}}
-      <details class="mt-5 border-t border-stone-200 pt-4">
+      <details class="w-full min-w-0 mt-5 border-t border-stone-200 pt-4">
         <summary class="cursor-pointer text-sm font-medium text-stone-700">Exact recorded inputs, formulas and results</summary>
-        <pre class="mt-3 rounded-xl bg-stone-50 p-4 text-xs leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{{.CalculationJSON}}</pre>
+        <pre class="w-full max-w-full mt-3 rounded-xl bg-stone-50 p-4 text-xs leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{{.CalculationJSON}}</pre>
       </details>
       {{end}}
-      <p class="max-w-prose text-xs leading-relaxed text-stone-600 mt-4">References: <a class="underline" href="https://doi.org/10.1016/j.jrp.2010.04.001">Yarkoni (2010), language and Big Five associations</a>; <a class="underline" href="https://doi.org/10.1037/0003-066X.52.12.1280">Higgins (1997), regulatory focus</a>; <a class="underline" href="https://doi.org/10.1037/0022-3514.42.1.116">Cacioppo and Petty (1982), need for cognition</a>; <a class="underline" href="https://doi.org/10.1037/0022-3514.67.6.1049">Webster and Kruglanski (1994), need for closure</a>. These sources do not validate this project's weights or proxies.</p>
+      <p class="w-full break-words text-xs leading-relaxed text-stone-600 mt-4">References: <a class="underline" href="https://doi.org/10.1016/j.jrp.2010.04.001">Yarkoni (2010), language and Big Five associations</a>; <a class="underline" href="https://doi.org/10.1037/0003-066X.52.12.1280">Higgins (1997), regulatory focus</a>; <a class="underline" href="https://doi.org/10.1037/0022-3514.42.1.116">Cacioppo and Petty (1982), need for cognition</a>; <a class="underline" href="https://doi.org/10.1037/0022-3514.67.6.1049">Webster and Kruglanski (1994), need for closure</a>. These sources do not validate this project's weights or proxies.</p>
     </div>
   </details>
 
