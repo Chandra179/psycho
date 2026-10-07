@@ -19,7 +19,8 @@ type FeatureVector struct {
 	AvgWordLength     float64
 	// Evidence holds a bounded sample of the words that matched each
 	// category — the raw material behind the percentages.
-	Evidence map[Category][]string
+	Evidence      map[Category][]string
+	ValueExcerpts map[string][]ingest.TextExcerpt
 }
 
 // FeatureExtractor computes psycholinguistic features from a document.
@@ -90,6 +91,7 @@ func (fe *FeatureExtractor) Extract(doc ingest.Document) (FeatureVector, float64
 		BigWordRatio:      float64(bigWords) / wordCount,
 		AvgWordLength:     avgWordLen,
 		Evidence:          evidence,
+		ValueExcerpts:     valueExcerpts(doc.RawText, fe.dict),
 	}
 	return fv, coverage
 }

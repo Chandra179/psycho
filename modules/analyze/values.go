@@ -41,6 +41,23 @@ func ValueDisplayName(cat Category) string {
 	return string(cat)
 }
 
+// ValueDescription describes dictionary topics, not inferred personal values.
+func ValueDescription(cat Category) string {
+	descriptions := map[Category]string{
+		"value_self_direction": "Independence, choice and creativity",
+		"value_stimulation":    "Novelty, challenge and excitement",
+		"value_hedonism":       "Pleasure, enjoyment and comfort",
+		"value_achievement":    "Goals, accomplishment and competence",
+		"value_power":          "Influence, authority and social standing",
+		"value_security":       "Safety, stability and order",
+		"value_conformity":     "Rules, obligations and social expectations",
+		"value_tradition":      "Customs, heritage and cultural references",
+		"value_benevolence":    "Care, help and concern for others",
+		"value_universalism":   "Fairness and care beyond oneself",
+	}
+	return descriptions[cat]
+}
+
 // SchwartzValueKeys returns all value category keys.
 func SchwartzValueKeys() []Category {
 	out := make([]Category, len(schwartzValueCategories))

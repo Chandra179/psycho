@@ -21,18 +21,19 @@ import (
 type AnalyzeDirRequest struct{}
 
 type AnalyzeDirResponse struct {
-	AnalysisID          string               `json:"analysis_id"`
-	WordCount           int                  `json:"word_count"`
-	DictionaryCoverage  float64              `json:"dictionary_coverage"`
-	ConfidenceFlag      string               `json:"confidence_flag"`
-	Traits              map[string]any       `json:"traits"`
-	Values              map[string]float64   `json:"values"`
-	ValueEvidence       map[string][]string  `json:"value_evidence,omitempty"`
-	PercentileReference *PercentileReference `json:"percentile_reference,omitempty"`
-	CalculationDetails  any                  `json:"calculation_details,omitempty"`
-	FilesRead           int                  `json:"files_read"`
-	Summary             any                  `json:"summary"`
-	Narrative           string               `json:"narrative"`
+	AnalysisID          string                   `json:"analysis_id"`
+	WordCount           int                      `json:"word_count"`
+	DictionaryCoverage  float64                  `json:"dictionary_coverage"`
+	ConfidenceFlag      string                   `json:"confidence_flag"`
+	Traits              map[string]any           `json:"traits"`
+	Values              map[string]float64       `json:"values"`
+	ValueEvidence       map[string][]string      `json:"value_evidence,omitempty"`
+	ValueExcerpts       map[string][]TextExcerpt `json:"value_excerpts,omitempty"`
+	PercentileReference *PercentileReference     `json:"percentile_reference,omitempty"`
+	CalculationDetails  any                      `json:"calculation_details,omitempty"`
+	FilesRead           int                      `json:"files_read"`
+	Summary             any                      `json:"summary"`
+	Narrative           string                   `json:"narrative"`
 }
 
 const (
@@ -53,17 +54,18 @@ type PercentileReference struct {
 // contract at this seam, so the tags below are load-bearing — consumers
 // (including the report renderer) decode this shape by its snake_case keys.
 type AnalysisOutput struct {
-	AnalysisID          string               `json:"analysis_id"`
-	WordCount           int                  `json:"word_count"`
-	DictionaryCoverage  float64              `json:"dictionary_coverage"`
-	ConfidenceFlag      string               `json:"confidence_flag"`
-	Traits              map[string]any       `json:"traits"`
-	Values              map[string]float64   `json:"values"`
-	ValueEvidence       map[string][]string  `json:"value_evidence,omitempty"`
-	PercentileReference *PercentileReference `json:"percentile_reference,omitempty"`
-	CalculationDetails  any                  `json:"calculation_details,omitempty"`
-	Summary             any                  `json:"summary"`
-	Narrative           string               `json:"narrative,omitempty"`
+	AnalysisID          string                   `json:"analysis_id"`
+	WordCount           int                      `json:"word_count"`
+	DictionaryCoverage  float64                  `json:"dictionary_coverage"`
+	ConfidenceFlag      string                   `json:"confidence_flag"`
+	Traits              map[string]any           `json:"traits"`
+	Values              map[string]float64       `json:"values"`
+	ValueEvidence       map[string][]string      `json:"value_evidence,omitempty"`
+	ValueExcerpts       map[string][]TextExcerpt `json:"value_excerpts,omitempty"`
+	PercentileReference *PercentileReference     `json:"percentile_reference,omitempty"`
+	CalculationDetails  any                      `json:"calculation_details,omitempty"`
+	Summary             any                      `json:"summary"`
+	Narrative           string                   `json:"narrative,omitempty"`
 }
 
 // AnalyzeFunc is the seam the HTTP handlers call into. modules/server and
@@ -123,6 +125,7 @@ func MakeHandleAnalyzeDir(
 			Traits:              out.Traits,
 			Values:              out.Values,
 			ValueEvidence:       out.ValueEvidence,
+			ValueExcerpts:       out.ValueExcerpts,
 			PercentileReference: out.PercentileReference,
 			CalculationDetails:  out.CalculationDetails,
 			FilesRead:           filesRead,

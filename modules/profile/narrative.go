@@ -2,87 +2,94 @@ package profile
 
 import (
 	"fmt"
+	"math"
 	"sort"
 	"strings"
 
 	"psycho/modules/analyze"
 )
 
-// NarrativeGenerator produces a human-readable narrative from a Profile.
-type NarrativeGenerator interface {
-	GenerateSynthesis(profile Profile) string
-}
-
-// TemplateNarrativeGenerator produces narrative text using predefined templates.
+// NarrativeGenerator produces a human-readable narrative from recorded data.
+type NarrativeGenerator interface{ GenerateSynthesis(profile Profile) string }
 type TemplateNarrativeGenerator struct{}
 
 func NewTemplateNarrativeGenerator() *TemplateNarrativeGenerator {
 	return &TemplateNarrativeGenerator{}
 }
 
-func (g *TemplateNarrativeGenerator) GenerateSynthesis(profile Profile) string {
-	out := "## Psychological Profile\n\n"
-	out += fmt.Sprintf("**Confidence level:** %s\n\n", profile.ConfidenceFlag)
-
-	out += "### Big Five (OCEAN)\n\n"
-	for _, name := range []string{"openness", "conscientiousness", "extraversion", "agreeableness", "neuroticism"} {
-		t := profile.Traits[name]
-		out += fmt.Sprintf("**%s:** %.2f (%s), %s percentile (rough score range: %.2f–%.2f)\n\n",
-			analyze.DimensionDisplayName(name), t.Score, analyze.DimensionLabel(name, t.Score), analyze.Ordinal(t.Percentile), t.ConfidenceInterval[0], t.ConfidenceInterval[1])
+func (g *TemplateNarrativeGenerator) GenerateSynthesis(p Profile) string {
+	var out strings.Builder
+	out.WriteString("## Your writing profile\n\nAn experimental estimate from word patterns, not a direct measurement of personality.\n\n### Big Five text signals\n\n")
+	traitLine := func(key string) {
+		if t, ok := p.Traits[key]; ok {
+			fmt.Fprintf(&out, "**%s:** Estimated text score: %.0f/100 (%s)\n\n", analyze.DimensionDisplayName(key), math.Round(t.Score*100), analyze.DimensionLabel(key, t.Score))
+		}
 	}
-
-	out += "### Regulatory Focus\n\n"
-	rf := profile.Traits["regulatory_focus"]
-	out += fmt.Sprintf("**Regulatory Focus:** %.2f (%s), %s percentile (rough score range: %.2f–%.2f)\n\n",
-		rf.Score, analyze.DimensionLabel("regulatory_focus", rf.Score), analyze.Ordinal(rf.Percentile), rf.ConfidenceInterval[0], rf.ConfidenceInterval[1])
-
-	out += "### Need for Cognition\n\n"
-	nc := profile.Traits["need_for_cognition"]
-	out += fmt.Sprintf("**Need for Cognition:** %.2f (%s), %s percentile (rough score range: %.2f–%.2f)\n\n",
-		nc.Score, analyze.DimensionLabel("need_for_cognition", nc.Score), analyze.Ordinal(nc.Percentile), nc.ConfidenceInterval[0], nc.ConfidenceInterval[1])
-
-	out += "### Cognitive Style\n\n"
-	cs := profile.Traits["cognitive_style"]
-	out += fmt.Sprintf("**Cognitive Style:** %.2f (%s), %s percentile (rough score range: %.2f–%.2f)\n\n",
-		cs.Score, analyze.DimensionLabel("cognitive_style", cs.Score), analyze.Ordinal(cs.Percentile), cs.ConfidenceInterval[0], cs.ConfidenceInterval[1])
-
-	out += "### Need for Closure\n\n"
-	ncl := profile.Traits["need_for_closure"]
-	out += fmt.Sprintf("**Need for Closure:** %.2f (%s), %s percentile (rough score range: %.2f–%.2f)\n\n",
-		ncl.Score, analyze.DimensionLabel("need_for_closure", ncl.Score), analyze.Ordinal(ncl.Percentile), ncl.ConfidenceInterval[0], ncl.ConfidenceInterval[1])
-
-	if len(profile.Values) > 0 {
-		out += "### Schwartz Value Orientation\n\n"
-		keys := make([]string, 0, len(profile.Values))
-		for k := range profile.Values {
-			keys = append(keys, k)
+	for _, key := range []string{"openness", "conscientiousness", "extraversion", "agreeableness", "neuroticism"} {
+		traitLine(key)
+	}
+	bands := analyze.BigFiveBands()
+	fmt.Fprintf(&out, "Bands: %s %s; %s %s; %s %s. Labels describe this tool's text-score scale.\n\n", bands[0].Label, bands[0].Range, bands[1].Label, bands[1].Range, bands[2].Label, bands[2].Range)
+	out.WriteString("### Additional text measures\n\nProject-defined word-pattern proxies.\n\n")
+	for _, key := range []string{"regulatory_focus", "need_for_cognition", "cognitive_style", "need_for_closure"} {
+		traitLine(key)
+	}
+	if len(p.Values) > 0 {
+		out.WriteString("### Value-related language\n\nDictionary occurrences, including both mentioning and rejecting a value. Percentages use all matches; excerpts are sampled examples.\n\n")
+		keys := make([]string, 0, len(p.Values))
+		for key, value := range p.Values {
+			if value > 0 {
+				keys = append(keys, key)
+			}
 		}
 		sort.Slice(keys, func(i, j int) bool {
-			if profile.Values[keys[i]] == profile.Values[keys[j]] {
+			if p.Values[keys[i]] == p.Values[keys[j]] {
 				return keys[i] < keys[j]
 			}
-			return profile.Values[keys[i]] > profile.Values[keys[j]]
+			return p.Values[keys[i]] > p.Values[keys[j]]
 		})
-		for _, k := range keys {
-			pct := profile.Values[k]
-			dn := analyze.ValueDisplayName(analyze.ValueCategory(k))
-			if words := profile.ValueEvidence[k]; len(words) > 0 {
-				out += fmt.Sprintf("- **%s:** %.2f%% of words (%s)\n", dn, pct, strings.Join(words, ", "))
+		for _, key := range keys {
+			name := analyze.ValueDisplayName(analyze.ValueCategory(key))
+			count := "counts not recorded"
+			if p.CalculationDetails != nil {
+				if c, ok := p.CalculationDetails.Values[key]; ok {
+					count = fmt.Sprintf("%d of %d words", c.MatchedCount, c.TotalWords)
+				}
+			}
+			fmt.Fprintf(&out, "- **%s:** %s; %.2f%% of all words. %s.\n", name, count, p.Values[key], analyze.ValueDescription(analyze.ValueCategory(key)))
+			if excerpts := p.ValueExcerpts[key]; len(excerpts) > 0 {
+				for _, excerpt := range excerpts {
+					fmt.Fprintf(&out, "  Sampled text excerpt: %s\n", excerpt.PlainText())
+				}
 			} else {
-				out += fmt.Sprintf("- **%s:** %.2f%% of words\n", dn, pct)
+				out.WriteString("  Text excerpts were not recorded for this analysis.\n")
+				if words := p.ValueEvidence[key]; len(words) > 0 {
+					fmt.Fprintf(&out, "  Sampled matching words: %s\n", strings.Join(words, ", "))
+				}
 			}
 		}
-		out += "\n"
+		out.WriteByte('\n')
 	}
-
-	out += "### Summary Variables\n\n"
-	sv := profile.Summary
-	out += fmt.Sprintf("- **Analytical Thinking:** %.2f, %s\n", sv.AnalyticalThinking, analyze.SummaryBandFormal("analytical_thinking", sv.AnalyticalThinking))
-	out += fmt.Sprintf("- **Clout:** %.2f, %s\n", sv.Clout, analyze.SummaryBandFormal("clout", sv.Clout))
-	out += fmt.Sprintf("- **Authenticity:** %.2f, %s\n", sv.Authenticity, analyze.SummaryBandFormal("authenticity", sv.Authenticity))
-	out += fmt.Sprintf("- **Emotional Tone:** %.2f, %s\n", sv.EmotionalTone, analyze.SummaryTone(sv.EmotionalTone))
-
-	out += "\n---\n"
-	out += "*Generated by Psycho. Project-defined text proxies, not validated personality or clinical measures.*"
-	return out
+	out.WriteString("### Language summaries\n\nProject-defined language summaries, not official LIWC scores.\n\n")
+	for _, item := range []struct {
+		key, name string
+		score     float64
+	}{
+		{"analytical_thinking", "Analytical thinking", p.Summary.AnalyticalThinking}, {"clout", "Clout", p.Summary.Clout},
+		{"authenticity", "Authenticity", p.Summary.Authenticity}, {"emotional_tone", "Emotional tone", p.Summary.EmotionalTone},
+	} {
+		fmt.Fprintf(&out, "- **%s:** Estimated text score: %.0f/100 (%s)\n", item.name, math.Round(item.score*100), analyze.SummarySignalLabel(item.key, item.score))
+	}
+	out.WriteString("\n### Calculation details and limitations\n\nPercentiles compare scores within reference texts, not people. Recorded heuristic bounds use assumed text-length and dictionary-coverage rules; they are unvalidated diagnostics.\n\n")
+	for _, key := range []string{"openness", "conscientiousness", "extraversion", "agreeableness", "neuroticism", "regulatory_focus", "need_for_cognition", "cognitive_style", "need_for_closure"} {
+		if t, ok := p.Traits[key]; ok {
+			fmt.Fprintf(&out, "- **%s:** %s", analyze.DimensionDisplayName(key), analyze.PercentileDescription(t.Percentile, p.PercentileReference))
+			if len(t.ConfidenceInterval) == 2 {
+				fmt.Fprintf(&out, " Recorded heuristic bounds: %.0f–%.0f/100 (unvalidated).", math.Round(t.ConfidenceInterval[0]*100), math.Round(t.ConfidenceInterval[1]*100))
+			}
+			out.WriteByte('\n')
+		}
+	}
+	out.WriteString("\nThe scorer counts dictionary words without interpreting sentence meaning, negation in context, sarcasm or quotations. Excerpts provide context and do not alter scores.\n\nGenerated by Psycho. Experimental word-pattern estimates, not validated personality or clinical measures.\n")
+	return out.String()
 }

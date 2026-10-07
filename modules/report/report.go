@@ -1,5 +1,5 @@
-// Package report renders Psycho's single HTML report (the "warm cards"
-// design): a friendly reading with the statistical receipts collapsed into
+// Package report renders Psycho's single HTML report (the Reading
+// design): compact score rows with the statistical receipts collapsed into
 // an expandable section. It serves two shapes from the same builder: an HTML
 // fragment for HTMX to swap into the upload page, and a full standalone
 // page for no-JS fallback and the CLI.
@@ -13,6 +13,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"sync"
 	"time"
@@ -25,17 +26,18 @@ import (
 // /analyze-dir responses, so an AnalysisOutput round-trips through JSON
 // into this struct.
 type Analysis struct {
-	AnalysisID          string                      `json:"analysis_id"`
-	WordCount           int                         `json:"word_count"`
-	DictionaryCoverage  float64                     `json:"dictionary_coverage"`
-	ConfidenceFlag      string                      `json:"confidence_flag"`
-	Traits              map[string]Trait            `json:"traits"`
-	Values              map[string]float64          `json:"values"`
-	ValueEvidence       map[string][]string         `json:"value_evidence"`
-	PercentileReference *ingest.PercentileReference `json:"percentile_reference,omitempty"`
-	CalculationDetails  *analyze.CalculationDetails `json:"calculation_details,omitempty"`
-	Summary             SummaryVariables            `json:"summary"`
-	Narrative           string                      `json:"narrative"`
+	AnalysisID          string                          `json:"analysis_id"`
+	WordCount           int                             `json:"word_count"`
+	DictionaryCoverage  float64                         `json:"dictionary_coverage"`
+	ConfidenceFlag      string                          `json:"confidence_flag"`
+	Traits              map[string]Trait                `json:"traits"`
+	Values              map[string]float64              `json:"values"`
+	ValueEvidence       map[string][]string             `json:"value_evidence"`
+	ValueExcerpts       map[string][]ingest.TextExcerpt `json:"value_excerpts,omitempty"`
+	PercentileReference *ingest.PercentileReference     `json:"percentile_reference,omitempty"`
+	CalculationDetails  *analyze.CalculationDetails     `json:"calculation_details,omitempty"`
+	Summary             SummaryVariables                `json:"summary"`
+	Narrative           string                          `json:"narrative"`
 }
 
 type Trait struct {
@@ -78,9 +80,10 @@ func readingQuality(flag string) string {
 	}
 }
 
-// --- Report view (Design A: warm cards) ---
+// --- Reading report view ---
 
 type TraitView struct {
+	Key               string
 	Name              string
 	Label             string
 	ChipClass         string
@@ -95,24 +98,27 @@ type TraitView struct {
 }
 
 type ValueView struct {
-	Rank     int
-	Name     string
-	Percent  float64
-	RelWidth int // bar width relative to the top value, 0–100
-	Words    []string
+	Key, Name, Description   string
+	Percent                  float64
+	HasCounts                bool
+	MatchedCount, TotalWords int
+	Words                    []string
+	Excerpts                 []ingest.TextExcerpt
 }
 
 type SummaryCard struct {
-	Name     string
-	Score100 int
-	Band     string
+	Key                                 string
+	Name                                string
+	Score100                            int
+	Label, ChipClass, SignalDescription string
 }
 
 type ReportView struct {
 	GeneratedAt                    string
 	Quality                        string
-	Snapshot                       string
 	Traits                         []TraitView
+	BigFive, Additional            []TraitView
+	Bands                          []analyze.ScoreBand
 	Values                         []ValueView
 	Summary                        []SummaryCard
 	PercentileReferenceDescription string
@@ -125,24 +131,30 @@ type ReportView struct {
 
 // chipClasses maps a trait's band label to Tailwind chip colors.
 var chipClasses = map[string]string{
-	"high":             "bg-teal-50 text-teal-700",
-	"promotion_focus":  "bg-teal-50 text-teal-700",
-	"systematic":       "bg-teal-50 text-teal-700",
-	"moderate":         "bg-amber-50 text-amber-700",
-	"balanced":         "bg-sky-50 text-sky-700",
-	"mixed":            "bg-violet-50 text-violet-700",
-	"low":              "bg-stone-100 text-stone-700",
-	"prevention_focus": "bg-stone-100 text-stone-700",
-	"intuitive":        "bg-stone-100 text-stone-700",
+	"high":              "bg-teal-50 text-teal-700",
+	"promotion_focus":   "bg-teal-50 text-teal-700",
+	"systematic":        "bg-teal-50 text-teal-700",
+	"moderate":          "bg-stone-100 text-stone-600",
+	"balanced":          "bg-stone-100 text-stone-600",
+	"mixed":             "bg-stone-100 text-stone-600",
+	"high signal":       "bg-teal-50 text-teal-700",
+	"moderate signal":   "bg-stone-100 text-stone-600",
+	"low signal":        "bg-stone-100 text-stone-700",
+	"positive language": "bg-teal-50 text-teal-700",
+	"neutral language":  "bg-stone-100 text-stone-600",
+	"negative language": "bg-stone-100 text-stone-700",
+	"low":               "bg-stone-100 text-stone-700",
+	"prevention_focus":  "bg-stone-100 text-stone-700",
+	"intuitive":         "bg-stone-100 text-stone-700",
 }
 
 // BuildReport assembles the single report view from a normalized analysis.
-// Traits missing from the map are skipped; the snapshot is generated from
-// the actual scores.
+// Traits missing from the map are skipped; all visible numbers come from
+// the recorded analysis rather than rerunning a model.
 func BuildReport(a *Analysis) ReportView {
 	v := ReportView{
 		Quality:                        readingQuality(a.ConfidenceFlag),
-		Snapshot:                       generateSnapshot(a),
+		Bands:                          analyze.BigFiveBands(),
 		WordCount:                      a.WordCount,
 		Coverage:                       int(math.Round(a.DictionaryCoverage * 100)),
 		AnalysisID:                     a.AnalysisID,
@@ -156,12 +168,6 @@ func BuildReport(a *Analysis) ReportView {
 		}
 	}
 
-	maxPct := 0.0
-	for _, val := range a.Values {
-		if val > maxPct {
-			maxPct = val
-		}
-	}
 	keys := make([]string, 0, len(a.Values))
 	for k := range a.Values {
 		keys = append(keys, k)
@@ -172,25 +178,32 @@ func BuildReport(a *Analysis) ReportView {
 		}
 		return a.Values[keys[i]] > a.Values[keys[j]]
 	})
-	for i, k := range keys {
+	for _, k := range keys {
 		val := a.Values[k]
 		if val <= 0 {
 			continue
 		}
-		v.Values = append(v.Values, ValueView{
-			Rank:     i + 1,
-			Name:     analyze.ValueDisplayName(analyze.ValueCategory(k)),
-			Percent:  round2(val),
-			RelWidth: int(val / maxPct * 100),
-			Words:    a.ValueEvidence[k],
-		})
+		value := ValueView{
+			Key:         k,
+			Name:        analyze.ValueDisplayName(analyze.ValueCategory(k)),
+			Description: analyze.ValueDescription(analyze.ValueCategory(k)),
+			Percent:     round2(val),
+			Words:       a.ValueEvidence[k],
+			Excerpts:    a.ValueExcerpts[k],
+		}
+		if a.CalculationDetails != nil {
+			if calculation, ok := a.CalculationDetails.Values[k]; ok {
+				value.HasCounts, value.MatchedCount, value.TotalWords = true, calculation.MatchedCount, calculation.TotalWords
+			}
+		}
+		v.Values = append(v.Values, value)
 	}
 
 	v.Summary = []SummaryCard{
-		newSummaryCard("Analytical thinking", a.Summary.AnalyticalThinking, false),
-		newSummaryCard("Clout", a.Summary.Clout, false),
-		newSummaryCard("Authenticity", a.Summary.Authenticity, false),
-		newSummaryCard("Emotional tone", a.Summary.EmotionalTone, true),
+		newSummaryCard("analytical_thinking", "Analytical thinking", a.Summary.AnalyticalThinking),
+		newSummaryCard("clout", "Clout", a.Summary.Clout),
+		newSummaryCard("authenticity", "Authenticity", a.Summary.Authenticity),
+		newSummaryCard("emotional_tone", "Emotional tone", a.Summary.EmotionalTone),
 	}
 
 	for _, k := range traitOrder {
@@ -200,12 +213,13 @@ func BuildReport(a *Analysis) ReportView {
 		}
 		label := analyze.DimensionLabel(k, t.Score)
 		tv := TraitView{
+			Key:               k,
 			Name:              analyze.DimensionDisplayName(k),
 			Label:             label,
 			ChipClass:         chipClasses[label],
 			Score100:          int(math.Round(t.Score * 100)),
 			PercentileText:    percentileText(t.Percentile, a.PercentileReference),
-			SignalDescription: scoreSignalDescription(label),
+			SignalDescription: analyze.DimensionBandDescription(k, t.Score),
 			Evidence:          t.Evidence,
 		}
 		if a.CalculationDetails != nil {
@@ -228,64 +242,13 @@ func BuildReport(a *Analysis) ReportView {
 			tv.ScoreRangeHigh = int(math.Round(t.ConfidenceInterval[1] * 100))
 		}
 		v.Traits = append(v.Traits, tv)
+		if slices.Contains(traitOrder[:5], k) {
+			v.BigFive = append(v.BigFive, tv)
+		} else {
+			v.Additional = append(v.Additional, tv)
+		}
 	}
 	return v
-}
-
-// generateSnapshot writes the short prose summary shown at the top of the
-// report: the strongest trait signal, the voice, and the top value — all
-// from the actual numbers.
-func generateSnapshot(a *Analysis) string {
-	s := a.Summary
-
-	var topName string
-	topPercentile := 0
-	topPct := -1
-	for _, k := range traitOrder {
-		t, ok := a.Traits[k]
-		if !ok || t.Percentile <= topPct {
-			continue
-		}
-		topPct = t.Percentile
-		topName = analyze.DimensionDisplayName(k)
-		topPercentile = t.Percentile
-	}
-
-	if topName == "" {
-		return "No trait scores were available. See the evidence below for the word categories detected in this text."
-	}
-	out := fmt.Sprintf("%s has the highest relative rank in this report (%s percentile). These are estimates from word patterns in this text, not direct measurements of personality.",
-		topName, analyze.Ordinal(topPercentile))
-	out += fmt.Sprintf(" Language-pattern summary scores (0–100): authenticity %d, clout %d, analytical thinking %d.",
-		int(math.Round(s.Authenticity*100)), int(math.Round(s.Clout*100)), int(math.Round(s.AnalyticalThinking*100)))
-
-	if tv := topValue(a); tv.Name != "" {
-		if len(tv.Words) > 0 {
-			out += fmt.Sprintf(" The top value-related word category is %s; a matched-word example is \u201c%s\u201d.",
-				tv.Name, tv.Words[0])
-		} else {
-			out += fmt.Sprintf(" The top value-related word category is %s.", tv.Name)
-		}
-	}
-	return out
-}
-
-func topValue(a *Analysis) ValueView {
-	max := -1.0
-	var maxKey string
-	for k, val := range a.Values {
-		if val > max || (val == max && k < maxKey) {
-			max = val
-			maxKey = k
-		}
-	}
-	if maxKey == "" || max <= 0 {
-		return ValueView{}
-	}
-	return ValueView{
-		Name:  analyze.ValueDisplayName(analyze.ValueCategory(maxKey)),
-		Words: a.ValueEvidence[maxKey],
-	}
 }
 
 func round2(f float64) float64 {
@@ -293,17 +256,7 @@ func round2(f float64) float64 {
 }
 
 func percentileText(percentile int, reference *ingest.PercentileReference) string {
-	if reference == nil {
-		return fmt.Sprintf("Percentile method not recorded (%s percentile).", analyze.Ordinal(percentile))
-	}
-	switch reference.Method {
-	case ingest.PercentileMethodEmpirical:
-		return fmt.Sprintf("Higher than %d%% of scores in the configured reference texts.", percentile)
-	case ingest.PercentileMethodNormalApproximation:
-		return fmt.Sprintf("Model-estimated %s percentile from a normal approximation.", analyze.Ordinal(percentile))
-	default:
-		return fmt.Sprintf("Percentile method not recorded (%s percentile).", analyze.Ordinal(percentile))
-	}
+	return analyze.PercentileDescription(percentile, reference)
 }
 
 func percentileReferenceDescription(reference *ingest.PercentileReference) string {
@@ -329,40 +282,14 @@ func percentileReferenceDescription(reference *ingest.PercentileReference) strin
 	}
 }
 
-func scoreSignalDescription(label string) string {
-	switch label {
-	case "high":
-		return "The text's word pattern falls in the high band for this measure."
-	case "low":
-		return "The text's word pattern falls in the low band for this measure."
-	case "moderate":
-		return "Moderate means the model found no strong high or low signal in this text."
-	case "promotion_focus":
-		return "The text's word pattern tilts toward promotion-focused terms."
-	case "prevention_focus":
-		return "The text's word pattern tilts toward prevention-focused terms."
-	case "balanced":
-		return "Balanced means the score shows no strong promotion or prevention tilt."
-	case "systematic":
-		return "The text's word pattern falls in the systematic band for this measure."
-	case "intuitive":
-		return "The text's word pattern falls in the intuitive band for this measure."
-	case "mixed":
-		return "Mixed means the score shows no strong systematic or intuitive tilt."
-	default:
-		return "This is an experimental score based on word patterns in this text."
-	}
-}
-
-func newSummaryCard(name string, score float64, emotionalTone bool) SummaryCard {
-	band := analyze.HighModerateLow(score) + " signal"
-	if emotionalTone {
-		band = analyze.SummaryTone(score) + " language"
-	}
+func newSummaryCard(key, name string, score float64) SummaryCard {
+	band := analyze.SummarySignalLabel(key, score)
 	return SummaryCard{
+		Key:      key,
 		Name:     name,
 		Score100: int(math.Round(score * 100)),
-		Band:     band,
+		Label:    band, ChipClass: chipClasses[band],
+		SignalDescription: analyze.SummarySignalDescription(key, score),
 	}
 }
 

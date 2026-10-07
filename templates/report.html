@@ -1,7 +1,24 @@
+{{define "report-score-row"}}
+<div class="report-score-row">
+  <div class="flex flex-wrap items-center gap-2 min-w-0">
+    <h3 class="text-sm font-medium">{{.Name}}</h3>
+    <details class="report-band">
+      <summary aria-label="{{.Name}}: {{.Label}} band explanation" aria-describedby="band-{{.Key}}" class="rounded-full px-2 py-1 text-[11px] font-medium {{.ChipClass}}">
+        {{.Label}}<span id="band-{{.Key}}" role="tooltip" class="report-tooltip">{{.SignalDescription}}</span>
+      </summary>
+    </details>
+  </div>
+  <p class="report-score-number"><span class="text-xs text-stone-500">Estimated text score</span><strong class="text-2xl font-medium tabular-nums">{{.Score100}}<span class="text-xs font-normal text-stone-500">/100</span></strong></p>
+  <div role="progressbar" aria-label="{{.Name}} estimated text score" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{.Score100}}" class="col-span-full h-1 rounded-full bg-stone-100 overflow-hidden">
+    <div class="h-full rounded-full bg-teal-700" style="width:{{.Score100}}%"></div>
+  </div>
+</div>
+{{end}}
+
 {{define "report-body"}}
 <div class="w-full max-w-[60rem] mx-auto px-4 sm:px-6 lg:px-8 py-10">
 
-  <header class="flex flex-wrap items-start justify-between gap-3">
+  <header class="flex flex-wrap items-start justify-between gap-3 pb-6 border-b border-stone-200">
     <div>
       <p class="text-[11px] tracking-[0.25em] uppercase text-teal-700 font-semibold">Psycho · writing profile</p>
       <h1 class="font-serif text-4xl mt-2">Your writing profile</h1>
@@ -21,72 +38,78 @@
     </nav>
   </header>
 
-  <section class="mt-8">
-    <h2 class="font-serif text-xl">Summary of text signals</h2>
-    <p class="mt-3 max-w-prose leading-relaxed text-stone-700">{{.Snapshot}}</p>
-  </section>
+  <p class="mt-6 max-w-prose leading-relaxed text-stone-600">An experimental estimate from word patterns in this writing. Scores can reflect the topic and writing style; they do not directly measure your personality.</p>
 
+  {{if .BigFive}}
   <section class="mt-10">
-    <h2 class="font-serif text-xl mb-4">What the words say</h2>
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      {{range .Traits}}
-      <div class="bg-white rounded-2xl border border-stone-200 shadow-sm p-5">
-        <div class="flex items-center justify-between gap-2">
-          <h3 class="font-medium">{{.Name}}</h3>
-          <span class="text-[11px] uppercase tracking-wider rounded-full px-2 py-0.5 font-medium {{.ChipClass}}">{{.Label}}</span>
-        </div>
-        <p class="text-sm text-stone-700 mt-3">Estimated text score: <b>{{.Score100}}/100</b></p>
-        <div role="progressbar" aria-label="{{.Name}} score" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{.Score100}}" class="relative h-2 rounded-full bg-stone-100 mt-2">
-          <div class="absolute inset-y-0 left-0 rounded-full bg-teal-500" style="width:{{.Score100}}%"></div>
-          <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-0.5 h-3.5 bg-stone-300 rounded"></div>
-        </div>
-        <p class="text-sm mt-3">{{.PercentileText}}</p>
-        {{if .HasScoreRange}}<p class="text-xs text-stone-600 mt-1">Rough score range: {{.ScoreRangeLow}}–{{.ScoreRangeHigh}}/100</p>{{end}}
-        <p class="text-sm text-stone-600 mt-2">{{.SignalDescription}}</p>
-      </div>
+    <h2 class="font-serif text-xl mb-4">Big Five text signals</h2>
+    <div class="report-legend" role="group" aria-label="Big Five text-score bands">
+      <span class="text-xs text-stone-500">Bands</span>
+      {{range .Bands}}
+      <details class="report-band">
+        <summary aria-label="{{.Label}} band: {{.Range}} out of 100" aria-describedby="legend-{{.Label}}" class="rounded-lg border border-stone-200 bg-white px-2 py-1.5 text-xs text-stone-600">
+          <span class="capitalize">{{.Label}}</span> <span class="ml-1 tabular-nums text-stone-800">{{.Range}}</span>
+          <span id="legend-{{.Label}}" role="tooltip" class="report-tooltip">{{.Description}}</span>
+        </summary>
+      </details>
       {{end}}
     </div>
+    <div class="rounded-2xl border border-stone-200 bg-white">{{range .BigFive}}{{template "report-score-row" .}}{{end}}</div>
   </section>
+  {{end}}
+
+  {{if .Additional}}
+  <section class="mt-10">
+    <h2 class="font-serif text-xl mb-2">Additional text measures</h2>
+    <p class="max-w-prose text-xs text-stone-500 mb-4">Project-defined language proxies. Each band's explanation follows that measure's own scale.</p>
+    <div class="rounded-2xl border border-stone-200 bg-white">{{range .Additional}}{{template "report-score-row" .}}{{end}}</div>
+  </section>
+  {{end}}
 
   {{if .Values}}
   <section class="mt-10">
-    <h2 class="font-serif text-xl mb-2">What you value</h2>
-    <p class="text-xs text-stone-500 mb-2">Ranked by how often value-related words appear. Bars are relative to your top value.</p>
-    <div class="bg-white rounded-2xl border border-stone-200 shadow-sm px-4 sm:px-5 py-2">
-      {{range .Values}}
-      <div class="grid grid-cols-[1.5rem_minmax(0,1fr)_3rem] items-center gap-x-3 gap-y-2 py-3 border-b border-stone-100 last:border-0 sm:grid-cols-[1.5rem_8rem_minmax(0,1fr)_3rem_9rem]">
-        <span class="row-start-1 col-start-1 w-6 h-6 rounded-full bg-teal-600 text-white text-xs grid place-items-center">{{.Rank}}</span>
-        <span class="row-start-1 col-start-2 min-w-0 text-sm font-medium break-words">{{.Name}}</span>
-        <span class="row-start-2 col-start-2 col-span-2 w-full h-1.5 bg-stone-100 rounded-full overflow-hidden sm:row-start-1 sm:col-start-3 sm:col-span-1"><span class="block h-full bg-teal-400 rounded-full" style="width:{{.RelWidth}}%"></span></span>
-        <span class="row-start-1 col-start-3 text-xs text-stone-500 tabular-nums text-right sm:col-start-4">{{.Percent}}%</span>
-        {{if .Words}}<span class="hidden sm:block sm:col-start-5 sm:row-start-1 text-xs text-stone-500 text-right truncate">seen in: {{range $i, $w := .Words}}{{if $i}}, {{end}}{{$w}}{{end}}</span>{{end}}
-      </div>
+    <h2 class="font-serif text-xl mb-2">Value-related language</h2>
+    <p class="max-w-prose text-xs text-stone-500 mb-4">Counts show how often dictionary words appear. Mentioning or rejecting a value both count. Open a category to see sampled examples in context; percentages use all matches.</p>
+    <div class="bg-white rounded-2xl border border-stone-200">
+      {{range $i, $value := .Values}}
+      <details class="report-value" {{if eq $i 0}}open{{end}}>
+        <summary class="report-value-heading">
+          <span class="min-w-0"><span class="text-sm font-medium">{{.Name}}</span><span class="block mt-1 text-xs text-stone-500">{{.Description}}</span></span>
+          <span class="text-right tabular-nums text-xs text-stone-500">{{if .HasCounts}}<strong class="block text-sm font-medium text-stone-800">{{.MatchedCount}} of {{.TotalWords}} words</strong>{{else}}<span class="block">Counts not recorded</span>{{end}}{{printf "%.2f" .Percent}}% of all words</span>
+          <span aria-hidden="true" class="report-chevron text-stone-400">⌄</span>
+        </summary>
+        <div class="px-4 sm:px-5 pb-4">
+          {{if .Excerpts}}
+          <p class="text-[11px] text-stone-500 mb-2">Sampled text excerpts; highlighted words match this category's dictionary.</p>
+          {{range .Excerpts}}<blockquote class="report-excerpt">{{range .Segments}}{{if .Matched}}<mark>{{.Text}}</mark>{{else}}{{.Text}}{{end}}{{end}}</blockquote>{{end}}
+          {{else}}
+          <p class="text-xs text-stone-500">Text excerpts were not recorded for this analysis.</p>
+          {{if .Words}}<p class="mt-2 text-sm text-stone-700">Sampled matching words: {{range $i, $word := .Words}}{{if $i}}, {{end}}{{$word}}{{end}}</p>{{else}}<p class="mt-2 text-xs text-stone-500">Matching-word examples are unavailable.</p>{{end}}
+          {{end}}
+        </div>
+      </details>
       {{end}}
     </div>
   </section>
   {{end}}
 
   <section class="mt-10">
-    <h2 class="font-serif text-xl mb-4">At a glance</h2>
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-      {{range .Summary}}
-      <div class="bg-white rounded-2xl border border-stone-200 shadow-sm p-4 text-center">
-        <div class="font-serif text-lg">{{.Score100}}/100</div>
-        <div class="text-[11px] uppercase tracking-wider text-stone-500 mt-1">{{.Band}}</div>
-        <div class="text-xs text-stone-600 mt-1">{{.Name}}</div>
-      </div>
-      {{end}}
-    </div>
+    <h2 class="font-serif text-xl mb-2">Language summaries</h2>
+    <p class="max-w-prose text-xs text-stone-500 mb-4">Project-defined word-pattern summaries, not official LIWC scores.</p>
+    <div class="rounded-2xl border border-stone-200 bg-white">{{range .Summary}}{{template "report-score-row" .}}{{end}}</div>
   </section>
 
   <details class="group mt-10 bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden">
     <summary class="cursor-pointer select-none px-5 py-4 flex items-center justify-between text-sm font-medium text-stone-700 hover:bg-stone-50">
-      Show the full score calculation and word examples
+      Calculation details and limitations
       <span aria-hidden="true" class="group-open:rotate-180 transition-transform text-stone-400">⌄</span>
     </summary>
     <div class="px-5 pb-5">
       <p class="max-w-prose text-xs leading-relaxed text-stone-600 mb-3">{{.PercentileReferenceDescription}}</p>
       <p class="text-xs text-stone-500 mb-3">{{.WordCount}} words · {{.Coverage}}% dictionary coverage · analysis {{.AnalysisID}}</p>
+      <div class="space-y-2 mb-5 text-xs text-stone-600">
+        {{range .Traits}}<p><strong class="font-medium text-stone-800">{{.Name}}</strong>: {{.PercentileText}}{{if .HasScoreRange}} Recorded heuristic bounds: {{.ScoreRangeLow}}–{{.ScoreRangeHigh}}/100 (unvalidated).{{end}}</p>{{end}}
+      </div>
       {{if not .CalculationJSON}}<p class="max-w-prose text-sm text-amber-800 mb-4">Complete calculation details were not recorded for this saved analysis. Its recorded scores and evidence are shown below; missing operands are not reconstructed using the current model.</p>{{end}}
       <div role="region" aria-label="Score evidence table, scroll horizontally to see all columns" tabindex="0" class="-mx-5 overflow-x-auto px-5 pb-1 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-teal-500">
         <table class="w-full min-w-[50rem] text-sm">
@@ -137,7 +160,8 @@
       <div class="max-w-prose text-xs leading-relaxed text-stone-600 mt-4 space-y-2">
         <p>Table values are rounded for display. Scores use a 0–1 scale internally and are shown out of 100. The expanded recorded details below retain full floating-point precision, formulas and operation order. Calculations clamp to 0–1, then round half away from zero to two decimals before and after calibration.</p>
         <p>Each row shows a category's share of all words, multiplied by the model's weight to produce its contribution. The score also includes a baseline and, when configured, a calibration adjustment. Matched words are normalized examples, capped at 10 per category; the percentage uses all matches.</p>
-        <p>The rough score range is estimated from text length and dictionary coverage. It is not a percentile range or a statistically validated confidence interval.</p>
+        <p>Recorded heuristic bounds use assumed text-length and dictionary-coverage rules. They are unvalidated diagnostics, not a percentile range or a statistically validated confidence interval.</p>
+        <p>The scorer counts individual dictionary words. It does not interpret sentence meaning, negation in context, sarcasm or quotations. Excerpts help you inspect the context; they do not alter the calculation.</p>
         <p>Big Five scores use a correlation-weighted heuristic with assumed scaling. The other text measures and rough ranges are project-defined proxies. Research supports associations and constructs, not these particular prediction formulas. This is an experimental language-pattern estimate, not a validated individual personality measure. In a separate evaluation on 2,442 essays, trait-ranking AUC ranged from 0.524 to 0.554 across the five dimensions; 0.5 is chance.</p>
       </div>
       {{if .CalculationJSON}}

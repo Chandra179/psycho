@@ -1,6 +1,10 @@
 package analyze
 
-import "fmt"
+import (
+	"fmt"
+
+	"psycho/modules/ingest"
+)
 
 // Canonical display names and score labels for the trait dimensions.
 // Every rendered surface — narrative, PDF, HTML previews — goes through
@@ -59,6 +63,76 @@ func HighModerateLow(score float64) string {
 		return "low"
 	}
 	return "moderate"
+}
+
+// ScoreBand is shared explanatory copy for report legends and disclosures.
+type ScoreBand struct {
+	Label, Range, Description string
+}
+
+func BigFiveBands() []ScoreBand {
+	return []ScoreBand{
+		{HighModerateLow(0), fmt.Sprintf("0–%d", int(lowLabelThreshold*100)-1), fmt.Sprintf("Low is below %d/100 on this tool's text-score scale. It does not establish a low personality trait.", int(lowLabelThreshold*100))},
+		{HighModerateLow(lowLabelThreshold), fmt.Sprintf("%d–%d", int(lowLabelThreshold*100), int(highLabelThreshold*100)-1), "Moderate means the word-pattern model found no strong high or low signal in this text."},
+		{HighModerateLow(highLabelThreshold), fmt.Sprintf("%d–100", int(highLabelThreshold*100)), fmt.Sprintf("High is %d/100 or above on this tool's text-score scale. It does not establish a high personality trait.", int(highLabelThreshold*100))},
+	}
+}
+
+// DimensionBandDescription derives each label from its actual classification
+// function, including additional measures whose upper band starts above .65.
+func DimensionBandDescription(key string, score float64) string {
+	label := DimensionLabel(key, score)
+	for _, band := range BigFiveBands() {
+		if label == band.Label && key != "need_for_cognition" && key != "need_for_closure" {
+			return band.Description
+		}
+	}
+	rangeText := fmt.Sprintf("%d–%d/100", int(lowLabelThreshold*100), int(highLabelThreshold*100))
+	if score < lowLabelThreshold {
+		rangeText = fmt.Sprintf("below %d/100", int(lowLabelThreshold*100))
+	} else if score > highLabelThreshold {
+		rangeText = fmt.Sprintf("above %d/100", int(highLabelThreshold*100))
+	}
+	meanings := map[string]string{
+		"promotion_focus":  "Promotion-related language outweighs prevention-related language in this bipolar proxy.",
+		"prevention_focus": "Prevention-related language outweighs promotion-related language in this bipolar proxy.",
+		"balanced":         "No strong promotion or prevention tilt in this proxy.",
+		"systematic":       "More systematic or analytical word-pattern signals on this proxy.",
+		"intuitive":        "More intuitive word-pattern signals on this proxy.",
+		"mixed":            "No strong systematic or intuitive tilt in this proxy.",
+		"moderate":         "No strong high or low word-pattern signal in this proxy.",
+		"high":             "An upper-band word-pattern score in this proxy.",
+		"low":              "A lower-band word-pattern score in this proxy.",
+	}
+	return fmt.Sprintf("%s: %s. %s Labels describe word patterns, not a validated personality assessment.", label, rangeText, meanings[label])
+}
+
+func SummarySignalLabel(name string, score float64) string {
+	if name == "emotional_tone" {
+		return SummaryTone(score) + " language"
+	}
+	return HighModerateLow(score) + " signal"
+}
+
+func SummarySignalDescription(name string, score float64) string {
+	for _, band := range BigFiveBands() {
+		if band.Label == HighModerateLow(score) {
+			return fmt.Sprintf("%s (%s/100): a project-defined language summary, not an official LIWC score or a probability of accuracy.", SummarySignalLabel(name, score), band.Range)
+		}
+	}
+	return "Project-defined language summary."
+}
+
+func PercentileDescription(percentile int, reference *ingest.PercentileReference) string {
+	if reference != nil {
+		switch reference.Method {
+		case ingest.PercentileMethodEmpirical:
+			return fmt.Sprintf("Approximate reference-text percentile: %s.", Ordinal(percentile))
+		case ingest.PercentileMethodNormalApproximation:
+			return fmt.Sprintf("Model-estimated %s percentile from a normal approximation.", Ordinal(percentile))
+		}
+	}
+	return fmt.Sprintf("Percentile method not recorded (%s percentile).", Ordinal(percentile))
 }
 
 // Summary variable band wording lives here so every renderer (HTML report,

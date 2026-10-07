@@ -17,17 +17,18 @@ type AnalyzeRequest struct {
 }
 
 type AnalyzeResponse struct {
-	AnalysisID          string                      `json:"analysis_id"`
-	WordCount           int                         `json:"word_count"`
-	DictionaryCoverage  float64                     `json:"dictionary_coverage"`
-	ConfidenceFlag      string                      `json:"confidence_flag"`
-	Traits              map[string]any              `json:"traits"`
-	Values              map[string]float64          `json:"values"`
-	ValueEvidence       map[string][]string         `json:"value_evidence,omitempty"`
-	PercentileReference *ingest.PercentileReference `json:"percentile_reference,omitempty"`
-	CalculationDetails  *CalculationDetails         `json:"calculation_details,omitempty"`
-	Summary             SummaryVariables            `json:"summary"`
-	Narrative           string                      `json:"narrative"`
+	AnalysisID          string                          `json:"analysis_id"`
+	WordCount           int                             `json:"word_count"`
+	DictionaryCoverage  float64                         `json:"dictionary_coverage"`
+	ConfidenceFlag      string                          `json:"confidence_flag"`
+	Traits              map[string]any                  `json:"traits"`
+	Values              map[string]float64              `json:"values"`
+	ValueEvidence       map[string][]string             `json:"value_evidence,omitempty"`
+	ValueExcerpts       map[string][]ingest.TextExcerpt `json:"value_excerpts,omitempty"`
+	PercentileReference *ingest.PercentileReference     `json:"percentile_reference,omitempty"`
+	CalculationDetails  *CalculationDetails             `json:"calculation_details,omitempty"`
+	Summary             SummaryVariables                `json:"summary"`
+	Narrative           string                          `json:"narrative"`
 }
 
 // MakeHandleAnalyze builds the POST /analyze handler. The analysis itself is
@@ -93,6 +94,7 @@ func makeHandleAnalyze(maxTextSize int, logger *zlogger.Logger, analyzeFn ingest
 			Traits:              out.Traits,
 			Values:              out.Values,
 			ValueEvidence:       out.ValueEvidence,
+			ValueExcerpts:       out.ValueExcerpts,
 			PercentileReference: out.PercentileReference,
 			CalculationDetails:  calculations,
 			Summary:             summary,

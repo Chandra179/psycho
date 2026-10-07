@@ -55,9 +55,18 @@ dictionary represents the sample.
 
 ### 3. Read your profile
 
-Psycho combines the counts into a profile with estimated score ranges and a
-short summary. It saves the profile and the evidence associated with each
-score, so results can be traced to the words that contributed to them.
+Psycho combines the counts into a profile with one estimated text score per
+measure. The Reading report uses compact rows and a shared Big Five band legend;
+band explanations are available by hover, keyboard focus or tap. Recorded
+percentiles, unvalidated heuristic bounds and full calculations are inside the
+detail section. It saves the profile and evidence so results can be traced.
+
+Value-related language shows occurrence counts, percentages of all words, and
+up to two sampled text excerpts per category with matching words highlighted.
+Excerpts are limited to 240 Unicode characters and persisted as plain-text
+segments, escaped when rendered. Older saved results show available word samples and identify
+missing excerpts or counts. Percentages count all occurrences, including text
+that rejects a value.
 
 ## Main features
 
@@ -79,9 +88,10 @@ score, so results can be traced to the words that contributed to them.
 
 ### Text normalization
 
-Formatting is removed while paragraph structure is preserved. The text is
-segmented into sentences and paragraphs to reduce formatting effects on
-feature counts.
+Formatting is removed while paragraph structure is preserved. Scoring uses
+individual normalized words and their category frequencies. Sentence and
+paragraph boundaries select contextual excerpts; the scorer does not interpret
+sentence meaning, word order, sarcasm or negation in context.
 
 ### Dictionary mapping
 
@@ -126,9 +136,11 @@ Each score has a range based on the amount of evidence. Longer samples
 generally have narrower ranges, while low dictionary coverage widens them.
 Very short samples receive a low-confidence flag. Samples with fewer than 10
 normalized Unicode characters or no letters or numbers are rejected. The ranges
-use project assumptions and are not validated confidence intervals. Scores are
-percentiles relative to about 4,000 blog posts in the Blog Authorship Corpus.
-A 60th-percentile score is higher than 60% of texts in that reference sample.
+use project assumptions and are not validated confidence intervals. The current
+reference sample contains 3,992 retained blog texts. Percentiles are approximate
+ranks within that sample; ties use a midpoint and do not mean a strict percentage
+of texts scored lower. The main report shows the 0–100 text score, with reference
+ranks and heuristic bounds available in calculation details.
 
 ## Current evidence
 

@@ -6,7 +6,7 @@
 
 **Core flow**
 
-1. User submits text (paste, file, URL). The ingest module normalises whitespace, strips irrelevant markup, segments into sentences and paragraphs, and attaches source metadata (type, date).
+1. User submits text (paste, file, URL). The ingest module normalises whitespace, strips markup, preserves paragraph breaks and validates the normalized text. Word tokenization supplies both scoring tokens and offsets for contextual excerpts; sentence meaning is not interpreted.
 2. The normalised text passes to the analyze module, which tokenises and compares against a psycholinguistic dictionary. It computes category percentages, stylometric features, and a coverage rate.
 3. The feature vector is fed to trait inference (Big Five correlation-weighted heuristic), Regulatory Focus, Need for Cognition, cognitive style classification, and value orientation mapping. Every output is stored with the feature evidence that produced it.
 4. The profile module aggregates all scores, attaches rough score ranges, and generates structured output. Optionally, an external LLM call (user‑configurable, off by default) synthesises a narrative portrait from the structured scores.
@@ -120,7 +120,24 @@ Tests run after each phase completes. The system is decomposed so each module is
 
 ### **Score calibration**
 
-Percentiles are measured, not assumed. `cmd/calibrate` runs the production inference path over a corpus of plain-text documents and writes `config/calibration.json`: per-dimension offsets that center the corpus mean at 0.50, plus the 1st–99th percentile quantiles of the adjusted scores. The file also records the SHA-256 of the dictionary it was built from, and `TestCalibrationMatchesDictionary` fails if the dictionary changes without recalibration. The server loads it at startup (`analyze.calibration_path`); `pipeline.Run` applies the offset before aggregation and the aggregator resolves percentiles by lookup instead of the normal approximation. The committed file was generated from a 4,010-post sample of the Blog Authorship Corpus (Schler et al., 2006; blogger.com posts, Aug 2004), a genre matching the product's intended input; regenerate it with `go run ./cmd/calibrate -corpus <dir>` when the dictionary or weights change. Rough score ranges are deliberately unchanged: they model measurement error (text length × coverage), not population position.
+With calibration enabled, `cmd/calibrate` runs the production inference path over reference texts and writes `config/calibration.json`: per-dimension offsets that center the corpus mean at 0.50, plus 99 quantiles of adjusted scores. Startup validates dictionary and model fingerprints. The pipeline applies offsets before aggregation; percentile lookup interpolates quantiles and uses midpoints for ties, producing approximate ranks rather than a strict percentage of texts below a score. The committed artifact retains 3,992 texts from a 4,010-post Blog Authorship Corpus sample. Without calibration, percentiles use the documented normal-approximation assumptions. Heuristic bounds use assumed text-length and coverage rules; they are unvalidated diagnostics.
+
+### Reading report and contextual evidence
+
+The HTML report shows one 0–100 score per measure in compact rows, with canonical
+band legends and native disclosure tooltips. Percentiles, heuristic bounds and
+complete recorded calculations are collapsed into details. All nine dimensions
+and four summary proxies remain available across full-page, HTMX and standalone
+HTML rendering. Narrative and PDF use the same simplified score wording.
+
+The optional `value_excerpts` field flows through analysis responses, profile JSON,
+saved-analysis retrieval and report decoding without a database migration. Each
+category has at most two distinct excerpts of up to 240 Unicode characters,
+represented as `segments` of `{text, matched}`. Matching uses the existing
+tokenizer and dictionary; excerpts cannot affect feature counts or scores. Go HTML
+escaping handles every segment, and templates supply only the highlighting markup.
+Value counts come from recorded calculation details. Legacy results identify
+missing counts or excerpts rather than rebuilding them with today's dictionary.
 
 ### **Measured accuracy** (`cmd/evaluate`)
 

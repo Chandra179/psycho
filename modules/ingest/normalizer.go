@@ -97,16 +97,59 @@ func normalizeWhitespace(s string) string {
 
 func tokenizeWords(s string) []string {
 	var words []string
-	fields := strings.FieldsFunc(s, func(r rune) bool {
-		return !unicode.IsLetter(r) && !unicode.IsNumber(r) && r != '\''
+	walkWords(s, func(word string, _, _ int) { words = append(words, word) })
+	return words
+}
+
+// WordSpan retains byte offsets into the original normalized text. Matching
+// uses Word, exactly as TokenizeWords does; excerpts preserve the original case.
+type WordSpan struct {
+	Word       string
+	Start, End int
+}
+
+func TokenizeWordSpans(s string) []WordSpan {
+	var spans []WordSpan
+	walkWords(s, func(word string, start, end int) {
+		spans = append(spans, WordSpan{Word: word, Start: start, End: end})
 	})
-	for _, w := range fields {
-		w = strings.ToLower(strings.TrimSpace(w))
-		if w != "" {
-			words = append(words, w)
+	return spans
+}
+
+func walkWords(s string, visit func(string, int, int)) {
+	start := -1
+	for i, r := range s {
+		if unicode.IsLetter(r) || unicode.IsNumber(r) || r == '\'' {
+			if start < 0 {
+				start = i
+			}
+		} else if start >= 0 {
+			visit(strings.ToLower(s[start:i]), start, i)
+			start = -1
 		}
 	}
-	return words
+	if start >= 0 {
+		visit(strings.ToLower(s[start:]), start, len(s))
+	}
+}
+
+// TextExcerpt contains only text, never trusted HTML. Renderers escape every
+// segment and supply their own highlighting around the matched segments.
+type TextExcerpt struct {
+	Segments []TextSegment `json:"segments"`
+}
+
+type TextSegment struct {
+	Text    string `json:"text"`
+	Matched bool   `json:"matched"`
+}
+
+func (e TextExcerpt) PlainText() string {
+	var out strings.Builder
+	for _, segment := range e.Segments {
+		out.WriteString(segment.Text)
+	}
+	return out.String()
 }
 
 func countSentences(s string) int {

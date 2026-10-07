@@ -11,15 +11,16 @@ import (
 
 // Profile holds the aggregated output for a single analysis.
 type Profile struct {
-	AnalysisID          string                      `json:"analysis_id"`
-	ConfidenceFlag      string                      `json:"confidence_flag"`
-	Traits              map[string]TraitResult      `json:"traits"`
-	Values              map[string]float64          `json:"values"`
-	ValueEvidence       map[string][]string         `json:"value_evidence,omitempty"`
-	PercentileReference *ingest.PercentileReference `json:"percentile_reference,omitempty"`
-	CalculationDetails  *analyze.CalculationDetails `json:"calculation_details,omitempty"`
-	Summary             analyze.SummaryVariables    `json:"summary"`
-	Narrative           string                      `json:"narrative"`
+	AnalysisID          string                          `json:"analysis_id"`
+	ConfidenceFlag      string                          `json:"confidence_flag"`
+	Traits              map[string]TraitResult          `json:"traits"`
+	Values              map[string]float64              `json:"values"`
+	ValueEvidence       map[string][]string             `json:"value_evidence,omitempty"`
+	ValueExcerpts       map[string][]ingest.TextExcerpt `json:"value_excerpts,omitempty"`
+	PercentileReference *ingest.PercentileReference     `json:"percentile_reference,omitempty"`
+	CalculationDetails  *analyze.CalculationDetails     `json:"calculation_details,omitempty"`
+	Summary             analyze.SummaryVariables        `json:"summary"`
+	Narrative           string                          `json:"narrative"`
 }
 
 // TraitResult holds one Big Five trait output. Evidence lists the category
@@ -93,6 +94,7 @@ func (sa *ScoreAggregator) Aggregate(scores analyze.BigFiveScores, fv analyze.Fe
 		Traits:             traits,
 		Values:             scores.Values,
 		ValueEvidence:      valueEvidence,
+		ValueExcerpts:      fv.ValueExcerpts,
 		Summary:            summary,
 		CalculationDetails: details,
 	}

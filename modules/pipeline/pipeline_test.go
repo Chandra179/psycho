@@ -43,7 +43,7 @@ func testPipeline(t *testing.T, calibrated bool) (*Pipeline, *sql.DB) {
 func TestInvalidInputNeverSaved(t *testing.T) {
 	pipe, db := testPipeline(t, false)
 	for _, text := range []string{"", "          ", "\t\n\u2003\u3000", "...............", "<p>\t </p>", "too short"} {
-		if _, err := pipe.Run(t.Context(), "paste", "", text); !errors.Is(err, ingest.ErrInvalidText) {
+		if _, err := pipe.Run(t.Context(), text); !errors.Is(err, ingest.ErrInvalidText) {
 			t.Errorf("invalid text %q: %v", text, err)
 		}
 	}
@@ -61,7 +61,7 @@ func TestCalculationDetailsPersistAndScoresRepeat(t *testing.T) {
 			if err != nil {
 				text = []byte("The plan is to study and think about the research, because it is important. I feel happy with friends.")
 			}
-			out, err := pipe.Run(t.Context(), "paste", "", string(text))
+			out, err := pipe.Run(t.Context(), string(text))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -89,7 +89,7 @@ func TestCalculationDetailsPersistAndScoresRepeat(t *testing.T) {
 					t.Fatalf("%s trace/result mismatch", name)
 				}
 			}
-			again, err := pipe.Run(t.Context(), "paste", "", string(text))
+			again, err := pipe.Run(t.Context(), string(text))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -114,5 +114,34 @@ func TestPercentileReferenceReportsActiveMethodAndSample(t *testing.T) {
 	got := percentileReference(calibration)
 	if got == nil || got.Method != ingest.PercentileMethodEmpirical || got.Corpus != "Reference essays" || got.SampleSize != 321 {
 		t.Fatalf("empirical reference metadata is incomplete: %+v", got)
+	}
+}
+
+func TestValueExcerptsPersistAndReturnThroughPipeline(t *testing.T) {
+	pipe, _ := testPipeline(t, true)
+	out, err := pipe.Run(t.Context(), "Our cultural traditions influence culture. We question tradition and authority.")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(out.ValueExcerpts["value_tradition"]) == 0 {
+		t.Fatal("pipeline omitted text excerpts")
+	}
+	saved, err := pipe.storage.GetAnalysis(out.AnalysisID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(saved.ValueExcerpts, out.ValueExcerpts) {
+		t.Fatal("text excerpts changed in storage")
+	}
+	encoded, err := json.Marshal(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var restored ingest.AnalysisOutput
+	if err := json.Unmarshal(encoded, &restored); err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(restored.ValueExcerpts, out.ValueExcerpts) {
+		t.Fatal("text excerpts changed across API JSON")
 	}
 }

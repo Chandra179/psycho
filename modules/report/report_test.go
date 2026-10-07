@@ -24,7 +24,7 @@ func TestRecordedCalculationsRenderedWithoutRecalculation(t *testing.T) {
 	if err := RenderAnalysis("../../templates", a, &out, false); err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"Baseline 0.4200", "calibration &#43;0.1600", "recorded_category", "7 / 570", "0.15105263157894738", "historical-model", "70/100"} {
+	for _, want := range []string{"Baseline 0.4200", "calibration &#43;0.1600", "recorded_category", "7 / 570", "0.15105263157894738", "historical-model", `aria-valuenow="70"`} {
 		if !strings.Contains(out.String(), want) {
 			t.Errorf("missing recorded value %q", want)
 		}
@@ -109,7 +109,7 @@ func TestBuildReportSuperset(t *testing.T) {
 	if !v.Traits[0].HasScoreRange || v.Traits[0].ScoreRangeLow != 45 || v.Traits[0].ScoreRangeHigh != 90 {
 		t.Fatalf("rough score range not scaled to 0-100: %+v", v.Traits[0])
 	}
-	if v.Traits[0].Score100 != 70 || v.Traits[0].SignalDescription != "The text's word pattern falls in the high band for this measure." {
+	if v.Traits[0].Score100 != 70 || v.Traits[0].SignalDescription != analyze.DimensionBandDescription("openness", .7) {
 		t.Fatalf("high score should use a text-pattern description: %+v", v.Traits[0])
 	}
 	if len(v.Traits[0].Evidence) != 4 {
@@ -118,7 +118,7 @@ func TestBuildReportSuperset(t *testing.T) {
 	if v.Traits[1].Name != "Neuroticism" || v.Traits[1].HasScoreRange {
 		t.Fatalf("trait without range must set HasScoreRange=false: %+v", v.Traits[1])
 	}
-	if v.Traits[1].Score100 != 30 || v.Traits[1].SignalDescription != "The text's word pattern falls in the low band for this measure." {
+	if v.Traits[1].Score100 != 30 || v.Traits[1].SignalDescription != analyze.DimensionBandDescription("neuroticism", .3) {
 		t.Fatalf("low score should use a text-pattern description: %+v", v.Traits[1])
 	}
 	if v.PercentileReferenceDescription != "Percentiles compare scores with 2400 texts in Reference essay sample. This is a comparison within that text sample, not a general-population estimate." {
@@ -134,10 +134,10 @@ func TestBuildReportScoreBandWording(t *testing.T) {
 		name, label, description string
 		score                    float64
 	}{
-		{"low", "low", "The text's word pattern falls in the low band for this measure.", 0.349},
-		{"moderate threshold", "moderate", "Moderate means the model found no strong high or low signal in this text.", 0.35},
-		{"moderate middle", "moderate", "Moderate means the model found no strong high or low signal in this text.", 0.5},
-		{"high", "high", "The text's word pattern falls in the high band for this measure.", 0.65},
+		{"low", "low", analyze.DimensionBandDescription("openness", .349), 0.349},
+		{"moderate threshold", "moderate", analyze.DimensionBandDescription("openness", .35), 0.35},
+		{"moderate middle", "moderate", analyze.DimensionBandDescription("openness", .5), 0.5},
+		{"high", "high", analyze.DimensionBandDescription("openness", .65), 0.65},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -158,25 +158,27 @@ func TestBuildReportValues(t *testing.T) {
 	if len(v.Values) != 2 {
 		t.Fatalf("zero values must be dropped, got %d", len(v.Values))
 	}
-	if v.Values[0].Name != "Universalism" || v.Values[0].Rank != 1 || v.Values[0].RelWidth != 100 {
+	if v.Values[0].Name != "Universalism" || v.Values[0].Percent != .88 || v.Values[0].Description == "" {
 		t.Fatalf("top value wrong: %+v", v.Values[0])
 	}
-	if v.Values[1].RelWidth != 20 {
-		t.Fatalf("relative bar width should be 20%% of top, got %d", v.Values[1].RelWidth)
+	if v.Values[1].Percent != .18 || v.Values[0].HasCounts {
+		t.Fatalf("legacy percentages should remain recorded, with no invented counts: %+v", v.Values)
 	}
 }
 
-func TestGenerateSnapshot(t *testing.T) {
-	s := generateSnapshot(testAnalysis())
-	for _, want := range []string{"Openness", "91st percentile", "not direct measurements of personality", "authenticity 71", "Universalism", "just"} {
-		if !strings.Contains(s, want) {
-			t.Errorf("snapshot missing %q: %s", want, s)
+func TestMainReadingHasOneScorePerMeasure(t *testing.T) {
+	var out strings.Builder
+	if err := RenderAnalysis("../../templates", testAnalysis(), &out, false); err != nil {
+		t.Fatal(err)
+	}
+	main := strings.Split(out.String(), "Calculation details and limitations")[0]
+	for _, removed := range []string{"percentile", "heuristic bounds", "Rough score range", "How to read these scores", "Summary of text signals", "What you value", "seen in:"} {
+		if strings.Contains(main, removed) {
+			t.Errorf("main reading still contains %q", removed)
 		}
 	}
-	for _, disallowed := range []string{"higher than 91% of people", "personal and honest", "reserved rather than dominant"} {
-		if strings.Contains(strings.ToLower(s), disallowed) {
-			t.Errorf("snapshot still makes an unsupported personality claim %q: %s", disallowed, s)
-		}
+	if strings.Count(main, `role="progressbar"`) != 7 || strings.Count(main, "Estimated text score") != 7 {
+		t.Fatal("each available trait/summary must have exactly one score row")
 	}
 }
 
@@ -209,8 +211,8 @@ func TestRenderFragmentAndPage(t *testing.T) {
 		t.Error("fragment render must not emit a full document")
 	}
 	for _, want := range []string{
-		"Your writing profile", "Higher than 91% of scores in the configured reference texts.",
-		"Rough score range: 45–90/100", "Show the full score calculation and word examples",
+		"Your writing profile", "Approximate reference-text percentile: 91st.",
+		"Recorded heuristic bounds: 45–90/100 (unvalidated)", "Calculation details and limitations",
 		"not a percentile range or a statistically validated confidence interval", "not a validated individual personality measure",
 		"Percentiles compare scores with 2400 texts in Reference essay sample",
 		">the<", ">happy<", "Words longer than six bytes (legacy model proxy)",
@@ -222,7 +224,7 @@ func TestRenderFragmentAndPage(t *testing.T) {
 	if strings.Count(frag.String(), "<td class=\"py-1.5 pr-3 text-stone-600\">") < 4 {
 		t.Error("evidence table should render all four weighted category rows")
 	}
-	for _, layout := range []string{"max-w-[60rem]", "max-w-prose", "lg:grid-cols-2", "role=\"region\"", "tabindex=\"0\"", "overflow-x-auto", "min-w-[50rem]"} {
+	for _, layout := range []string{"max-w-[60rem]", "max-w-prose", "report-score-row", "role=\"region\"", "tabindex=\"0\"", "overflow-x-auto", "min-w-[50rem]"} {
 		if !strings.Contains(frag.String(), layout) {
 			t.Errorf("report is missing responsive/readability layout feature %q", layout)
 		}

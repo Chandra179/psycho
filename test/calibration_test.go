@@ -170,11 +170,11 @@ func TestCalibratedPipeline(t *testing.T) {
 	articleHeavy := strings.Repeat("Theories about architecture and the history of the cities were the topics of the lectures. ", 40)
 	pronounHeavy := strings.Repeat("I was there and you were with me when they told us we would miss it all. ", 40)
 
-	outHigh, err := pipe.Run(t.Context(), "test", "", articleHeavy)
+	outHigh, err := pipe.Run(t.Context(), articleHeavy)
 	if err != nil {
 		t.Fatalf("run article-heavy: %v", err)
 	}
-	outLow, err := pipe.Run(t.Context(), "test", "", pronounHeavy)
+	outLow, err := pipe.Run(t.Context(), pronounHeavy)
 	if err != nil {
 		t.Fatalf("run pronoun-heavy: %v", err)
 	}

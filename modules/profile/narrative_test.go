@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"psycho/modules/analyze"
+	"psycho/modules/ingest"
 )
 
 func TestNewTemplateNarrativeGenerator(t *testing.T) {
@@ -42,8 +43,7 @@ func TestTemplateNarrativeGenerator_GeneratesAllSections(t *testing.T) {
 	narrative := g.GenerateSynthesis(prof)
 
 	checks := []string{
-		"Psychological Profile",
-		"Confidence level:** high",
+		"Your writing profile",
 		"Openness",
 		"Conscientiousness",
 		"Extraversion",
@@ -53,15 +53,15 @@ func TestTemplateNarrativeGenerator_GeneratesAllSections(t *testing.T) {
 		"Need for Cognition",
 		"Cognitive Style",
 		"Need for Closure",
-		"Analytical Thinking",
+		"Analytical thinking",
 		"Clout",
 		"Authenticity",
-		"Emotional Tone",
+		"Emotional tone",
 		"promotion_focus",
 		"high",
 		"98th percentile",
-		"rough score range",
-		"Project-defined text proxies, not validated personality or clinical measures",
+		"Recorded heuristic bounds",
+		"not validated personality or clinical measures",
 	}
 	for _, want := range checks {
 		if !strings.Contains(narrative, want) {
@@ -89,8 +89,8 @@ func TestTemplateNarrativeGenerator_LowConfidence(t *testing.T) {
 	}
 
 	narrative := g.GenerateSynthesis(prof)
-	if !strings.Contains(narrative, "Confidence level:** low") {
-		t.Error("low confidence narrative should report low confidence")
+	if !strings.Contains(narrative, "not a direct measurement of personality") {
+		t.Error("narrative should explain the experimental text scores")
 	}
 }
 
@@ -146,5 +146,25 @@ func TestSummaryBandFormal(t *testing.T) {
 	}
 	if got := analyze.SummaryTone(0.50); got != "neutral" {
 		t.Errorf("SummaryTone(0.50) = %q; want neutral", got)
+	}
+}
+
+func TestNarrativeSeparatesMainScoresFromRecordedDiagnostics(t *testing.T) {
+	p := Profile{
+		Traits:              map[string]TraitResult{"openness": {Score: .65, Percentile: 78, ConfidenceInterval: []float64{.4, .9}}},
+		Values:              map[string]float64{"value_tradition": 1.61},
+		ValueExcerpts:       map[string][]ingest.TextExcerpt{"value_tradition": {{Segments: []ingest.TextSegment{{Text: "We reject "}, {Text: "tradition", Matched: true}, {Text: "."}}}}},
+		CalculationDetails:  &analyze.CalculationDetails{Values: map[string]analyze.ValueCalculation{"value_tradition": {MatchedCount: 8, TotalWords: 497}}},
+		PercentileReference: &ingest.PercentileReference{Method: ingest.PercentileMethodEmpirical},
+	}
+	narrative := NewTemplateNarrativeGenerator().GenerateSynthesis(p)
+	parts := strings.Split(narrative, "### Calculation details and limitations")
+	if len(parts) != 2 || strings.Contains(parts[0], "percentile") || strings.Contains(parts[0], "heuristic bounds") {
+		t.Fatal("main narrative repeats diagnostics")
+	}
+	for _, want := range []string{"Estimated text score: 65/100", "8 of 497 words", "1.61% of all words", "We reject tradition.", "Approximate reference-text percentile: 78th.", "Recorded heuristic bounds: 40–90/100 (unvalidated)"} {
+		if !strings.Contains(narrative, want) {
+			t.Errorf("missing narrative content %q", want)
+		}
 	}
 }
