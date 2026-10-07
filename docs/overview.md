@@ -12,21 +12,20 @@ created: 2026-09-29
 
 # Psycho: Personality Profiling from Text
 
-Psycho analyzes a writing sample and estimates Big Five traits, motivational
-and cognitive tendencies, and value orientations. Each score includes a
-confidence level and the linguistic evidence used to calculate it.
+Psycho estimates Big Five traits, motivational and cognitive tendencies, and
+value-related language from writing. Reports show one estimated text score per
+measure, an overall reading-quality flag, and the evidence behind each score.
 
 It is useful for:
 
-- reflecting on your own writing;
-- comparing style and emphasis across blogs, emails, or chat logs;
-- research on the relationship between language use and personality;
-- writing-sample analysis where the reasoning behind a score matters; and
-- analyzing text you own using psycholinguistic methods.
+- reflecting on your writing;
+- comparing style across blogs, emails, or chats;
+- studying language and personality; and
+- reviewing your own text and the evidence behind its scores.
 
-Psycho runs as one process and stores data in an embedded database. It requires
-no account and makes no external calls during analysis. It is not a clinical
-instrument and does not provide diagnoses or mental-health assessments.
+Psycho runs as one process, stores data in an embedded database, requires no
+account, and makes no external calls during analysis. It is not a clinical or
+diagnostic tool and does not assess mental health.
 
 ## How it works
 
@@ -37,73 +36,74 @@ your writing → clean and organize → read word by word → infer tendencies �
                                   dictionary            every score
 ```
 
-Psycho returns a profile with estimated scores, score ranges, supporting
-evidence, and a short summary. You can view it on screen or export it as a PDF.
+Reports include scores, evidence, and a short summary. Expand calculation
+details for approximate percentiles, unvalidated bounds, and recorded formulas.
+View reports online or export them as PDFs.
 
 ### 1. Add your writing
 
-You provide a sample, such as saved blog posts, emails, or chat logs. Psycho
-checks its length, normalizes the text, and preserves paragraph and sentence
-structure.
+Submit text such as blog posts, emails, or chat logs. Psycho checks its length,
+normalizes it, and preserves paragraph and sentence structure.
 
 ### 2. Analyze the text
 
-Psycho looks up words in a psycholinguistic dictionary that maps them to
-categories. It counts category usage, measures stylistic features, and records
-the share of text covered by the dictionary. Coverage indicates how well the
-dictionary represents the sample.
+Psycho maps words to dictionary categories, counts them, measures style, and
+reports dictionary coverage, the share of the sample represented.
 
 ### 3. Read your profile
 
-Psycho combines the counts into a profile with one estimated text score per
-measure. The Reading report uses compact rows and a shared Big Five band legend;
-band explanations are available by hover, keyboard focus or tap. Recorded
-percentiles, unvalidated heuristic bounds and full calculations are inside the
-detail section. It saves the profile and evidence so results can be traced.
+Category counts produce one estimated text score per measure. The responsive
+**Text-based measures** section lists all nine, with the Big Five first and four
+project-defined language proxies after them. A shared legend explains Big Five
+bands; each proxy has its own explanation. Explanatory text fills the report
+width and wraps on narrow screens. Expand calculation details for approximate
+percentiles, unvalidated bounds, and recorded formulas.
 
-Value-related language shows occurrence counts, percentages of all words, and
-up to two sampled text excerpts per category with matching words highlighted.
-Excerpts are limited to 240 Unicode characters and persisted as plain-text
-segments, escaped when rendered. Older saved results show available word samples and identify
-missing excerpts or counts. Percentages count all occurrences, including text
-that rejects a value.
+Value-related language shows each category's count, share of all words, and up
+to two sampled excerpts with matching words highlighted. Excerpts are limited
+to 240 Unicode characters, stored as plain text, and escaped when rendered.
+Older results show available word samples and flag missing excerpts or counts.
+Mentions and rejections both count toward percentages.
 
 ## Main features
 
-- **Local analysis**: no accounts, and the analysis pipeline makes no external calls.
-- **Dictionary-based scoring**: the same text produces the same result under the same model, dictionary, and calibration; scores include their supporting evidence.
-- **Big Five (OCEAN) traits**: openness, conscientiousness, extraversion, agreeableness, and neuroticism, estimated from word-use patterns.
-- **Regulatory Focus**: whether the writing leans toward promotion (gains, aspirations) or prevention (safety, obligations).
-- **Need for Cognition**: the writer's tendency toward effortful, analytic thinking.
-- **Need for Closure**: comfort with definite answers versus ambiguity.
-- **Cognitive style**: systematic versus intuitive processing markers.
-- **Schwartz value orientations**: which values the writing emphasizes, from a cross-cultural framework.
-- **Score ranges**: ranges depend on text length and dictionary coverage; they are not validated probabilities of correctness.
-- **Evidence for scores**: outputs include the linguistic evidence used to calculate them.
-- **Quality flags**: short samples or low dictionary coverage widen the ranges and may trigger a warning.
-- **Reports you can keep**: a PDF report to save or print, plus the single on-screen report.
-- **Saved analyses**: past analyses can be viewed or exported again.
+- **Local analysis**: runs in one process, stores data in an embedded database, and needs no account or external calls.
+- **Dictionary-based scores**: repeatable with the same model, dictionary, and calibration; reports show matching word categories.
+- **Big Five (OCEAN)**: openness, conscientiousness, extraversion, agreeableness, and neuroticism, estimated from word patterns.
+- **Regulatory Focus**: promotion- versus prevention-related language.
+- **Need for Cognition**: analytic and intuitive word patterns used as a proxy for effortful thinking.
+- **Need for Closure**: certainty and tentative language used as a proxy for ambiguity tolerance.
+- **Cognitive style**: systematic and intuitive processing markers.
+- **Schwartz values**: value categories in the writing, based on a cross-cultural framework.
+- **Rough score bounds**: diagnostics based on text length and dictionary coverage, not validated confidence intervals or probabilities.
+- **Quality flags**: short samples and low dictionary coverage can trigger warnings and widen bounds.
+- **Reports**: view results online or export them as a PDF.
+- **Saved analyses**: view or export past results.
 
 ## Algorithms
 
 ### Text normalization
 
-Formatting is removed while paragraph structure is preserved. Scoring uses
-individual normalized words and their category frequencies. Sentence and
-paragraph boundaries select contextual excerpts; the scorer does not interpret
-sentence meaning, word order, sarcasm or negation in context.
+Formatting is removed, and paragraph structure is preserved. Scoring counts
+normalized words by category. Sentence and paragraph boundaries select
+excerpts; the scorer does not interpret sentence meaning, word order, sarcasm,
+or negation in context.
 
 ### Dictionary mapping
 
-Each word is matched against a LIWC-style psycholinguistic dictionary. The
-category counts are converted to percentages for the full sample, covering
-features such as emotion, cognition, and social language. Coverage is the share
-of words matched by at least one category. The feature vector also includes
-stylometric measures such as lexical diversity and word length.
+Each word is matched against a LIWC-style dictionary. Category counts become
+percentages of the full sample for features such as emotion, cognition, and
+social language. Coverage is the share of words matched by at least one
+category. Features also include lexical diversity and word length.
 
 ### Big Five correlation-weighted heuristic
 
-The Big Five scorer uses a correlation-weighted heuristic inspired by language associations (Yarkoni, 2010). It scales correlations using assumed trait and category standard deviations rather than fitted regression coefficients. With the same model, dictionary, and calibration, category ordering makes results reproducible. Other language measures are project-defined proxies, not official LIWC algorithms or validated personality tests.
+The Big Five scorer applies a correlation-weighted heuristic inspired by
+language associations (Yarkoni, 2010). It scales correlations using assumed
+trait and category standard deviations, not fitted regression coefficients.
+Fixed category ordering makes results reproducible with the same model,
+dictionary, and calibration. Other measures are project-defined proxies, not
+official LIWC algorithms or validated personality tests.
 
 ### Regulatory Focus
 
@@ -126,49 +126,42 @@ not this scoring formula.
 
 ### Schwartz values
 
-Value keywords are grouped by the Schwartz Value Survey framework (Schwartz,
-1992), a cross-cultural model of human values, and adapted for how values
-co-occur in text.
+Value keywords use Schwartz's cross-cultural framework (1992), adapted to show
+how value categories co-occur in text.
 
 ### Rough score ranges
 
-Each score has a range based on the amount of evidence. Longer samples
-generally have narrower ranges, while low dictionary coverage widens them.
-Very short samples receive a low-confidence flag. Samples with fewer than 10
-normalized Unicode characters or no letters or numbers are rejected. The ranges
-use project assumptions and are not validated confidence intervals. The current
-reference sample contains 3,992 retained blog texts. Percentiles are approximate
-ranks within that sample; ties use a midpoint and do not mean a strict percentage
-of texts scored lower. The main report shows the 0–100 text score, with reference
-ranks and heuristic bounds available in calculation details.
+Score bounds reflect text length and dictionary coverage: longer samples tend
+to have narrower bounds, while low coverage widens them. Very short samples
+receive a low-confidence flag. Samples with fewer than 10 normalized Unicode
+characters or no letters or numbers are rejected. These bounds use project
+assumptions; they are not validated confidence intervals. Percentiles are
+approximate ranks among 3,992 retained blog texts, with ties assigned their
+midpoint. They do not represent percentages of people. The main report shows
+the 0–100 text score; calculation details include percentiles and bounds.
 
 ## Current evidence
 
-Psycho is early stage. The speed figure below comes from an automated benchmark
-on one development machine. It is for tracking regressions, not a production
-measurement. Other figures are design targets.
+Psycho is early stage. Benchmark speed comes from one development machine and
+tracks regressions; it is not a production estimate. Other figures are design
+targets.
 
 | Area | Current status |
 |---|---|
 | Speed | a 5,000-word corpus analyzes in a median of **5 ms** (p95: **11 ms**) on the benchmark machine; the design target is **under 5 seconds** |
 | Usage | designed for 1–10 analyses per minute, personal, single-user pacing |
-| Storage | about **10 MB** per analyzed subject, including the text, the evidence, and the profile |
+| Storage | about **10 MB** per subject, including text, evidence, and profile |
 | Short samples | samples below 500 words are flagged low-confidence; invalid text is rejected |
-| Quality | automated tests check feature counts, word-to-category mappings, and score directions; the dictionary matches about **58%** of words in typical test samples (2,155 words across 36 categories) |
-| Measured accuracy | evaluated on **2,442 essays** from a local CSV of 2,467 rows with binary questionnaire labels; provenance is unverified. Trait-ranking AUC ranged from **0.524 to 0.554**, near chance (0.5). These results do not validate individual predictions or show that a larger dictionary would improve accuracy. |
-
-An automated validation suite runs known-profile samples through the full
-pipeline. It checks score directions and feature counts, and records latency
-percentiles.
+| Quality | pipeline tests check known profiles, feature counts, category mappings, and score directions; the dictionary matches about **58%** of words in typical test samples (2,155 words across 36 categories) |
+| Measured accuracy | evaluated on **2,442 essays** from a local CSV of 2,467 rows with binary questionnaire labels; provenance is unverified. Trait-ranking AUC was **0.524–0.554** (0.5 is chance). This does not establish individual accuracy or show that a larger dictionary would improve results. |
 
 The separate [offline supervised experiment](offline-supervised.md) evaluates learned models on held-out essay authors.
 
 ## Your data
 
-Each analysis stores the submitted text, word counts, scores, supporting
-evidence, and summary in one database file. Analyses remain available after
-restarts, and you can back them up by copying that file. Analysis makes no
-external service calls.
+Each analysis stores the submitted text, word counts, scores, evidence, and
+summary in one database file. Analyses remain available after restarts; copy
+the file to back them up.
 
 ## References
 
