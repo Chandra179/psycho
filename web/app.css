@@ -23,7 +23,7 @@
 @media (hover: hover) { .report-band:hover .report-tooltip { visibility: visible; } }
 @media (max-width: 580px) {
   .report-score-number { display: block; }
-  .report-score-number > span { display: block; max-width: 11ch; font-size: 11px; }
+  .report-score-number > span { display: block; max-width: 11ch; font-size: 0.75rem; }
   .report-score-number > strong { display: block; }
 }
 @media (pointer: coarse) { .report-band > summary { min-height: 44px; display: flex; align-items: center; } }

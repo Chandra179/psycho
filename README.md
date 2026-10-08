@@ -15,7 +15,7 @@ Inference is dictionary-based (LIWC-style), no LLM in the core inference path. S
 * Trait inference: Big Five (OCEAN), Regulatory Focus, Need for Cognition, Need for Closure, cognitive style, and Schwartz value orientations
 * Project-defined rough score ranges, not validated confidence intervals
 * Structured JSON output and PDF report export (`GET /analysis/{id}/pdf`)
-* Single-report browser flow (Tailwind + HTMX): paste text at the root URL, the report swaps in on the same page, download it as PDF. Every score ships with its evidence trail, and self-writing consent is required
+* Single-report browser flow (Tailwind + HTMX): paste text at the root URL, the report swaps in on the same page, download it as PDF. The report opens with an "At a glance" summary and flags measures that fit the text poorly. Every score ships with its evidence trail, and self-writing consent is required
 * Config file path overridable via `PSYCHO_CONFIG`
 
 ## Getting started

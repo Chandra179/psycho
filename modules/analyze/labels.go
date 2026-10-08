@@ -2,6 +2,7 @@ package analyze
 
 import (
 	"fmt"
+	"strings"
 
 	"psycho/modules/ingest"
 )
@@ -14,6 +15,10 @@ import (
 const (
 	highLabelThreshold = 0.65
 	lowLabelThreshold  = 0.35
+
+	// Ranks at or beyond these read as extreme in PercentileMainLine.
+	extremeRankHigh = 80
+	extremeRankLow  = 20
 )
 
 // DimensionDisplayName returns the human-readable name for a trait key,
@@ -90,8 +95,8 @@ func DimensionBandDescription(key string, score float64) string {
 	rangeText := fmt.Sprintf("%d–%d/100", int(lowLabelThreshold*100), int(highLabelThreshold*100))
 	if score < lowLabelThreshold {
 		rangeText = fmt.Sprintf("below %d/100", int(lowLabelThreshold*100))
-	} else if score > highLabelThreshold {
-		rangeText = fmt.Sprintf("above %d/100", int(highLabelThreshold*100))
+	} else if score >= highLabelThreshold {
+		rangeText = fmt.Sprintf("%d/100 or above", int(highLabelThreshold*100))
 	}
 	meanings := map[string]string{
 		"promotion_focus":  "Promotion-related language outweighs prevention-related language in this bipolar proxy.",
@@ -105,6 +110,38 @@ func DimensionBandDescription(key string, score float64) string {
 		"low":              "A lower-band word-pattern score in this proxy.",
 	}
 	return fmt.Sprintf("%s: %s. %s Labels describe word patterns, not a validated personality assessment.", label, rangeText, meanings[label])
+}
+
+// MeasureSummary is the one visible line saying what a measure counts. It
+// is deliberately about word patterns: low Authenticity means formal
+// wording, not dishonesty, and the traits are proxies, not the constructs.
+// Keys cover the nine trait dimensions and the four summary variables.
+func MeasureSummary(key string) string {
+	summaries := map[string]string{
+		"openness":            "Higher with more articles, prepositions and inclusive words; lower with more pronouns, time, motion and past-tense words.",
+		"conscientiousness":   "Higher with achievement words; lower with negations, negative-emotion words and exclusion words such as \"but\".",
+		"extraversion":        "Higher with more social, positive-emotion and pronoun words.",
+		"agreeableness":       "Higher with inclusive, positive-emotion, space and motion words; lower with negative-emotion words.",
+		"neuroticism":         "Higher with negative-emotion, negation, reasoning, certainty and hedging words. It counts word patterns, not mood.",
+		"regulatory_focus":    "Compares gain and aspiration words (promotion) with duty and loss-avoidance words (prevention).",
+		"need_for_cognition":  "Compares analytic words with intuitive words, as a proxy for enjoying effortful thinking.",
+		"cognitive_style":     "Systematic wording (reasoning, cause, long words) versus intuitive wording (senses, personal, present-tense). Long formal words push it up.",
+		"need_for_closure":    "Compares certainty words with hedging words, as a proxy for comfort with ambiguity.",
+		"analytical_thinking": "Formal, reasoning-heavy wording versus personal, story-like wording.",
+		"clout":               "Certain, social and achievement wording versus hedging, personal-pronoun and negative-emotion wording. Low does not mean low status.",
+		"authenticity":        "Personal, informal wording versus formal wording with many long words. Low means formal, not dishonest.",
+		"emotional_tone":      "Positive-emotion words minus negative-emotion words. It counts words only, so clearly distressed text can still read as neutral.",
+	}
+	return summaries[key]
+}
+
+// CategoryLabel turns a dictionary category key into reader-facing words for
+// the evidence table; the raw key stays available as a title attribute.
+func CategoryLabel(key string) string {
+	if key == "long_word_ratio" {
+		return "long words (over six bytes)"
+	}
+	return strings.ReplaceAll(key, "_", " ")
 }
 
 func SummarySignalLabel(name string, score float64) string {
@@ -121,6 +158,34 @@ func SummarySignalDescription(name string, score float64) string {
 		}
 	}
 	return "Project-defined language summary."
+}
+
+// PercentileMainLine is the plain rank sentence shown beside a trait score.
+// It is empty unless the percentile came from an empirical reference sample,
+// because a normal approximation or an unrecorded method is not a rank among
+// real texts. When the band label says moderate (or balanced, mixed) but the
+// rank is extreme, it explains why: most reference scores cluster tightly
+// around 50, so a "moderate" score can still rank high or low.
+func PercentileMainLine(percentile int, reference *ingest.PercentileReference, label string) string {
+	if reference == nil || reference.Method != ingest.PercentileMethodEmpirical || percentile < 1 || percentile > 99 {
+		return ""
+	}
+	line := fmt.Sprintf("Higher than about %d of 100 reference texts.", percentile)
+	middle := label == "moderate" || label == "balanced" || label == "mixed"
+	switch {
+	case middle && percentile >= extremeRankHigh:
+		line += fmt.Sprintf(" %s on the 0–100 scale, but reference scores cluster tightly, so it ranks high.", capitalize(label))
+	case middle && percentile <= extremeRankLow:
+		line += fmt.Sprintf(" %s on the 0–100 scale, but reference scores cluster tightly, so it ranks low.", capitalize(label))
+	}
+	return line
+}
+
+func capitalize(s string) string {
+	if s == "" {
+		return s
+	}
+	return strings.ToUpper(s[:1]) + s[1:]
 }
 
 func PercentileDescription(percentile int, reference *ingest.PercentileReference) string {

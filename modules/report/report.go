@@ -57,6 +57,9 @@ type ContributionJSON struct {
 	MatchedWords []string `json:"matched_words,omitempty"`
 }
 
+// CategoryLabel is the reader-facing name of the dictionary category.
+func (c ContributionJSON) CategoryLabel() string { return analyze.CategoryLabel(c.Category) }
+
 type SummaryVariables struct {
 	AnalyticalThinking float64 `json:"analytical_thinking"`
 	Clout              float64 `json:"clout"`
@@ -82,6 +85,15 @@ func readingQuality(flag string) string {
 
 // --- Reading report view ---
 
+// CardNotes are the small text lines under a score bar, shared by trait and
+// summary cards through the common "report-score-row" template.
+type CardNotes struct {
+	Meaning        string // what the measure counts
+	Detail         string // recorded counts behind the score, when available
+	PercentileMain string // rank among reference texts, traits only
+	FitNote        string // why this measure fits this text poorly, when it does not
+}
+
 type TraitView struct {
 	Key               string
 	Name              string
@@ -90,11 +102,12 @@ type TraitView struct {
 	Score100          int
 	PercentileText    string
 	SignalDescription string
-	HasScoreRange     bool
-	ScoreRangeLow     int
-	ScoreRangeHigh    int
-	Evidence          []ContributionJSON
-	Calculation       *analyze.ScoreCalculation
+	CardNotes
+	HasScoreRange  bool
+	ScoreRangeLow  int
+	ScoreRangeHigh int
+	Evidence       []ContributionJSON
+	Calculation    *analyze.ScoreCalculation
 }
 
 type ValueView struct {
@@ -111,11 +124,13 @@ type SummaryCard struct {
 	Name                                string
 	Score100                            int
 	Label, ChipClass, SignalDescription string
+	CardNotes
 }
 
 type ReportView struct {
 	GeneratedAt                    string
 	Quality                        string
+	Glance                         Glance
 	Traits                         []TraitView
 	HasBigFive                     bool
 	Bands                          []analyze.ScoreBand
@@ -123,6 +138,7 @@ type ReportView struct {
 	Summary                        []SummaryCard
 	PercentileReferenceDescription string
 	WordCount                      int
+	WordCountText                  string // WordCount with thousands separators, matching the glance block
 	Coverage                       int
 	AnalysisID                     string
 	CalculationJSON                string
@@ -154,8 +170,10 @@ var chipClasses = map[string]string{
 func BuildReport(a *Analysis) ReportView {
 	v := ReportView{
 		Quality:                        readingQuality(a.ConfidenceFlag),
+		Glance:                         BuildGlance(a),
 		Bands:                          analyze.BigFiveBands(),
 		WordCount:                      a.WordCount,
+		WordCountText:                  analyze.FormatCount(a.WordCount),
 		Coverage:                       int(math.Round(a.DictionaryCoverage * 100)),
 		AnalysisID:                     a.AnalysisID,
 		PercentileReferenceDescription: percentileReferenceDescription(a.PercentileReference),
@@ -206,6 +224,19 @@ func BuildReport(a *Analysis) ReportView {
 		newSummaryCard("emotional_tone", "Emotional tone", a.Summary.EmotionalTone),
 	}
 
+	if pos, neg, ok := emotionCounts(a); ok {
+		for i := range v.Summary {
+			if v.Summary[i].Key == "emotional_tone" {
+				v.Summary[i].Detail = fmt.Sprintf("Based on %d negative-feeling and %d positive-feeling dictionary words.", neg, pos)
+			}
+		}
+	}
+
+	_, fit := FitNotes(a)
+	for i := range v.Summary {
+		v.Summary[i].FitNote = fit[v.Summary[i].Key]
+	}
+
 	for _, k := range traitOrder {
 		t, ok := a.Traits[k]
 		if !ok {
@@ -220,7 +251,12 @@ func BuildReport(a *Analysis) ReportView {
 			Score100:          int(math.Round(t.Score * 100)),
 			PercentileText:    percentileText(t.Percentile, a.PercentileReference),
 			SignalDescription: analyze.DimensionBandDescription(k, t.Score),
-			Evidence:          t.Evidence,
+			CardNotes: CardNotes{
+				Meaning:        analyze.MeasureSummary(k),
+				PercentileMain: analyze.PercentileMainLine(t.Percentile, a.PercentileReference, label),
+				FitNote:        fit[k],
+			},
+			Evidence: t.Evidence,
 		}
 		if a.CalculationDetails != nil {
 			tv.Calculation = a.CalculationDetails.Traits[k]
@@ -288,6 +324,7 @@ func newSummaryCard(key, name string, score float64) SummaryCard {
 		Score100: int(math.Round(score * 100)),
 		Label:    band, ChipClass: chipClasses[band],
 		SignalDescription: analyze.SummarySignalDescription(key, score),
+		CardNotes:         CardNotes{Meaning: analyze.MeasureSummary(key)},
 	}
 }
 

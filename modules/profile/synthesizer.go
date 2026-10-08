@@ -165,16 +165,7 @@ func normalCDF(z float64) float64 {
 }
 
 func computeConfidenceFlag(wordCount int, coverage float64) string {
-	if wordCount < 500 {
-		return "low"
-	}
-	if coverage < 0.6 {
-		return "medium"
-	}
-	if wordCount < 1000 {
-		return "medium"
-	}
-	return "high"
+	return analyze.QualityFlag(wordCount, coverage)
 }
 
 // computeCIWidth retains the legacy API name. This is a project-defined

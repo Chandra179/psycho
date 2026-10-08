@@ -25,8 +25,12 @@ func TestReadingPreservesAllMeasuresAndCanonicalBoundaries(t *testing.T) {
 			t.Fatalf("changed score/band: %+v", row)
 		}
 	}
-	if v.Traits[0].Label != "high" || v.Traits[6].Label != "moderate" || !strings.Contains(v.Traits[6].SignalDescription, "35–65/100") {
-		t.Fatal("65/100 boundary rules drifted")
+	// Every measure uses the shared rule: exactly 65/100 is the top band, as the legend says.
+	if v.Traits[0].Label != "high" || v.Traits[5].Label != "promotion_focus" || v.Traits[6].Label != "high" || v.Traits[7].Label != "systematic" || v.Traits[8].Label != "high" {
+		t.Fatalf("65/100 boundary rules drifted: %+v", v.Traits)
+	}
+	if !strings.Contains(v.Traits[6].SignalDescription, "65/100 or above") {
+		t.Fatalf("top-band wording drifted: %q", v.Traits[6].SignalDescription)
 	}
 	if v.Bands[0].Range != "0–34" || v.Bands[1].Range != "35–64" || v.Bands[2].Range != "65–100" {
 		t.Fatalf("wrong legend: %+v", v.Bands)

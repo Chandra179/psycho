@@ -36,9 +36,12 @@ your writing → clean and organize → read word by word → infer tendencies �
                                   dictionary            every score
 ```
 
-Reports include scores, evidence, and a short summary. Expand calculation
-details for approximate percentiles, unvalidated bounds, and recorded formulas.
-View reports online or export them as PDFs.
+Reports open with an **At a glance** block, then scores and evidence. The block
+says how many words were read, why the reading quality is not high, which
+measures fit the text poorly, and that the scores are rough estimates that must
+not be used for hiring, clinical, or other decisions about a person. Expand
+calculation details for unvalidated bounds, the reference sample, and recorded
+formulas. View reports online or export them as PDFs.
 
 ### 1. Add your writing
 
@@ -55,9 +58,16 @@ reports dictionary coverage, the share of the sample represented.
 Category counts produce one estimated text score per measure. The responsive
 **Text-based measures** section lists all nine, with the Big Five first and four
 project-defined language proxies after them. A shared legend explains Big Five
-bands; each proxy has its own explanation. Explanatory text fills the report
-width and wraps on narrow screens. Expand calculation details for approximate
-percentiles, unvalidated bounds, and recorded formulas.
+bands; each proxy has its own explanation. Every card has a one-line meaning of
+what the measure counts. Each of the nine measures also shows how it ranks among
+the reference texts ("Higher than about 94 of 100 reference texts"). When a score
+reads moderate but ranks near the top or bottom, the card says so, because most
+reference scores cluster tightly around 50. A card marked **Low fit for this
+text** names a measure that mostly reflects the writing style or topic here, for
+example Authenticity on formal prose or Neuroticism on text with almost no
+emotion words. Explanatory text fills the report width and wraps on narrow
+screens; on phones the evidence table becomes a stacked list. Expand calculation
+details for unvalidated bounds and recorded formulas.
 
 Value-related language shows each category's count, share of all words, and up
 to two sampled excerpts with matching words highlighted. Excerpts are limited
@@ -76,7 +86,8 @@ Mentions and rejections both count toward percentages.
 - **Cognitive style**: systematic and intuitive processing markers.
 - **Schwartz values**: value categories in the writing, based on a cross-cultural framework.
 - **Rough score bounds**: diagnostics based on text length and dictionary coverage, not validated confidence intervals or probabilities.
-- **Quality flags**: short samples and low dictionary coverage can trigger warnings and widen bounds.
+- **Quality flags**: short samples and low dictionary coverage lower the reading quality and widen bounds, and the report states the reason in plain words.
+- **Fit notes**: formal writing and text with very few emotion words flag the measures that mostly reflect style or topic.
 - **Reports**: view results online or export them as a PDF.
 - **Saved analyses**: view or export past results.
 
@@ -138,7 +149,10 @@ characters or no letters or numbers are rejected. These bounds use project
 assumptions; they are not validated confidence intervals. Percentiles are
 approximate ranks among 3,992 retained blog texts, with ties assigned their
 midpoint. They do not represent percentages of people. The main report shows
-the 0–100 text score; calculation details include percentiles and bounds.
+the 0–100 text score and, for empirical references only, a plain rank sentence;
+calculation details include the exact percentile and the bounds. The bounds use
+one width for every measure, so they are a caution about the text, not a way to
+compare measures.
 
 ## Current evidence
 

@@ -26,11 +26,5 @@ func ComputeNeedForClosureCalculation(fv FeatureVector) *ScoreCalculation {
 
 // ComputeNeedForClosureLabel returns a human-readable label for the score.
 func ComputeNeedForClosureLabel(score float64) string {
-	if score > 0.65 {
-		return "high"
-	}
-	if score < 0.35 {
-		return "low"
-	}
-	return "moderate"
+	return HighModerateLow(score)
 }

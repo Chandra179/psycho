@@ -103,7 +103,7 @@ Tests run after each phase completes. The system is decomposed so each module is
 * "Text with 5.2% positive emotion words and 8.7% cognitive process words maps to predicted Openness percentile within expected range."
 * "Corpus with <500 words returns low‑confidence flag regardless of feature values."
 * "Normaliser strips HTML tags but preserves paragraph boundaries."
-* "Dictionary coverage below 60% triggers warning flag."
+* "Dictionary coverage below 60% lowers reading quality to medium, and the report says why."
 * "High promotion_focus and low prevention_focus percentages map to elevated Regulatory Focus score."
 
 **Integration Tests**
@@ -124,11 +124,25 @@ With calibration enabled, `cmd/calibrate` runs the production inference path ove
 
 ### Reading report and contextual evidence
 
-The HTML report shows one 0–100 score per measure in compact rows, with canonical
-band legends and native disclosure tooltips. Percentiles, heuristic bounds and
-complete recorded calculations are collapsed into details. All nine dimensions
-and four summary proxies remain available across full-page, HTMX and standalone
-HTML rendering. Narrative and PDF use the same simplified score wording.
+The HTML report opens with an "At a glance" block built by `report.BuildGlance`
+from recorded fields only: size and dictionary coverage, the reasons the reading
+quality is not high (`analyze.QualityReasons`, which shares its thresholds with
+`profile.computeConfidenceFlag` through `analyze.QualityFlag`), recorded
+emotion-word counts, fit notes, and one plain caveat (`analyze.ReadingCaveat`).
+Below it, each measure is a compact 0–100 row with canonical band legends,
+native disclosure tooltips, a one-line meaning (`analyze.MeasureSummary`) and,
+for the nine traits, a plain rank sentence (`analyze.PercentileMainLine`, shown
+only for empirical references). The rank sentence explains when a moderate band
+sits at an extreme rank: calibrated scores for most dimensions cluster within
+about 0.44 to 0.56 in the reference sample, while the 35/65 bands are fixed on
+the score scale. `report.FitNotes` flags measures that mostly reflect register or
+topic (formal prose: Authenticity at or below 0.15 with at least 25% long words)
+or lack signal (emotion words under 0.5% of the text); thresholds were set from
+the nine samples plus 25 random corpus posts. Heuristic bounds and complete
+recorded calculations stay collapsed. Below 768px the evidence table is replaced
+by a stacked list. All nine dimensions and four summary proxies remain available
+across full-page, HTMX and standalone HTML rendering. Narrative and PDF use the
+same simplified score wording but do not yet include the glance block.
 
 The optional `value_excerpts` field flows through analysis responses, profile JSON,
 saved-analysis retrieval and report decoding without a database migration. Each

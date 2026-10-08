@@ -29,10 +29,10 @@ func ComputeRegulatoryFocusCalculation(fv FeatureVector) *ScoreCalculation {
 }
 
 func ComputeRegulatoryFocusLabel(score float64) string {
-	if score > 0.65 {
+	switch HighModerateLow(score) {
+	case "high":
 		return "promotion_focus"
-	}
-	if score < 0.35 {
+	case "low":
 		return "prevention_focus"
 	}
 	return "balanced"

@@ -7,6 +7,7 @@ A self-contained system that extracts the psychological structure of a person fr
 ## Non-goals
 
 * Clinical diagnosis or mental health assessment
+* Hiring, employment, or other decisions about a person; the report says so at the top
 * Real‑time surveillance or monitoring
 * Predicting future behavior
 * Black‑box LLM inference (all claims are auditable)
@@ -39,7 +40,7 @@ A self-contained system that extracts the psychological structure of a person fr
 **Risks we tolerate:**
 
 * No authentication on the ingestion endpoint. Anyone who can reach the server port can submit text.
-* Analysis may be unreliable for texts <500 words. The system warns; fewer than 10 normalized Unicode characters or no letters/numbers are rejected.
+* Analysis may be unreliable for texts <500 words. The report states the reason in plain words; fewer than 10 normalized Unicode characters or no letters/numbers are rejected.
 * Single‑threaded processing. Texts >50,000 words may take >30 seconds. No progress indicator in MVP.
 
 **Trusted sources:**

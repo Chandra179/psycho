@@ -3,7 +3,7 @@
   <div class="flex flex-wrap items-center gap-2 min-w-0">
     <h3 class="text-sm font-medium">{{.Name}}</h3>
     <details class="report-band">
-      <summary aria-label="{{.Name}}: {{.Label}} band explanation" aria-describedby="band-{{.Key}}" class="rounded-full px-2 py-1 text-[11px] font-medium {{.ChipClass}}">
+      <summary aria-label="{{.Name}}: {{.Label}} band explanation" aria-describedby="band-{{.Key}}" class="rounded-full px-2 py-1 text-xs font-medium {{.ChipClass}}">
         {{.Label}}<span id="band-{{.Key}}" role="tooltip" class="report-tooltip">{{.SignalDescription}}</span>
       </summary>
     </details>
@@ -12,6 +12,10 @@
   <div role="progressbar" aria-label="{{.Name}} estimated text score" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{.Score100}}" class="col-span-full h-1 rounded-full bg-stone-100 overflow-hidden">
     <div class="h-full rounded-full bg-teal-700" style="width:{{.Score100}}%"></div>
   </div>
+  {{if .Meaning}}<p class="col-span-full text-xs leading-relaxed text-stone-600">{{.Meaning}}</p>{{end}}
+  {{if .Detail}}<p class="col-span-full text-xs leading-relaxed text-stone-600">{{.Detail}}</p>{{end}}
+  {{if .PercentileMain}}<p class="col-span-full text-xs leading-relaxed text-stone-700">{{.PercentileMain}}</p>{{end}}
+  {{if .FitNote}}<p class="col-span-full text-xs leading-relaxed text-stone-700"><strong class="font-medium text-amber-800">Low fit for this text.</strong> {{.FitNote}}</p>{{end}}
 </div>
 {{end}}
 
@@ -20,25 +24,37 @@
 
   <header class="flex flex-wrap items-start justify-between gap-3 pb-6 border-b border-stone-200">
     <div>
-      <p class="text-[11px] tracking-[0.25em] uppercase text-teal-700 font-semibold">Psycho · writing profile</p>
+      <p class="text-xs tracking-[0.25em] uppercase text-teal-700 font-semibold">Psycho · writing profile</p>
       <h1 class="font-serif text-4xl mt-2">Your writing profile</h1>
       <div class="flex flex-wrap items-center gap-3 mt-3">
         <span class="inline-flex items-center rounded-full bg-teal-50 text-teal-800 px-3 py-1 text-xs font-medium ring-1 ring-teal-600/20">Reading quality: {{.Quality}}</span>
-        <span class="text-sm text-stone-500">{{.GeneratedAt}} · {{.WordCount}} words</span>
+        <span class="text-sm text-stone-500">{{.GeneratedAt}} · {{.WordCountText}} words</span>
       </div>
     </div>
     <nav aria-label="Report actions" class="flex items-center gap-2">
-      <a href="/" class="inline-flex items-center rounded-full border border-stone-300 bg-white px-4 py-2 text-xs font-medium text-stone-700 hover:bg-stone-100 transition">
+      <a href="/" class="inline-flex min-h-[44px] items-center rounded-full border border-stone-300 bg-white px-4 py-2 text-xs font-medium text-stone-700 hover:bg-stone-100 transition">
         New reading
       </a>
       <a href="/analysis/{{.AnalysisID}}/pdf"
-         class="inline-flex items-center rounded-full bg-stone-900 text-white px-4 py-2 text-xs font-medium hover:bg-stone-700 transition">
+         class="inline-flex min-h-[44px] items-center rounded-full bg-stone-900 text-white px-4 py-2 text-xs font-medium hover:bg-stone-700 transition">
         Download PDF
       </a>
     </nav>
   </header>
 
-  <p class="mt-5 sm:mt-6 w-full text-[15px] sm:text-base leading-relaxed text-pretty text-stone-600">An experimental estimate from word patterns in this writing. Scores can reflect the topic and writing style; they do not directly measure your personality.</p>
+  <section aria-labelledby="glance-heading" class="mt-6 rounded-2xl border border-stone-200 bg-white p-5 sm:p-6">
+    <h2 id="glance-heading" class="font-serif text-xl">At a glance</h2>
+    <div class="mt-3 space-y-2 text-[15px] sm:text-base leading-relaxed text-pretty text-stone-600">
+      <p>An experimental estimate from word patterns in this writing. Scores can reflect the topic and writing style; they do not directly measure your personality.</p>
+      <p>{{.Glance.Read}}</p>
+      {{range .Glance.QualityReasons}}<p>{{.}}</p>
+      {{end}}{{range .Glance.FitNotes}}<p>{{.}}</p>
+      {{end}}{{if .Glance.Emotion}}<p>{{.Glance.Emotion}}</p>
+      {{end}}<p class="font-medium text-stone-800">{{.Glance.Caveat}}</p>
+      {{if .Glance.SupportNote}}<p>{{.Glance.SupportNote}}</p>
+      {{end}}
+    </div>
+  </section>
 
   {{if .Traits}}
   <section class="mt-10">
@@ -77,7 +93,7 @@
         </summary>
         <div class="px-4 sm:px-5 pb-4">
           {{if .Excerpts}}
-          <p class="text-[11px] text-stone-500 mb-2">Sampled text excerpts; highlighted words match this category's dictionary.</p>
+          <p class="text-xs text-stone-500 mb-2">Sampled text excerpts; highlighted words match this category's dictionary.</p>
           {{range .Excerpts}}<blockquote class="report-excerpt">{{range .Segments}}{{if .Matched}}<mark>{{.Text}}</mark>{{else}}{{.Text}}{{end}}{{end}}</blockquote>{{end}}
           {{else}}
           <p class="text-xs text-stone-500">Text excerpts were not recorded for this analysis.</p>
@@ -103,15 +119,15 @@
     </summary>
     <div class="px-5 pb-5">
       <p class="w-full break-words text-xs leading-relaxed text-stone-600 mb-3">{{.PercentileReferenceDescription}}</p>
-      <p class="text-xs text-stone-500 mb-3">{{.WordCount}} words · {{.Coverage}}% dictionary coverage · analysis {{.AnalysisID}}</p>
+      <p class="text-xs text-stone-500 mb-3">{{.WordCountText}} words · {{.Coverage}}% dictionary coverage · analysis {{.AnalysisID}}</p>
       <div class="space-y-2 mb-5 text-xs text-stone-600">
         {{range .Traits}}<p><strong class="font-medium text-stone-800">{{.Name}}</strong>: {{.PercentileText}}{{if .HasScoreRange}} Recorded heuristic bounds: {{.ScoreRangeLow}}–{{.ScoreRangeHigh}}/100 (unvalidated).{{end}}</p>{{end}}
       </div>
       {{if not .CalculationJSON}}<p class="w-full break-words text-sm text-amber-800 mb-4">Complete calculation details were not recorded for this saved analysis. Its recorded scores and evidence are shown below; missing operands are not reconstructed using the current model.</p>{{end}}
-      <div role="region" aria-label="Score evidence table, scroll horizontally to see all columns" tabindex="0" class="-mx-5 overflow-x-auto px-5 pb-1 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-teal-500">
+      <div role="region" aria-label="Score evidence table, scroll horizontally to see all columns" tabindex="0" class="hidden md:block -mx-5 overflow-x-auto px-5 pb-1 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-teal-500">
         <table class="w-full min-w-[50rem] text-sm">
           <thead>
-            <tr class="text-[11px] uppercase tracking-wider text-stone-500 border-b border-stone-200">
+            <tr class="text-xs uppercase tracking-wider text-stone-500 border-b border-stone-200">
               <th scope="col" class="py-2 pr-3 text-left font-medium">Trait</th>
               <th scope="col" class="py-2 pr-3 text-left font-medium">Category</th>
               <th scope="col" class="py-2 pr-3 text-right font-medium">Matches / words</th>
@@ -126,12 +142,12 @@
             {{if .Calculation}}
             <tr class="border-b border-stone-200 bg-stone-50">
               <th scope="row" class="py-2 pr-3 text-left font-medium">{{.Name}}</th>
-              <td colspan="6" class="py-2 text-xs leading-relaxed tabular-nums">Baseline {{printf "%.4f" .Calculation.Baseline}} + contributions {{printf "%+.4f" .Calculation.ContributionTotal}} → clamp and round {{printf "%.2f" .Calculation.ModelScore}}; calibration {{printf "%+.4f" .Calculation.CalibrationOffset}}{{if not .Calculation.CalibrationApplied}} (not applied){{end}} → final {{printf "%.2f" .Calculation.FinalScore}}</td>
+              <td colspan="6" class="py-2 text-xs leading-relaxed tabular-nums">Baseline {{printf "%.4f" .Calculation.Baseline}} + contributions {{printf "%+.4f" .Calculation.ContributionTotal}} → limited to 0–1 and rounded {{printf "%.2f" .Calculation.ModelScore}}; calibration {{printf "%+.4f" .Calculation.CalibrationOffset}}{{if not .Calculation.CalibrationApplied}} (not applied){{end}} → final {{printf "%.2f" .Calculation.FinalScore}}</td>
             </tr>
             {{end}}{{range .Evidence}}
             <tr class="border-b border-stone-50">
               <td class="py-1.5 pr-3">{{$t.Name}}</td>
-              <td class="py-1.5 pr-3 text-stone-600">{{.Category}}</td>
+              <td class="py-1.5 pr-3 text-stone-600"><span title="{{.Category}}">{{.CategoryLabel}}</span></td>
               <td class="py-1.5 pr-3 tabular-nums text-right">{{if $t.Calculation}}{{.MatchedCount}} / {{.TotalWords}}{{else}}Not recorded{{end}}</td>
               <td class="py-1.5 pr-3 tabular-nums text-right">{{printf "%.2f" .WordPercent}}%</td>
               <td class="py-1.5 pr-3 tabular-nums text-right">{{printf "%+.3f" .Weight}}</td>
@@ -154,10 +170,27 @@
           </tbody>
         </table>
       </div>
+      <div class="md:hidden space-y-5" aria-label="Score evidence, one block per measure" role="group">
+        {{range .Traits}}{{$t := .}}
+        <section class="border-t border-stone-200 pt-3">
+          <h3 class="text-sm font-medium text-stone-800">{{.Name}}</h3>
+          {{if .Calculation}}<p class="mt-1 text-xs leading-relaxed tabular-nums text-stone-600">Baseline {{printf "%.4f" .Calculation.Baseline}} + contributions {{printf "%+.4f" .Calculation.ContributionTotal}} → limited to 0–1 and rounded {{printf "%.2f" .Calculation.ModelScore}}; calibration {{printf "%+.4f" .Calculation.CalibrationOffset}}{{if not .Calculation.CalibrationApplied}} (not applied){{end}} → final {{printf "%.2f" .Calculation.FinalScore}}</p>{{end}}
+          <ul class="mt-2 space-y-3">
+            {{range .Evidence}}
+            <li class="text-xs leading-relaxed text-stone-600">
+              <span class="font-medium text-stone-800" title="{{.Category}}">{{.CategoryLabel}}</span>:
+              {{if $t.Calculation}}{{.MatchedCount}} / {{.TotalWords}} words, {{end}}{{printf "%.2f" .WordPercent}}% of words × weight {{printf "%+.3f" .Weight}} = {{printf "%+.3f" .Contribution}}
+              {{if .MatchedWords}}<div class="mt-1 flex flex-wrap gap-1">{{range .MatchedWords}}<span class="rounded bg-stone-100 px-1.5 py-0.5 text-xs">{{.}}</span>{{end}}</div>{{end}}
+            </li>
+            {{end}}
+          </ul>
+        </section>
+        {{end}}
+      </div>
       <div class="w-full break-words text-xs leading-relaxed text-stone-600 mt-4 space-y-2">
-        <p>Table values are rounded for display. Scores use a 0–1 scale internally and are shown out of 100. The expanded recorded details below retain full floating-point precision, formulas and operation order. Calculations clamp to 0–1, then round half away from zero to two decimals before and after calibration.</p>
+        <p>Table values are rounded for display. Scores use a 0–1 scale internally and are shown out of 100. The expanded recorded details below retain full floating-point precision, formulas and operation order. Calculations are limited to 0–1, then rounded half away from zero to two decimals before and after calibration. Calibration is a fixed adjustment so that the average text in the reference sample lands near 50.</p>
         <p>Each row shows a category's share of all words, multiplied by the model's weight to produce its contribution. The score also includes a baseline and, when configured, a calibration adjustment. Matched words are normalized examples, capped at 10 per category; the percentage uses all matches.</p>
-        <p>Recorded heuristic bounds use assumed text-length and dictionary-coverage rules. They are unvalidated diagnostics, not a percentile range or a statistically validated confidence interval.</p>
+        <p>Recorded heuristic bounds use assumed text-length and dictionary-coverage rules. They are unvalidated diagnostics, not a percentile range or a statistically validated confidence interval. The same width is used for every measure and depends only on text length and coverage, so treat it as a caution about this text, not as a way to compare measures.</p>
         <p>The scorer counts individual dictionary words. It does not interpret sentence meaning, negation in context, sarcasm or quotations. Excerpts help you inspect the context; they do not alter the calculation.</p>
         <p>Big Five scores use a correlation-weighted heuristic with assumed scaling. The other text measures and rough ranges are project-defined proxies. Research supports associations and constructs, not these particular prediction formulas. This is an experimental language-pattern estimate, not a validated individual personality measure. In a separate evaluation on 2,442 essays, trait-ranking AUC ranged from 0.524 to 0.554 across the five dimensions; 0.5 is chance.</p>
       </div>

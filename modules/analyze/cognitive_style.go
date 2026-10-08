@@ -53,10 +53,10 @@ func ComputeCognitiveStyleCalculation(fv FeatureVector) *ScoreCalculation {
 
 // ComputeCognitiveStyleLabel returns a human-readable label for the score.
 func ComputeCognitiveStyleLabel(score float64) string {
-	if score > 0.65 {
+	switch HighModerateLow(score) {
+	case "high":
 		return "systematic"
-	}
-	if score < 0.35 {
+	case "low":
 		return "intuitive"
 	}
 	return "mixed"

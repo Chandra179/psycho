@@ -42,6 +42,7 @@ sed -e "s|dir_path:.*|dir_path: \"$work/input\"|" \
     "$repo/config/config.yaml" > "$work/config/config.yaml"
 cp "$repo/modules/analyze/dictionary.json" "$work/modules/analyze/"
 cp -r "$repo/templates" "$work/templates"
+cp -r "$repo/assets" "$work/assets"
 
 (cd "$repo" && go build -o "$work/psycho-server" ./cmd/psycho)
 (cd "$repo" && go build -o "$work/rendertemplates" ./cmd/rendertemplates)
