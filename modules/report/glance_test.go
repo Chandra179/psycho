@@ -97,9 +97,6 @@ func TestTraitCardsShowMeaningAndRankBesideScore(t *testing.T) {
 		}
 		if tv.Key == "conscientiousness" {
 			found = true
-			if !strings.Contains(tv.PercentileMain, "Higher than about 1 of 100 reference texts") || !strings.Contains(tv.PercentileMain, "ranks low") {
-				t.Fatalf("moderate score at rank 1 must explain the clustering: %q", tv.PercentileMain)
-			}
 		}
 	}
 	if !found {
@@ -111,10 +108,8 @@ func TestTraitCardsShowMeaningAndRankBesideScore(t *testing.T) {
 		t.Fatal(err)
 	}
 	main, _, _ := strings.Cut(out.String(), "Calculation details and limitations")
-	for _, want := range []string{"At a glance", "Higher than about 1 of 100 reference texts", "cluster tightly"} {
-		if !strings.Contains(main, want) {
-			t.Errorf("main reading must contain %q", want)
-		}
+	if strings.Contains(main, "Higher than about") {
+		t.Error("the rank sentence was removed from the cards")
 	}
 	if strings.Contains(strings.ToLower(main), "percentile") {
 		t.Error("main reading must not use the word percentile")
@@ -132,8 +127,8 @@ func TestLegacyPayloadStillRendersWithoutRank(t *testing.T) {
 	if strings.Contains(out.String(), "reference texts.") && strings.Contains(out.String(), "Higher than about") {
 		t.Fatal("no recorded reference means no rank line")
 	}
-	if !strings.Contains(out.String(), "At a glance") {
-		t.Fatal("glance block must render for legacy analyses")
+	if strings.Contains(out.String(), "At a glance") {
+		t.Fatal("the At a glance section was removed from the page")
 	}
 }
 
@@ -148,8 +143,8 @@ func TestWordCountFormattedTheSameEverywhere(t *testing.T) {
 	if strings.Contains(html, "1133 words") {
 		t.Error("word counts must use thousands separators everywhere")
 	}
-	if got := strings.Count(html, "1,133 words"); got < 3 {
-		t.Errorf("header, glance block and details should all say 1,133 words, found %d", got)
+	if got := strings.Count(html, "1,133 words"); got < 2 {
+		t.Errorf("header and details should both say 1,133 words, found %d", got)
 	}
 }
 

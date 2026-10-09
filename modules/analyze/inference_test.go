@@ -1,6 +1,7 @@
 package analyze
 
 import (
+	"math"
 	"testing"
 )
 
@@ -188,64 +189,64 @@ func TestComputeNeedForCognitionLow(t *testing.T) {
 	}
 }
 
-func TestComputeCognitiveStyleSystematic(t *testing.T) {
+func TestComputeCognitiveStyleCategorical(t *testing.T) {
+	// Formal prose: many articles and prepositions, few pronouns and auxiliaries.
 	fv := FeatureVector{
 		CategoryPercents: map[Category]float64{
-			"cognitive_process":  15.0,
-			"cause":              12.0,
-			"certainty":          10.0,
-			"big_words":          8.0,
-			"analytic_thinking":  12.0,
-			"sensation":          3.0,
-			"pronoun":            8.0,
-			"present_focus":      5.0,
-			"intuitive_thinking": 2.0,
-			"tentative":          4.0,
+			"article": 8.0, "preposition": 16.0, "personal_pronoun": 2.0, "impersonal_pronoun": 4.0,
+			"auxiliary_verb": 5.0, "adverb": 2.0, "conjunction": 3.0, "negation": 0.5,
 		},
 	}
 	score := ComputeCognitiveStyle(fv)
-	if score < 0.55 {
-		t.Errorf("expected systematic style (score >= 0.55), got %f", score)
+	if score < 0.65 {
+		t.Errorf("expected categorical style (score >= 0.65), got %f", score)
 	}
-	label := ComputeCognitiveStyleLabel(score)
-	if label != "systematic" {
+	if label := ComputeCognitiveStyleLabel(score); label != "systematic" {
 		t.Errorf("expected systematic label, got %s", label)
 	}
 }
 
-func TestComputeCognitiveStyleIntuitive(t *testing.T) {
+func TestComputeCognitiveStyleDynamic(t *testing.T) {
+	// Narrative writing: many pronouns, auxiliaries, adverbs and conjunctions.
 	fv := FeatureVector{
 		CategoryPercents: map[Category]float64{
-			"cognitive_process":  3.0,
-			"cause":              4.0,
-			"certainty":          3.0,
-			"big_words":          1.0,
-			"analytic_thinking":  2.0,
-			"sensation":          12.0,
-			"pronoun":            18.0,
-			"present_focus":      15.0,
-			"intuitive_thinking": 12.0,
-			"tentative":          10.0,
+			"article": 4.0, "preposition": 9.0, "personal_pronoun": 15.0, "impersonal_pronoun": 6.0,
+			"auxiliary_verb": 12.0, "adverb": 7.0, "conjunction": 8.0, "negation": 2.0,
 		},
 	}
 	score := ComputeCognitiveStyle(fv)
-	if score > 0.45 {
-		t.Errorf("expected intuitive style (score <= 0.45), got %f", score)
+	if score > 0.35 {
+		t.Errorf("expected dynamic style (score <= 0.35), got %f", score)
 	}
-	label := ComputeCognitiveStyleLabel(score)
-	if label != "intuitive" {
+	if label := ComputeCognitiveStyleLabel(score); label != "intuitive" {
 		t.Errorf("expected intuitive label, got %s", label)
 	}
 }
 
-func TestComputeCognitiveStyleMixed(t *testing.T) {
-	fv := FeatureVector{CategoryPercents: map[Category]float64{}}
-	score := ComputeCognitiveStyle(fv)
-	if score != 0.50 {
-		t.Errorf("expected mixed 0.50, got %f", score)
+func TestComputeCognitiveStyleIgnoresLongWordsAndContentCategories(t *testing.T) {
+	base := FeatureVector{CategoryPercents: map[Category]float64{"article": 5.0, "personal_pronoun": 8.0}}
+	other := FeatureVector{
+		CategoryPercents: map[Category]float64{"article": 5.0, "personal_pronoun": 8.0, "cognitive_process": 20.0, "cause": 10.0, "sensation": 9.0},
+		BigWordRatio:     0.5,
 	}
-	label := ComputeCognitiveStyleLabel(score)
-	if label != "mixed" {
+	if a, b := ComputeCognitiveStyle(base), ComputeCognitiveStyle(other); a != b {
+		t.Errorf("only the eight function-word categories may move this score: %f vs %f", a, b)
+	}
+}
+
+func TestComputeCognitiveStyleTypicalTextIsMixed(t *testing.T) {
+	// Reference-corpus averages (CDI about -19.7 points) must land mid-scale.
+	fv := FeatureVector{
+		CategoryPercents: map[Category]float64{
+			"article": 4.0, "preposition": 9.0, "personal_pronoun": 11.0, "impersonal_pronoun": 5.0,
+			"auxiliary_verb": 9.0, "adverb": 5.0, "conjunction": 3.65, "negation": 0.0,
+		},
+	}
+	score := ComputeCognitiveStyle(fv)
+	if math.Abs(score-0.50) > 0.02 {
+		t.Errorf("typical text should score near 0.50, got %f", score)
+	}
+	if label := ComputeCognitiveStyleLabel(score); label != "mixed" {
 		t.Errorf("expected mixed label, got %s", label)
 	}
 }

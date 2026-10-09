@@ -25,7 +25,7 @@ func ComputeRegulatoryFocus(fv FeatureVector) float64 {
 }
 
 func ComputeRegulatoryFocusCalculation(fv FeatureVector) *ScoreCalculation {
-	return computeWeightedScore(fv, regFocusCoefficients, 0)
+	return computeWeightedScore(fv, regFocusCoefficients)
 }
 
 func ComputeRegulatoryFocusLabel(score float64) string {

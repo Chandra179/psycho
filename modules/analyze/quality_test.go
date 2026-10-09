@@ -16,6 +16,8 @@ func TestQualityFlagMatchesThresholds(t *testing.T) {
 		{600, 0.8, "medium"},
 		{1500, 0.8, "high"},
 		{1500, 0.5, "medium"},
+		{1500, 0.4, "low"},
+		{1500, 0.45, "medium"},
 	}
 	for _, c := range cases {
 		if got := QualityFlag(c.words, c.coverage); got != c.want {
@@ -32,9 +34,13 @@ func TestQualityReasonsExplainEveryLimitingFactor(t *testing.T) {
 	if len(short) != 1 || !strings.Contains(short[0], "short") {
 		t.Fatalf("short text reason = %v", short)
 	}
-	both := QualityReasons(800, 0.41)
-	if len(both) != 2 || !strings.Contains(both[1], "matched the dictionary") {
+	both := QualityReasons(800, 0.5)
+	if len(both) != 2 || !strings.Contains(both[1], "Under 60%") {
 		t.Fatalf("medium text with low coverage reasons = %v", both)
+	}
+	veryLow := QualityReasons(2000, 0.4)
+	if len(veryLow) != 1 || !strings.Contains(veryLow[0], "Under 45%") {
+		t.Fatalf("very low coverage reasons = %v", veryLow)
 	}
 	// Every non-high flag must come with at least one reason.
 	for _, c := range []struct {

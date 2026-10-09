@@ -250,8 +250,8 @@ func TestDimensionDirectionality(t *testing.T) {
 		},
 		{
 			name:   "cognitive_style",
-			high:   []string{"think", "because", "logic", "hypothesis", "insight"}, // systematic
-			low:    []string{"feel", "look", "touch", "gut", "obvious"},            // intuitive
+			high:   []string{"the", "of", "in", "a", "with", "between"}, // articles and prepositions (categorical)
+			low:    []string{"i", "we", "was", "have", "and", "really"}, // pronouns, auxiliaries, conjunctions, adverbs (dynamic)
 			score:  func(s analyze.BigFiveScores) float64 { return s.CognitiveStyle },
 			minGap: 0.3,
 		},

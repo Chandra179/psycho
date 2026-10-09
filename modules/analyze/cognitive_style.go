@@ -1,54 +1,51 @@
 package analyze
 
-// Cognitive style coefficients distinguish systematic (central-route) from
-// intuitive (peripheral-route) processing based on language patterns.
-// Higher = systematic/analytical; lower = intuitive/heuristic.
+// Cognitive style follows the categorical-versus-dynamic language index of
+// Pennebaker et al. (2014), built from eight function-word categories: articles
+// and prepositions mark categorical (formal, hierarchical) writing, while
+// personal pronouns, impersonal pronouns, auxiliary verbs, adverbs,
+// conjunctions and negations mark dynamic (narrative, here-and-now) writing.
+// The paper's index is unit weighted (30 + article + preposition minus the
+// other six, in percent of words) and does not use long words.
 //
-// Systematic markers: cognitive process words, causal reasoning, complex
-// vocabulary (a legacy byte-length proxy for words longer than six bytes), definitive claims, and analytical language indicate
-// deliberate elaboration.
+// Source:
 //
-// Intuitive markers: perceptual/sensory language, personal pronouns,
-// present-tense focus, and tentative hedging indicate heuristic, felt-sense
-// processing.
+//	Pennebaker, J.W., Chung, C.K., Frazee, J., Lavergne, G.M., & Beaver, D.I.
+//	(2014). When small words foretell academic success: The case of college
+//	admissions essays. PLoS ONE, 9(12), e115844.
 //
-// Source constructs:
-//   - Petty, R.E., & Cacioppo, J.T. (1986). The Elaboration Likelihood Model.
-//   - Pennebaker, J.W., & King, L.A. (1999). Linguistic styles: Language use
-//     as an individual difference.
-//
-// Coefficients are synthesised from the source construct definitions;
-// no published regression table exists matching LIWC categories to ELM
-// processing style. The weights reflect directional hypotheses consistent
-// with the ELM framework.
-// bigWordsWeight applies to vocabulary complexity, measured as the
-// percentage of words longer than six bytes, not Unicode letter counts. Unlike the
-// category coefficients below, that signal is computed on the feature
-// vector rather than looked up in the dictionary.
-const bigWordsWeight = 0.012
+// Higher = categorical (labelled "systematic"); lower = dynamic ("intuitive").
+// Every category carries the same weight, mirroring the paper's unit weights.
+// The 0.01 per percentage point scale is a project assumption chosen so the
+// score spreads like the other proxies; the paper validates the index against
+// college grades, not personality or any other outcome here. The index sums to
+// about -19.7 points on the 3,992-post reference corpus (SD 10.6), the way the
+// paper adds 30 to stay positive, so the baseline is 0.50 + 0.01 * 19.7 = 0.70
+// and typical text starts near the middle instead of being clamped at 0.
+const (
+	cognitiveStyleUnitWeight = 0.01
+	cognitiveStyleBaseline   = 0.70
+)
 
 var cognitiveStyleCoefficients = map[string]float64{
-	// Systematic (+) — openminded depth, causality, precision, formality.
-	"cognitive_process": 0.008,
-	"cause":             0.008,
-	"certainty":         0.008,
-	"analytic_thinking": 0.010,
-	// Intuitive (−) — perceptual, personal, immediate, uncertain.
-	"sensation":          -0.008,
-	"pronoun":            -0.008,
-	"present_focus":      -0.008,
-	"intuitive_thinking": -0.010,
-	"tentative":          -0.006,
+	"article":            cognitiveStyleUnitWeight,
+	"preposition":        cognitiveStyleUnitWeight,
+	"personal_pronoun":   -cognitiveStyleUnitWeight,
+	"impersonal_pronoun": -cognitiveStyleUnitWeight,
+	"auxiliary_verb":     -cognitiveStyleUnitWeight,
+	"adverb":             -cognitiveStyleUnitWeight,
+	"conjunction":        -cognitiveStyleUnitWeight,
+	"negation":           -cognitiveStyleUnitWeight,
 }
 
-// ComputeCognitiveStyle computes a cognitive processing style score from
-// category percentages plus the computed long-word ratio.
+// ComputeCognitiveStyle computes the categorical-versus-dynamic score from
+// function-word category percentages.
 func ComputeCognitiveStyle(fv FeatureVector) float64 {
 	return ComputeCognitiveStyleCalculation(fv).FinalScore
 }
 
 func ComputeCognitiveStyleCalculation(fv FeatureVector) *ScoreCalculation {
-	return computeWeightedScore(fv, cognitiveStyleCoefficients, bigWordsWeight)
+	return computeWeightedScoreFrom(fv, cognitiveStyleCoefficients, cognitiveStyleBaseline)
 }
 
 // ComputeCognitiveStyleLabel returns a human-readable label for the score.

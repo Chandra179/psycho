@@ -88,10 +88,9 @@ func readingQuality(flag string) string {
 // CardNotes are the small text lines under a score bar, shared by trait and
 // summary cards through the common "report-score-row" template.
 type CardNotes struct {
-	Meaning        string // what the measure counts
-	Detail         string // recorded counts behind the score, when available
-	PercentileMain string // rank among reference texts, traits only
-	FitNote        string // why this measure fits this text poorly, when it does not
+	Meaning string // what the measure counts
+	Detail  string // recorded counts behind the score, when available
+	FitNote string // why this measure fits this text poorly, when it does not
 }
 
 type TraitView struct {
@@ -252,9 +251,8 @@ func BuildReport(a *Analysis) ReportView {
 			PercentileText:    percentileText(t.Percentile, a.PercentileReference),
 			SignalDescription: analyze.DimensionBandDescription(k, t.Score),
 			CardNotes: CardNotes{
-				Meaning:        analyze.MeasureSummary(k),
-				PercentileMain: analyze.PercentileMainLine(t.Percentile, a.PercentileReference, label),
-				FitNote:        fit[k],
+				Meaning: analyze.MeasureSummary(k),
+				FitNote: fit[k],
 			},
 			Evidence: t.Evidence,
 		}

@@ -56,20 +56,7 @@ func (p *Pipeline) Run(ctx context.Context, text string) (ingest.AnalysisOutput,
 	}
 	features, coverage := p.extractor.Extract(doc)
 
-	scores := p.model.Infer(features)
-	if scores.Calculations == nil {
-		scores.Calculations = make(map[string]*analyze.ScoreCalculation)
-	}
-	scores.Calculations["regulatory_focus"] = analyze.ComputeRegulatoryFocusCalculation(features)
-	scores.Calculations["need_for_cognition"] = analyze.ComputeNeedForCognitionCalculation(features)
-	scores.Calculations["cognitive_style"] = analyze.ComputeCognitiveStyleCalculation(features)
-	scores.Calculations["need_for_closure"] = analyze.ComputeNeedForClosureCalculation(features)
-	scores.RegulatoryFocus = scores.Calculations["regulatory_focus"].FinalScore
-	scores.NeedForCognition = scores.Calculations["need_for_cognition"].FinalScore
-	scores.CognitiveStyle = scores.Calculations["cognitive_style"].FinalScore
-	scores.NeedForClosure = scores.Calculations["need_for_closure"].FinalScore
-
-	scores.Values = analyze.ComputeSchwartzValues(features)
+	scores := analyze.ScoreFeatures(p.model, features)
 
 	// Recenter scores against the calibration corpus before aggregation so
 	// absolute scores and percentiles share the same reference population.

@@ -18,13 +18,13 @@ func excerptDictionary(t *testing.T) Dictionary {
 }
 
 func TestValueExcerptsPreserveContextAndAllCounts(t *testing.T) {
-	doc := ingest.NewNormalizer().Normalize("I do not follow tradition. CULTURE, culture!\n\nOur cultural customs are safe.")
+	doc := ingest.NewNormalizer().Normalize("I follow tradition. CULTURE, culture!\n\nOur cultural customs are safe.")
 	fv, _ := NewFeatureExtractor(excerptDictionary(t)).Extract(doc)
 	if fv.CategoryCounts["value_tradition"] != 4 {
 		t.Fatalf("all occurrences must count: %+v", fv.CategoryCounts)
 	}
 	excerpts := fv.ValueExcerpts["value_tradition"]
-	if len(excerpts) != 2 || excerpts[0].PlainText() != "I do not follow tradition." || excerpts[1].PlainText() != "CULTURE, culture!" {
+	if len(excerpts) != 2 || excerpts[0].PlainText() != "I follow tradition." || excerpts[1].PlainText() != "CULTURE, culture!" {
 		t.Fatalf("wrong sampled context: %+v", excerpts)
 	}
 	var highlighted []string
@@ -85,5 +85,25 @@ func TestAllValuesHaveDictionaryTopicDescriptions(t *testing.T) {
 		if ValueDescription(category) == "" {
 			t.Errorf("missing description: %s", category)
 		}
+	}
+}
+
+func TestNegatedValueWordsAreNotCounted(t *testing.T) {
+	doc := ingest.NewNormalizer().Normalize("I did not care about tradition. They never cared for culture. We value tradition.")
+	fv, _ := NewFeatureExtractor(excerptDictionary(t)).Extract(doc)
+	if got := fv.CategoryCounts["value_tradition"]; got != 1 {
+		t.Fatalf("negated mentions must not count as endorsing the value: %d", got)
+	}
+	if got := fv.ValueExcerpts["value_tradition"]; len(got) != 1 || got[0].PlainText() != "We value tradition." {
+		t.Fatalf("excerpt must come from the endorsing sentence: %+v", got)
+	}
+}
+
+func TestValueExcerptsPreferMoreDistinctMatches(t *testing.T) {
+	dict := excerptDictionary(t)
+	text := "Culture matters. Tradition and culture and cultural life matter. Culture again."
+	got := valueExcerpts(text, dict)["value_tradition"]
+	if len(got) != 2 || got[0].PlainText() != "Tradition and culture and cultural life matter." {
+		t.Fatalf("richest sentence must come first: %+v", got)
 	}
 }

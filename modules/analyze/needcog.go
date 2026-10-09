@@ -19,7 +19,7 @@ func ComputeNeedForCognition(fv FeatureVector) float64 {
 }
 
 func ComputeNeedForCognitionCalculation(fv FeatureVector) *ScoreCalculation {
-	return computeWeightedScore(fv, needCogCoefficients, 0)
+	return computeWeightedScore(fv, needCogCoefficients)
 }
 
 func ComputeNeedForCognitionLabel(score float64) string {

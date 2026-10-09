@@ -14,7 +14,6 @@
   </div>
   {{if .Meaning}}<p class="col-span-full text-xs leading-relaxed text-stone-600">{{.Meaning}}</p>{{end}}
   {{if .Detail}}<p class="col-span-full text-xs leading-relaxed text-stone-600">{{.Detail}}</p>{{end}}
-  {{if .PercentileMain}}<p class="col-span-full text-xs leading-relaxed text-stone-700">{{.PercentileMain}}</p>{{end}}
   {{if .FitNote}}<p class="col-span-full text-xs leading-relaxed text-stone-700"><strong class="font-medium text-amber-800">Low fit for this text.</strong> {{.FitNote}}</p>{{end}}
 </div>
 {{end}}
@@ -41,20 +40,6 @@
       </a>
     </nav>
   </header>
-
-  <section aria-labelledby="glance-heading" class="mt-6 rounded-2xl border border-stone-200 bg-white p-5 sm:p-6">
-    <h2 id="glance-heading" class="font-serif text-xl">At a glance</h2>
-    <div class="mt-3 space-y-2 text-[15px] sm:text-base leading-relaxed text-pretty text-stone-600">
-      <p>An experimental estimate from word patterns in this writing. Scores can reflect the topic and writing style; they do not directly measure your personality.</p>
-      <p>{{.Glance.Read}}</p>
-      {{range .Glance.QualityReasons}}<p>{{.}}</p>
-      {{end}}{{range .Glance.FitNotes}}<p>{{.}}</p>
-      {{end}}{{if .Glance.Emotion}}<p>{{.Glance.Emotion}}</p>
-      {{end}}<p class="font-medium text-stone-800">{{.Glance.Caveat}}</p>
-      {{if .Glance.SupportNote}}<p>{{.Glance.SupportNote}}</p>
-      {{end}}
-    </div>
-  </section>
 
   {{if .Traits}}
   <section class="mt-10">
@@ -190,9 +175,9 @@
       <div class="w-full break-words text-xs leading-relaxed text-stone-600 mt-4 space-y-2">
         <p>Table values are rounded for display. Scores use a 0–1 scale internally and are shown out of 100. The expanded recorded details below retain full floating-point precision, formulas and operation order. Calculations are limited to 0–1, then rounded half away from zero to two decimals before and after calibration. Calibration is a fixed adjustment so that the average text in the reference sample lands near 50.</p>
         <p>Each row shows a category's share of all words, multiplied by the model's weight to produce its contribution. The score also includes a baseline and, when configured, a calibration adjustment. Matched words are normalized examples, capped at 10 per category; the percentage uses all matches.</p>
-        <p>Recorded heuristic bounds use assumed text-length and dictionary-coverage rules. They are unvalidated diagnostics, not a percentile range or a statistically validated confidence interval. The same width is used for every measure and depends only on text length and coverage, so treat it as a caution about this text, not as a way to compare measures.</p>
+        <p>Recorded heuristic bounds estimate how much each measure's score moves between different stretches of the same kind of text. They were checked by scoring the first and second halves of 375 blog posts, so they describe repeatability, not accuracy about a person. They are not a percentile range or a statistically validated confidence interval. Each measure has its own width.</p>
         <p>The scorer counts individual dictionary words. It does not interpret sentence meaning, negation in context, sarcasm or quotations. Excerpts help you inspect the context; they do not alter the calculation.</p>
-        <p>Big Five scores use a correlation-weighted heuristic with assumed scaling. The other text measures and rough ranges are project-defined proxies. Research supports associations and constructs, not these particular prediction formulas. This is an experimental language-pattern estimate, not a validated individual personality measure. In a separate evaluation on 2,442 essays, trait-ranking AUC ranged from 0.524 to 0.554 across the five dimensions; 0.5 is chance.</p>
+        <p>Big Five scores use a correlation-weighted heuristic with assumed scaling. The other text measures and rough ranges are project-defined proxies. Research supports associations and constructs, not these particular prediction formulas. This is an experimental language-pattern estimate, not a validated individual personality measure. In a separate evaluation on 2,442 essays, trait-ranking AUC ranged from 0.532 to 0.559 across the five dimensions; 0.5 is chance.</p>
       </div>
       {{if .CalculationJSON}}
       <details class="w-full min-w-0 mt-5 border-t border-stone-200 pt-4">

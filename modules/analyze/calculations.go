@@ -9,16 +9,19 @@ import (
 // CalculationDetails records the operations used for this analysis. It is
 // persisted with the profile so future renderers never need to rerun a model.
 type CalculationDetails struct {
-	ModelFingerprint  string                            `json:"model_fingerprint"`
-	WordCount         int                               `json:"word_count"`
-	DictionaryMatches int                               `json:"dictionary_matches"`
-	CategoryCounts    map[Category]int                  `json:"category_counts"`
-	Traits            map[string]*ScoreCalculation      `json:"traits"`
-	Summary           map[string]SummaryCalculation     `json:"summary"`
-	Values            map[string]ValueCalculation       `json:"values"`
-	RangeBounds       map[string]RangeBoundsCalculation `json:"range_bounds"`
-	Range             RangeCalculation                  `json:"range"`
-	Percentiles       map[string]PercentileCalculation  `json:"percentiles"`
+	ModelFingerprint  string `json:"model_fingerprint"`
+	WordCount         int    `json:"word_count"`
+	DictionaryMatches int    `json:"dictionary_matches"`
+	// BigWordCount is the number of words longer than six letters. It is
+	// recorded for the formal-prose note only; no score uses it.
+	BigWordCount   int                               `json:"big_word_count,omitempty"`
+	CategoryCounts map[Category]int                  `json:"category_counts"`
+	Traits         map[string]*ScoreCalculation      `json:"traits"`
+	Summary        map[string]SummaryCalculation     `json:"summary"`
+	Values         map[string]ValueCalculation       `json:"values"`
+	RangeBounds    map[string]RangeBoundsCalculation `json:"range_bounds"`
+	Range          RangeCalculation                  `json:"range"`
+	Percentiles    map[string]PercentileCalculation  `json:"percentiles"`
 }
 
 // ScoreTerm retains full floating-point precision; sampled words are separate
@@ -81,6 +84,10 @@ type RangeCalculation struct {
 }
 
 type RangeBoundsCalculation struct {
+	// Method is "per_measure_sampling_error" (half-width = 1.96 * StandardError,
+	// limited to 0.01-0.25) or "shared_length_rule" for older records.
+	Method        string  `json:"method,omitempty"`
+	StandardError float64 `json:"standard_error,omitempty"`
 	Score         float64 `json:"score"`
 	HalfWidth     float64 `json:"half_width"`
 	UnclampedLow  float64 `json:"unclamped_low"`
@@ -123,7 +130,7 @@ type EmpiricalPercentileCalculation struct {
 
 const additionalScoreBaseline = 0.50
 
-const weightedScoreFormula = "category_percent = matched_count / total_words * 100; contribution = weight * category_percent (long-word term evaluates weight * ratio * 100); the accumulator starts at baseline and adds terms in recorded (sorted category) order, then the long-word term; contribution_total accumulates separately from zero; unrounded_score is the actual accumulator; model_score = round2(clamp(baseline + sum(contributions), 0, 1)); final_score = round2(clamp(model_score + calibration_offset, 0, 1)) when calibration is applied. round2 rounds half away from zero to 2 decimals."
+const weightedScoreFormula = "category_percent = matched_count / total_words * 100; contribution = weight * category_percent; the accumulator starts at baseline and adds terms in recorded (sorted category) order; contribution_total accumulates separately from zero; unrounded_score is the actual accumulator; model_score = round2(clamp(baseline + sum(contributions), 0, 1)); final_score = round2(clamp(model_score + calibration_offset, 0, 1)) when calibration is applied. round2 rounds half away from zero to 2 decimals."
 
 func newScoreCalculation(baseline float64) *ScoreCalculation {
 	return &ScoreCalculation{Formula: weightedScoreFormula, Baseline: baseline, Terms: []ScoreTerm{}}
@@ -134,9 +141,6 @@ func (c *ScoreCalculation) addTerm(fv FeatureVector, category string, percent, w
 		return
 	}
 	count := fv.CategoryCounts[Category(category)]
-	if category == "long_word_ratio" {
-		count = fv.BigWordCount
-	}
 	c.Terms = append(c.Terms, ScoreTerm{category, count, fv.WordCount, percent, weight, contribution})
 	c.ContributionTotal += contribution
 }
@@ -153,8 +157,12 @@ func (c *ScoreCalculation) finish(accumulator float64) float64 {
 	return c.FinalScore
 }
 
-func computeWeightedScore(fv FeatureVector, weights map[string]float64, longWordWeight float64) *ScoreCalculation {
-	c := newScoreCalculation(additionalScoreBaseline)
+func computeWeightedScore(fv FeatureVector, weights map[string]float64) *ScoreCalculation {
+	return computeWeightedScoreFrom(fv, weights, additionalScoreBaseline)
+}
+
+func computeWeightedScoreFrom(fv FeatureVector, weights map[string]float64, baseline float64) *ScoreCalculation {
+	c := newScoreCalculation(baseline)
 	score := c.Baseline
 	for _, category := range slices.Sorted(maps.Keys(weights)) {
 		weight := weights[category]
@@ -162,12 +170,6 @@ func computeWeightedScore(fv FeatureVector, weights map[string]float64, longWord
 		contribution := weight * percent
 		score += contribution
 		c.addTerm(fv, category, percent, weight, contribution)
-	}
-	if longWordWeight != 0 {
-		// Retain the existing multiplication order to preserve current scores.
-		contribution := longWordWeight * fv.BigWordRatio * 100
-		score += contribution
-		c.addTerm(fv, "long_word_ratio", fv.BigWordRatio*100, longWordWeight, contribution)
 	}
 	c.finish(score)
 	return c

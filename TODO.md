@@ -45,41 +45,50 @@ went from 3-5/10 to 3-7/10. The items below are what they still flagged.
     block or fit notes yet, and prints the raw lowercase quality flag.
 14. **CI:** add a step that rebuilds assets and runs `git diff --exit-code assets/`,
     since nothing catches stale CSS.
-15. **Known test failure:** `TestAnalyzeDirWithDataSamples` expects 8 files in
-    `samples/`; the untracked `samples/ancient.txt` makes it 9. Either commit the
-    file and change the expectation, or keep it out of `samples/`.
 
-## Phase 2: scoring layer (needs `go run ./cmd/calibrate` against local `corpus/`)
+## Phase 2: scoring layer
 
-Any dictionary edit changes `dictionary_sha256` and forces recalibration
-(`TestCalibrationMatchesDictionary`). Do not tune against the final-test labels.
+Done on 2026-10-09 (dictionary and rules changed, `config/calibration.json`
+regenerated; AUC moved by at most 0.004 for the first fixes, then to 0.532 to 0.559 after the word-sense audit):
 
-1. **Dictionary false matches.** Polysemous words count as values: "just"
-   (Universalism and exclusive), "kind", "content", "natural", "care", "support",
-   "rule", "independent". Add context or sense rules, a minimum match count, and
-   split endorsing a value from rejecting it ("did not care"). Apply the same rule in
-   `features.go` and `excerpts.go`.
-2. **Value excerpts.** Pick the strongest or most representative matches, not the
-   first two; show which word matched; say value counts describe subject matter.
-3. **Normalize noise.** `Normalize()` should strip running page headers, bare page
-   numbers, figure captions and map legends, and rejoin hyphenation. Bump
-   `model_fingerprint.go` when it changes.
-4. **Long-word term.** It counts bytes, not letters (contractions and accents count),
-   and dominates Cognitive Style and Authenticity on formal text. Count runes and
-   rebalance.
-5. **Emotional tone.** The 0.35-0.65 "neutral" band is too wide, there is no negation
-   handling, and the negative list is short (misses "cried", "scream", "scam",
-   "garbage", "disaster"). Relabel when negatives outnumber positives.
-6. **Trait-specific bounds.** One width of about +-0.22 applies to all nine measures
-   and ignores the reference spread (SD 0.01-0.04 for most). Scale per measure.
-7. **Percentile quality.** Calibrated scores are rounded to two decimals, so the
-   table has only 7-41 distinct values and many ties. Use finer resolution.
-8. **First-person pronoun category.** The single `pronoun` category mixes "that",
-   "which", "these" with "I" and "my". A real first-person share would enable a better
-   genre signal.
-9. **Quality flag.** Low dictionary coverage can never produce "low". Let it, and add
-   an extraction-noise component.
-10. **Reference corpus.** 2004 blog posts are a poor comparison for essays, abstracts
-    and book chapters. Consider genre-specific references.
-11. **Rename or demote** Authenticity and Clout (read as character verdicts), and
-    "high/low signal" (read as reliability).
+- Value lists no longer match everyday words ("just", "kind", "content",
+  "natural", "care", "support", "rule", "order", "control" and others); value
+  matches after a negator are not counted; excerpts pick the richest sentences.
+- Long words and average length count letters, not bytes, and no score uses long words any more. Cognitive Style is now the Pennebaker et al. (2014) function-word index (new dictionary categories: personal and impersonal pronouns, auxiliary verbs, adverbs, conjunctions) and Authenticity lost its long-word term.
+- `Normalize()` drops page numbers, captions and running headers and rejoins
+  hyphenated words.
+- Emotional tone flips negated emotion words, uses tighter bands, and the
+  negative list gained "cried", "scream", "scam", "garbage", "disaster" and others.
+- Bounds are per measure, from the sampling error of each measure's own weights,
+  scaled by a split-half check on 375 reference posts.
+- Ranks use unrounded calibrated scores (73 to 99 distinct quantiles instead of 7 to 41).
+- Low dictionary coverage (under 45%) now gives a "low" reading quality.
+- `TestAnalyzeDirWithDataSamples` counts the files in `samples/`.
+
+Still open (any dictionary edit changes `dictionary_sha256` and needs
+`go run ./cmd/calibrate -corpus corpus/`; do not tune against the final-test labels):
+
+1. **Trait lists are audited for ambiguity, not read in context.** Done on
+   2026-10-09: a concordance audit (20 contexts per word, one annotator) removed 18
+   word entries ("just", "will", "so", "as", "up", "right" ...); see
+   `modules/analyze/dictionary_exclusions.json`. The Schwartz et al. (2013) top-sense
+   filter (theta 0.50, WordNet 3.0 tag counts) was also built and measured, then
+   reverted: it removed 418 more entries, cost 2.5 points of coverage and gave
+   no accuracy gain (mean AUC 0.540 against 0.545), and it removes many in-sense
+   words. Residual: occurrences are still counted without disambiguation. The
+   production Big Five weights are `rho * 0.06`, not fitted, so a word-list change
+   needs `cmd/calibrate`, not a `cmd/train` refit.
+2. **First-person pronoun category.** (`personal_pronoun` now exists; a first-person-singular-only list is still missing.) The single `pronoun` category mixes "that",
+   "which", "these" with "I" and "my". A real first-person share would give a
+   better genre signal.
+3. **Quality flag.** Add an extraction-noise component (share of removed lines).
+4. **Reference corpus.** 2004 blog posts are a poor comparison for essays,
+   abstracts and book chapters. Consider genre-specific references.
+5. **Rename or demote** Authenticity and Clout (read as character verdicts), and
+   "high/low signal" (read as reliability).
+6. **Weights are unverified against the paper.** The Big Five weights are
+   consistent with `rho * 0.06` for every correlation quoted in
+   `coefficients.go`, but those correlations were not re-checked against
+   Yarkoni (2010) Table 1, and the SD assumptions are unvalidated.
+7. **Accuracy is near chance.** AUC 0.532 to 0.559 on 2,442 essays. Only a
+   discriminative vocabulary or the supervised model (`cmd/train`) can change that.

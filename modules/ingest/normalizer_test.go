@@ -86,3 +86,27 @@ func TestNormalizerLargeText(t *testing.T) {
 		t.Errorf("WordCount = %d; want 1000", doc.WordCount)
 	}
 }
+
+func TestNormalizeDropsScanNoise(t *testing.T) {
+	raw := "The Rise of Trade Routes\nThe merchants travelled across the long dry plains for many months and re-\nturned home with silver.\n12\nFigure 3 Trade map of the region\nThe Rise of Trade Routes\nThey sold the silver at the harbour.\n- 14 -\nThe Rise of Trade Routes\nPrices fell soon after."
+	got := NewNormalizer().Normalize(raw).RawText
+	for _, bad := range []string{"Rise of Trade", "Figure 3", "12", "14", "re- "} {
+		if strings.Contains(got, bad) {
+			t.Errorf("%q should have been removed from %q", bad, got)
+		}
+	}
+	if !strings.Contains(got, "returned home with silver") {
+		t.Errorf("hyphenated word not rejoined: %q", got)
+	}
+	if !strings.Contains(got, "Prices fell soon after.") {
+		t.Errorf("body text lost: %q", got)
+	}
+}
+
+func TestNormalizeKeepsChatRefrains(t *testing.T) {
+	raw := "haha so true\nhaha so true\nhaha so true\nI was thinking-\nanyway let's go"
+	got := NewNormalizer().Normalize(raw).RawText
+	if strings.Count(got, "haha so true") != 3 || !strings.Contains(got, "thinking- anyway") {
+		t.Errorf("short chat lines must be kept as written: %q", got)
+	}
+}

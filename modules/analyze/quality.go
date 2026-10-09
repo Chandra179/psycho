@@ -12,13 +12,17 @@ const (
 	QualityLowWords    = 500
 	QualityHighWords   = 1000
 	QualityMinCoverage = 0.6
+	// QualityLowCoverage sits below the 2nd percentile of the 3,992-post
+	// reference corpus (median coverage 63%), so only text the dictionary barely
+	// recognizes (another language, code, heavy jargon) is called low.
+	QualityLowCoverage = 0.45
 )
 
 // QualityFlag classifies a sample as "low", "medium" or "high" reading
-// quality: under QualityLowWords is low; low dictionary coverage or under
-// QualityHighWords is medium; otherwise high.
+// quality: under QualityLowWords or under QualityLowCoverage is low; coverage
+// under QualityMinCoverage or under QualityHighWords is medium; otherwise high.
 func QualityFlag(wordCount int, coverage float64) string {
-	if wordCount < QualityLowWords {
+	if wordCount < QualityLowWords || coverage < QualityLowCoverage {
 		return "low"
 	}
 	if coverage < QualityMinCoverage {
@@ -39,7 +43,9 @@ func QualityReasons(wordCount int, coverage float64) []string {
 	} else if wordCount < QualityHighWords {
 		reasons = append(reasons, fmt.Sprintf("The text is under %s words, so scores are rough.", FormatCount(QualityHighWords)))
 	}
-	if coverage < QualityMinCoverage {
+	if coverage < QualityLowCoverage {
+		reasons = append(reasons, "Under 45% of the words matched the dictionary, so most of the text was not scored.")
+	} else if coverage < QualityMinCoverage {
 		reasons = append(reasons, "Under 60% of the words matched the dictionary, so part of the text was not scored.")
 	}
 	return reasons

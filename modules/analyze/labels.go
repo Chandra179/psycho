@@ -15,10 +15,6 @@ import (
 const (
 	highLabelThreshold = 0.65
 	lowLabelThreshold  = 0.35
-
-	// Ranks at or beyond these read as extreme in PercentileMainLine.
-	extremeRankHigh = 80
-	extremeRankLow  = 20
 )
 
 // DimensionDisplayName returns the human-readable name for a trait key,
@@ -102,9 +98,9 @@ func DimensionBandDescription(key string, score float64) string {
 		"promotion_focus":  "Promotion-related language outweighs prevention-related language in this bipolar proxy.",
 		"prevention_focus": "Prevention-related language outweighs promotion-related language in this bipolar proxy.",
 		"balanced":         "No strong promotion or prevention tilt in this proxy.",
-		"systematic":       "More systematic or analytical word-pattern signals on this proxy.",
-		"intuitive":        "More intuitive word-pattern signals on this proxy.",
-		"mixed":            "No strong systematic or intuitive tilt in this proxy.",
+		"systematic":       "More formal, categorical word patterns (articles and prepositions) on this proxy.",
+		"intuitive":        "More narrative, dynamic word patterns (pronouns and auxiliary verbs) on this proxy.",
+		"mixed":            "No strong tilt toward categorical or dynamic wording in this proxy.",
 		"moderate":         "No strong high or low word-pattern signal in this proxy.",
 		"high":             "An upper-band word-pattern score in this proxy.",
 		"low":              "A lower-band word-pattern score in this proxy.",
@@ -125,12 +121,12 @@ func MeasureSummary(key string) string {
 		"neuroticism":         "Higher with negative-emotion, negation, reasoning, certainty and hedging words. It counts word patterns, not mood.",
 		"regulatory_focus":    "Compares gain and aspiration words (promotion) with duty and loss-avoidance words (prevention).",
 		"need_for_cognition":  "Compares analytic words with intuitive words, as a proxy for enjoying effortful thinking.",
-		"cognitive_style":     "Systematic wording (reasoning, cause, long words) versus intuitive wording (senses, personal, present-tense). Long formal words push it up.",
+		"cognitive_style":     "Formal, categorical wording (many articles and prepositions) versus narrative, dynamic wording (many pronouns, auxiliary verbs, adverbs and conjunctions). It follows a published function-word index.",
 		"need_for_closure":    "Compares certainty words with hedging words, as a proxy for comfort with ambiguity.",
 		"analytical_thinking": "Formal, reasoning-heavy wording versus personal, story-like wording.",
 		"clout":               "Certain, social and achievement wording versus hedging, personal-pronoun and negative-emotion wording. Low does not mean low status.",
-		"authenticity":        "Personal, informal wording versus formal wording with many long words. Low means formal, not dishonest.",
-		"emotional_tone":      "Positive-emotion words minus negative-emotion words. It counts words only, so clearly distressed text can still read as neutral.",
+		"authenticity":        "Personal, informal wording versus formal, reasoning-heavy wording. Low means formal, not dishonest.",
+		"emotional_tone":      "Positive-emotion words minus negative-emotion words, with a negated word (\"not happy\") counted on the opposite side. It still counts words only, so sarcasm and context are missed.",
 	}
 	return summaries[key]
 }
@@ -138,9 +134,6 @@ func MeasureSummary(key string) string {
 // CategoryLabel turns a dictionary category key into reader-facing words for
 // the evidence table; the raw key stays available as a title attribute.
 func CategoryLabel(key string) string {
-	if key == "long_word_ratio" {
-		return "long words (over six bytes)"
-	}
 	return strings.ReplaceAll(key, "_", " ")
 }
 
@@ -158,34 +151,6 @@ func SummarySignalDescription(name string, score float64) string {
 		}
 	}
 	return "Project-defined language summary."
-}
-
-// PercentileMainLine is the plain rank sentence shown beside a trait score.
-// It is empty unless the percentile came from an empirical reference sample,
-// because a normal approximation or an unrecorded method is not a rank among
-// real texts. When the band label says moderate (or balanced, mixed) but the
-// rank is extreme, it explains why: most reference scores cluster tightly
-// around 50, so a "moderate" score can still rank high or low.
-func PercentileMainLine(percentile int, reference *ingest.PercentileReference, label string) string {
-	if reference == nil || reference.Method != ingest.PercentileMethodEmpirical || percentile < 1 || percentile > 99 {
-		return ""
-	}
-	line := fmt.Sprintf("Higher than about %d of 100 reference texts.", percentile)
-	middle := label == "moderate" || label == "balanced" || label == "mixed"
-	switch {
-	case middle && percentile >= extremeRankHigh:
-		line += fmt.Sprintf(" %s on the 0–100 scale, but reference scores cluster tightly, so it ranks high.", capitalize(label))
-	case middle && percentile <= extremeRankLow:
-		line += fmt.Sprintf(" %s on the 0–100 scale, but reference scores cluster tightly, so it ranks low.", capitalize(label))
-	}
-	return line
-}
-
-func capitalize(s string) string {
-	if s == "" {
-		return s
-	}
-	return strings.ToUpper(s[:1]) + s[1:]
 }
 
 func PercentileDescription(percentile int, reference *ingest.PercentileReference) string {
@@ -243,12 +208,21 @@ func summaryBand(table map[string][2]string, name string, score float64) string 
 	return "moderate"
 }
 
+// Emotional tone is a net word count on a sigmoid with divisor 5, so the usual
+// 35/65 bands would call a text neutral until positive words outnumber negative
+// ones by about 1.9 points of all words. These tighter cutoffs (about 1 point)
+// stop a clearly negative text from reading as neutral.
+const (
+	toneNegativeBelow = 0.45
+	tonePositiveFrom  = 0.55
+)
+
 // SummaryTone words the emotional-tone variable.
 func SummaryTone(score float64) string {
-	switch HighModerateLow(score) {
-	case "high":
+	switch {
+	case score >= tonePositiveFrom:
 		return "positive"
-	case "low":
+	case score <= toneNegativeBelow:
 		return "negative"
 	}
 	return "neutral"

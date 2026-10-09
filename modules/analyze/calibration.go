@@ -103,7 +103,7 @@ func BuildCalibration(corpus, generatedAt string, samples []BigFiveScores) (*Cal
 	raw := make(map[string][]float64, len(dimensionKeys))
 	for _, s := range samples {
 		for _, dim := range dimensionKeys {
-			raw[dim] = append(raw[dim], dimensionValue(dim, &s))
+			raw[dim] = append(raw[dim], preRoundValue(dim, &s))
 		}
 	}
 
@@ -118,11 +118,12 @@ func BuildCalibration(corpus, generatedAt string, samples []BigFiveScores) (*Cal
 
 		offset := round4(0.50 - mean)
 
-		// Adjusted values must match what Calibration.AdjustScores produces
-		// in production: clamp rounds to 2 decimals on the way through.
+		// Quantiles are taken over the unrounded adjusted scores, the same
+		// values AdjustScores keeps as CalibratedClampedScore, so percentile
+		// lookups can tell apart scores that round to the same two decimals.
 		adjusted := make([]float64, len(vals))
 		for i, v := range vals {
-			adjusted[i] = clamp(v + offset)
+			adjusted[i] = math.Max(0, math.Min(1, v+offset))
 		}
 		sort.Float64s(adjusted)
 
@@ -169,7 +170,7 @@ func (c *Calibration) AdjustScores(scores *BigFiveScores) {
 		if !ok {
 			continue
 		}
-		unrounded := dimensionValue(dim, scores) + d.Offset
+		unrounded := preRoundValue(dim, scores) + d.Offset
 		final := clamp(unrounded)
 		setDimensionValue(dim, scores, final)
 		if trace := scores.Calculations[dim]; trace != nil {
@@ -247,6 +248,25 @@ func (c *Calibration) PercentileWithDetails(dim string, score float64) (int, Per
 	lookup.UpperPercentile = nLess + 1
 	lookup.Fraction = frac
 	return finish(nLess + int(math.Round(frac)))
+}
+
+// preRoundValue is the dimension's model score before the two-decimal
+// rounding (clamped to [0, 1]), falling back to the rounded score when no
+// calculation trace is attached.
+func preRoundValue(dim string, s *BigFiveScores) float64 {
+	if t := s.Calculations[dim]; t != nil {
+		return t.ClampedScore
+	}
+	return dimensionValue(dim, s)
+}
+
+// UnroundedCalibratedScore returns the calibrated, unrounded score used for
+// percentile lookups, or the displayed score when no calibration was applied.
+func UnroundedCalibratedScore(dim string, scores *BigFiveScores) float64 {
+	if t := scores.Calculations[dim]; t != nil && t.CalibrationApplied {
+		return t.CalibratedClampedScore
+	}
+	return dimensionValue(dim, scores)
 }
 
 func finite(v float64) bool { return !math.IsNaN(v) && !math.IsInf(v, 0) }

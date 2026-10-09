@@ -94,3 +94,24 @@ func TestScoreAggregator(t *testing.T) {
 		t.Error("SummaryVariables is zero; expected computed values")
 	}
 }
+
+func TestBoundsUsePerMeasureSamplingError(t *testing.T) {
+	scores := analyze.BigFiveScores{Openness: 0.5, NeedForCognition: 0.5}
+	fv := analyze.FeatureVector{WordCount: 1000, ScoreSE: map[string]float64{"openness": 0.05, "need_for_cognition": 0.01}}
+	p := NewScoreAggregator().Aggregate(scores, fv, 1000, 0.7)
+	open, nfc := p.Traits["openness"].ConfidenceInterval, p.Traits["need_for_cognition"].ConfidenceInterval
+	if width := open[1] - open[0]; math.Abs(width-0.20) > 1e-9 {
+		t.Errorf("openness half-width should be 1.96*0.05 = 0.10, got interval %v", open)
+	}
+	if width := nfc[1] - nfc[0]; math.Abs(width-0.04) > 1e-9 {
+		t.Errorf("need_for_cognition half-width should be 1.96*0.01 = 0.02, got interval %v", nfc)
+	}
+	if m := p.CalculationDetails.RangeBounds["openness"].Method; m != "per_measure_sampling_error" {
+		t.Errorf("method = %q", m)
+	}
+	// Without recorded spread, fall back to the shared length rule.
+	legacy := NewScoreAggregator().Aggregate(scores, analyze.FeatureVector{WordCount: 1000}, 1000, 0.7)
+	if m := legacy.CalculationDetails.RangeBounds["openness"].Method; m != "shared_length_rule" {
+		t.Errorf("fallback method = %q", m)
+	}
+}

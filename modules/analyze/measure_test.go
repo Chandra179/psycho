@@ -3,8 +3,6 @@ package analyze
 import (
 	"strings"
 	"testing"
-
-	"psycho/modules/ingest"
 )
 
 func TestMeasureSummaryCoversEveryMeasureWithoutEmDash(t *testing.T) {
@@ -32,9 +30,8 @@ func TestMeasureSummaryCoversEveryMeasureWithoutEmDash(t *testing.T) {
 
 func TestCategoryLabel(t *testing.T) {
 	for in, want := range map[string]string{
-		"past_focus":      "past focus",
-		"article":         "article",
-		"long_word_ratio": "long words (over six bytes)",
+		"past_focus": "past focus",
+		"article":    "article",
 	} {
 		if got := CategoryLabel(in); got != want {
 			t.Errorf("CategoryLabel(%q) = %q, want %q", in, got, want)
@@ -68,46 +65,5 @@ func TestDedicatedLabelersShareTheBoundaryRule(t *testing.T) {
 		if got := DimensionLabel(c.key, 0.3499); got != c.low {
 			t.Errorf("%s at 0.3499 = %q, want %q", c.key, got, c.low)
 		}
-	}
-}
-
-func TestPercentileMainLine(t *testing.T) {
-	emp := &ingest.PercentileReference{Method: ingest.PercentileMethodEmpirical}
-	norm := &ingest.PercentileReference{Method: ingest.PercentileMethodNormalApproximation}
-
-	if got := PercentileMainLine(94, emp, "high"); got != "Higher than about 94 of 100 reference texts." {
-		t.Fatalf("plain rank line = %q", got)
-	}
-	if strings.Contains(PercentileMainLine(94, emp, "high"), "label") {
-		t.Fatal("an aligned label needs no clustering note")
-	}
-	for _, c := range []struct {
-		p    int
-		want string
-	}{{99, "ranks high"}, {80, "ranks high"}, {1, "ranks low"}, {20, "ranks low"}} {
-		got := PercentileMainLine(c.p, emp, "moderate")
-		if !strings.Contains(got, c.want) || !strings.Contains(got, "cluster tightly") {
-			t.Errorf("moderate at rank %d = %q, want clustering note containing %q", c.p, got, c.want)
-		}
-	}
-	if got := PercentileMainLine(50, emp, "moderate"); strings.Contains(got, "cluster") {
-		t.Fatalf("a mid-range rank needs no note: %q", got)
-	}
-	for _, label := range []string{"balanced", "mixed"} {
-		if !strings.Contains(PercentileMainLine(95, emp, label), strings.ToUpper(label[:1])+label[1:]+" on the 0–100 scale") {
-			t.Errorf("the note must name the %q label shown on the card", label)
-		}
-	}
-	// Only an empirical rank is shown as a rank.
-	for _, ref := range []*ingest.PercentileReference{nil, norm, {}} {
-		if got := PercentileMainLine(94, ref, "high"); got != "" {
-			t.Errorf("non-empirical reference must give no rank line, got %q", got)
-		}
-	}
-	if PercentileMainLine(0, emp, "low") != "" || PercentileMainLine(100, emp, "high") != "" {
-		t.Fatal("out-of-range percentiles are not shown")
-	}
-	if strings.ContainsRune(PercentileMainLine(99, emp, "moderate"), '—') {
-		t.Fatal("copy must not contain em-dashes")
 	}
 }

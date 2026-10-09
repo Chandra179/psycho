@@ -184,7 +184,7 @@ func TestSummaryAndValueCalculationsReplay(t *testing.T) {
 		case "clout":
 			numerator = p["certainty"] + p["social"] + p["achievement"] + p["exclusive"] - p["pronoun"] - p["tentative"] - p["negative_emotion"]
 		case "authenticity":
-			numerator = p["pronoun"] + p["tentative"] + p["present_focus"] + p["inclusive"] + p["sensation"] - p["long_word_ratio"] - p["cognitive_process"] - p["cause"] - p["past_focus"] - p["exclusive"] - p["certainty"]
+			numerator = p["pronoun"] + p["tentative"] + p["present_focus"] + p["inclusive"] + p["sensation"] - p["cognitive_process"] - p["cause"] - p["past_focus"] - p["exclusive"] - p["certainty"] - authenticityCenter
 		}
 		if numerator != c.Numerator || math.Round((1/(1+math.Exp(-numerator/c.Divisor)))*100)/100 != c.Score {
 			t.Fatalf("summary %s cannot replay", name)

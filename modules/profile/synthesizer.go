@@ -52,16 +52,34 @@ func (sa *ScoreAggregator) UseCalibration(cal *analyze.Calibration) {
 // Aggregate records the actual score, summary, percentile and rough-range operations.
 func (sa *ScoreAggregator) Aggregate(scores analyze.BigFiveScores, fv analyze.FeatureVector, wordCount int, coverage float64) Profile {
 	confidence := computeConfidenceFlag(wordCount, coverage)
-	ciWidth, rangeDetails := computeRangeWithDetails(wordCount, coverage)
+	sharedWidth, rangeDetails := computeRangeWithDetails(wordCount, coverage)
+	// Each measure gets its own half-width from the sampling error of its own
+	// category weights. The shared length rule is the fallback for features
+	// built without per-word spread.
+	widthFor := func(dim string) float64 {
+		if se, ok := fv.ScoreSE[dim]; ok && se > 0 {
+			return perMeasureHalfWidth(se)
+		}
+		return sharedWidth
+	}
 	summary, summaryDetails := analyze.ComputeSummaryVariablesWithDetails(fv)
 	details := &analyze.CalculationDetails{
-		ModelFingerprint: analyze.ModelFingerprint(), WordCount: fv.WordCount, DictionaryMatches: fv.DictionaryMatches,
+		ModelFingerprint: analyze.ModelFingerprint(), WordCount: fv.WordCount, DictionaryMatches: fv.DictionaryMatches, BigWordCount: fv.BigWordCount,
 		CategoryCounts: fv.CategoryCounts, Traits: scores.Calculations, Summary: summaryDetails,
 		Values: make(map[string]analyze.ValueCalculation), RangeBounds: make(map[string]analyze.RangeBoundsCalculation), Range: rangeDetails, Percentiles: make(map[string]analyze.PercentileCalculation),
 	}
 
 	recordTrait := func(dim string, score float64, evidence []analyze.Contribution) TraitResult {
-		result, bounds := makeTraitResultWithDetails(score, ciWidth, sa.percentileForRecorded(dim, score, details), evidence)
+		// Rank on the unrounded calibrated score so scores that display the
+		// same two decimals can still land on different percentiles.
+		lookup := analyze.UnroundedCalibratedScore(dim, &scores)
+		result, bounds := makeTraitResultWithDetails(score, widthFor(dim), sa.percentileForRecorded(dim, lookup, details), evidence)
+		bounds.StandardError = fv.ScoreSE[dim]
+		if bounds.StandardError > 0 {
+			bounds.Method = "per_measure_sampling_error"
+		} else {
+			bounds.Method = "shared_length_rule"
+		}
 		details.RangeBounds[dim] = bounds
 		return result
 	}
@@ -173,6 +191,22 @@ func computeConfidenceFlag(wordCount int, coverage float64) string {
 func computeCIWidth(wordCount int, coverage float64) float64 {
 	w, _ := computeRangeWithDetails(wordCount, coverage)
 	return w
+}
+
+// Half-width limits for per-measure bounds. The floor keeps a very long text
+// from claiming near-exact scores; the cap matches the shared rule.
+const (
+	minMeasureHalfWidth = 0.01
+	maxMeasureHalfWidth = 0.25
+)
+
+// perMeasureHalfWidth is 1.96 standard errors of the measure's own sampling
+// error, limited to [0.01, 0.25] and rounded to two decimals. It is not a
+// validated confidence interval: it assumes words are independent draws.
+func perMeasureHalfWidth(se float64) float64 {
+	w := 1.96 * se
+	w = math.Max(minMeasureHalfWidth, math.Min(maxMeasureHalfWidth, w))
+	return math.Round(w*100) / 100
 }
 
 func computeRangeWithDetails(wordCount int, coverage float64) (float64, analyze.RangeCalculation) {

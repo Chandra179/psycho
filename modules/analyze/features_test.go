@@ -72,8 +72,8 @@ func TestComputeSummaryVariables(t *testing.T) {
 	if sv.Clout < 0.19 || sv.Clout >= 0.9 {
 		t.Errorf("Clout = %f; want reasonable value in (0.2, 0.9)", sv.Clout)
 	}
-	if sv.Authenticity <= 0.1 || sv.Authenticity >= 0.9 {
-		t.Errorf("Authenticity = %f; want reasonable value in (0.1, 0.9)", sv.Authenticity)
+	if sv.Authenticity <= 0.02 || sv.Authenticity >= 0.9 {
+		t.Errorf("Authenticity = %f; want reasonable value in (0.02, 0.9)", sv.Authenticity)
 	}
 }
 

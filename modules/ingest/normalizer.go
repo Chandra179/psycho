@@ -2,6 +2,7 @@ package ingest
 
 import (
 	"errors"
+	"regexp"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -73,6 +74,7 @@ func normalizeWhitespace(s string) string {
 	for i, line := range lines {
 		lines[i] = strings.Join(strings.Fields(line), " ")
 	}
+	lines = removeScanNoise(lines)
 	// Group consecutive non-blank lines into paragraphs separated by blank lines.
 	var paragraphs []string
 	var current strings.Builder
@@ -205,3 +207,76 @@ func ValidateDocument(doc Document) error {
 
 // TokenizeWords is the common tokenizer used for document and feature counts.
 func TokenizeWords(s string) []string { return tokenizeWords(s) }
+
+var (
+	pageNumberLine = regexp.MustCompile(`^(?i:(page\s+)?\d{1,4}(\s+of\s+\d{1,4})?|[-–—]\s*\d{1,4}\s*[-–—])$`)
+	captionLine    = regexp.MustCompile(`^(?i:(figure|fig\.|table|map|plate)\s+[0-9ivx]+\b)`)
+	headerDigits   = regexp.MustCompile(`\d+`)
+)
+
+// Minimum shape for a repeated line to count as a running page header, and how
+// many times it must repeat. Short chat refrains ("haha") and full sentences
+// are left alone.
+const (
+	headerMinRunes   = 20
+	headerMinRepeats = 3
+	hyphenMinLine    = 40
+)
+
+// removeScanNoise drops what scanned or pasted print leaves between sentences,
+// so it is not scored as the author's wording: bare page numbers, figure and
+// table captions, running page headers (a short unpunctuated line repeated
+// three or more times), and it rejoins words hyphenated across line breaks.
+func removeScanNoise(lines []string) []string {
+	repeats := make(map[string]int, len(lines))
+	for _, line := range lines {
+		if k := headerKey(line); k != "" {
+			repeats[k]++
+		}
+	}
+	out := make([]string, 0, len(lines))
+	for _, line := range lines {
+		if line == "" {
+			out = append(out, line)
+			continue
+		}
+		if pageNumberLine.MatchString(line) || captionLine.MatchString(line) {
+			continue
+		}
+		if k := headerKey(line); k != "" && repeats[k] >= headerMinRepeats {
+			continue
+		}
+		out = append(out, line)
+	}
+	// Rejoin "exam-" + "ple" only inside long lines of running text, so a
+	// dash that ends a short chat line is kept.
+	for i := 0; i+1 < len(out); i++ {
+		cur, next := out[i], out[i+1]
+		if next == "" || len([]rune(cur)) < hyphenMinLine || !strings.HasSuffix(cur, "-") {
+			continue
+		}
+		prev, _ := utf8.DecodeLastRuneInString(cur[:len(cur)-1])
+		first, _ := utf8.DecodeRuneInString(next)
+		if unicode.IsLetter(prev) && unicode.IsLower(first) {
+			out[i+1] = cur[:len(cur)-1] + next
+			out = append(out[:i], out[i+1:]...)
+			i--
+		}
+	}
+	return out
+}
+
+// headerKey returns a comparison key for a line that could be a running page
+// header, or "" when the line is too short, too long, or ends like a sentence.
+func headerKey(line string) string {
+	if utf8.RuneCountInString(line) < headerMinRunes {
+		return ""
+	}
+	if n := len(strings.Fields(line)); n < 2 || n > 10 {
+		return ""
+	}
+	if last, _ := utf8.DecodeLastRuneInString(line); strings.ContainsRune(".!?:;,\"'”)", last) {
+		return ""
+	}
+	return strings.ToLower(strings.TrimSpace(headerDigits.ReplaceAllString(line, "")))
+}

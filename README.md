@@ -1,7 +1,7 @@
 # Psycho
 
 <p align="center">
-  <img src="docs/images/report.png" width="70%" alt="The Psycho report: trait cards with bars and percentiles, values with matched words, and a collapsible evidence section">
+  <img src="docs/images/report.png" width="70%" alt="The Psycho report: score bars for each measure with a one-line meaning, value categories with matched words in context, and a collapsible calculation section">
 </p>
 
 A small Go service for exploring language patterns through a dictionary-based psychological profiling heuristic. Reports expose the formulas and matching-word evidence behind recorded scores.

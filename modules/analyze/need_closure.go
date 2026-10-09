@@ -21,7 +21,7 @@ func ComputeNeedForClosure(fv FeatureVector) float64 {
 }
 
 func ComputeNeedForClosureCalculation(fv FeatureVector) *ScoreCalculation {
-	return computeWeightedScore(fv, needClosureCoefficients, 0)
+	return computeWeightedScore(fv, needClosureCoefficients)
 }
 
 // ComputeNeedForClosureLabel returns a human-readable label for the score.

@@ -27,16 +27,16 @@ func modelSpecification() map[string]any {
 	for _, dim := range dimensionKeys[:5] {
 		baselines[dim] = dimensionValue(dim, &intercepts)
 	}
+	baselines["cognitive_style"] = cognitiveStyleBaseline
 	return map[string]any{
-		"rules_version":      3,
+		"rules_version":      6,
 		"baselines":          baselines,
 		"big_five":           coefficients,
 		"regulatory_focus":   regFocusCoefficients,
 		"need_for_cognition": needCogCoefficients,
 		"cognitive_style":    cognitiveStyleCoefficients,
-		"long_word_weight":   bigWordsWeight,
 		"need_for_closure":   needClosureCoefficients,
-		"features":           "strip tags using letter/slash delimiter; collapse Unicode whitespace within lines, preserve blank-line paragraphs; tokenize on non-Unicode-letter/non-number except ASCII apostrophe; lowercase; dictionary exact matches; trim/lowercase dictionary entries, deduplicate category membership; category percent=count/token_count*100; long_word_ratio=byte_length>6/token_count",
+		"features":           "strip tags using letter/slash delimiter; collapse Unicode whitespace within lines, drop bare page numbers, figure/table captions and lines repeated 3+ times that look like running headers, rejoin words hyphenated across long lines, preserve blank-line paragraphs; tokenize on non-Unicode-letter/non-number except ASCII apostrophe; lowercase; dictionary exact matches; trim/lowercase dictionary entries, deduplicate category membership; category percent=count/token_count*100; long_word_ratio=letter_count>6/token_count (apostrophes excluded); value-category matches within 3 tokens after a negator are not counted; words that a concordance audit showed to be mostly used in another sense are removed from the scored content-word lists; per-measure score standard error from the spread of per-word contributions",
 		"score_policy":       "baseline plus weighted category percentages in sorted category order; long-word term=weight*ratio*100; clamp [0,1] then round half away from zero to 2 decimals; add calibration offset then clamp and round again",
 	}
 }

@@ -2,6 +2,7 @@ package analyze
 
 import (
 	"slices"
+	"sort"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -12,42 +13,63 @@ import (
 const maxValueExcerpts = 2
 const maxExcerptRunes = 240
 
-// valueExcerpts samples context using the scorer's exact tokenizer and lookup.
-// Punctuation and paragraph boundaries only select excerpts, never scores.
+// valueExcerpts picks, for each value, the sentences with the most distinct
+// matched words (ties keep document order), using the scorer's exact tokenizer
+// and negation-aware lookup. Punctuation and paragraph boundaries only select
+// excerpts, never scores.
 func valueExcerpts(text string, dict Dictionary) map[string][]ingest.TextExcerpt {
 	spans := ingest.TokenizeWordSpans(text)
-	out := make(map[string][]ingest.TextExcerpt)
-	seen := make(map[string]map[string]bool)
+	words := make([]string, len(spans))
+	for i, span := range spans {
+		words[i] = span.Word
+	}
+	type candidate struct {
+		bounds   [2]int
+		matches  []ingest.WordSpan
+		distinct int
+	}
+	candidates := make(map[Category][]candidate)
 	index := 0
 	for _, bounds := range excerptRanges(text) {
 		matches := make(map[Category][]ingest.WordSpan)
 		for index < len(spans) && spans[index].Start < bounds[1] {
 			span := spans[index]
+			at := index
 			index++
 			if span.Start < bounds[0] {
 				continue
 			}
-			for _, cat := range dict.Lookup(span.Word) {
-				if slices.Contains(schwartzValueCategories, cat) && len(out[string(cat)]) < maxValueExcerpts {
+			for _, cat := range countedCategories(words, at, dict) {
+				if slices.Contains(schwartzValueCategories, cat) {
 					matches[cat] = append(matches[cat], span)
 				}
 			}
 		}
-		for _, cat := range schwartzValueCategories {
-			if len(matches[cat]) == 0 {
-				continue
+		for cat, m := range matches {
+			seen := make(map[string]bool, len(m))
+			for _, span := range m {
+				seen[span.Word] = true
 			}
-			excerpt := makeValueExcerpt(text, bounds, spans, matches[cat])
+			candidates[cat] = append(candidates[cat], candidate{bounds, m, len(seen)})
+		}
+	}
+	out := make(map[string][]ingest.TextExcerpt)
+	for _, cat := range schwartzValueCategories {
+		list := candidates[cat]
+		sort.SliceStable(list, func(i, j int) bool { return list[i].distinct > list[j].distinct })
+		key := string(cat)
+		seen := make(map[string]bool)
+		for _, c := range list {
+			if len(out[key]) >= maxValueExcerpts {
+				break
+			}
+			excerpt := makeValueExcerpt(text, c.bounds, spans, c.matches)
 			if len(excerpt.Segments) == 0 {
 				continue
 			}
-			key, plain := string(cat), excerpt.PlainText()
-			if seen[key] == nil {
-				seen[key] = make(map[string]bool)
-			}
-			if !seen[key][plain] {
+			if plain := excerpt.PlainText(); !seen[plain] {
+				seen[plain] = true
 				out[key] = append(out[key], excerpt)
-				seen[key][plain] = true
 			}
 		}
 	}

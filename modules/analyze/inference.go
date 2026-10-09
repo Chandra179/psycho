@@ -19,3 +19,23 @@ type BigFiveScores struct {
 type TraitModel interface {
 	Infer(features FeatureVector) BigFiveScores
 }
+
+// ScoreFeatures scores every calibrated dimension with its calculation trace.
+// The pipeline and cmd/calibrate both call it, so the calibration corpus is
+// scored exactly as production text is.
+func ScoreFeatures(model TraitModel, fv FeatureVector) BigFiveScores {
+	scores := model.Infer(fv)
+	if scores.Calculations == nil {
+		scores.Calculations = make(map[string]*ScoreCalculation)
+	}
+	scores.Calculations["regulatory_focus"] = ComputeRegulatoryFocusCalculation(fv)
+	scores.Calculations["need_for_cognition"] = ComputeNeedForCognitionCalculation(fv)
+	scores.Calculations["cognitive_style"] = ComputeCognitiveStyleCalculation(fv)
+	scores.Calculations["need_for_closure"] = ComputeNeedForClosureCalculation(fv)
+	scores.RegulatoryFocus = scores.Calculations["regulatory_focus"].FinalScore
+	scores.NeedForCognition = scores.Calculations["need_for_cognition"].FinalScore
+	scores.CognitiveStyle = scores.Calculations["cognitive_style"].FinalScore
+	scores.NeedForClosure = scores.Calculations["need_for_closure"].FinalScore
+	scores.Values = ComputeSchwartzValues(fv)
+	return scores
+}

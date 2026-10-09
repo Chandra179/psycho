@@ -63,11 +63,7 @@ func main() {
 			continue
 		}
 		features, _ := extractor.Extract(doc)
-		s := model.Infer(features)
-		s.RegulatoryFocus = analyze.ComputeRegulatoryFocus(features)
-		s.NeedForCognition = analyze.ComputeNeedForCognition(features)
-		s.CognitiveStyle = analyze.ComputeCognitiveStyle(features)
-		s.NeedForClosure = analyze.ComputeNeedForClosure(features)
+		s := analyze.ScoreFeatures(model, features)
 		samples = append(samples, s)
 	}
 

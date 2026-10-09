@@ -51,15 +51,8 @@ func NeedForClosureEvidence(fv FeatureVector) []Contribution {
 	return dimensionEvidence(needClosureCoefficients, fv)
 }
 
-// CognitiveStyleEvidence adds the computed long-word ratio, which
-// contributes to the score but is not a dictionary category.
 func CognitiveStyleEvidence(fv FeatureVector) []Contribution {
-	out := dimensionEvidence(cognitiveStyleCoefficients, fv)
-	if fv.BigWordRatio > 0 {
-		out = append(out, newContribution("long_word_ratio", fv.BigWordRatio*100, bigWordsWeight, nil))
-		sortContributions(out)
-	}
-	return out
+	return dimensionEvidence(cognitiveStyleCoefficients, fv)
 }
 
 func dimensionEvidence(weights map[string]float64, fv FeatureVector) []Contribution {

@@ -1,15 +1,18 @@
 package report
 
-// Fit thresholds. They were set by measuring the nine samples and a random
-// sample of 25 corpus posts: formal prose scored Authenticity 0.00 to 0.13
-// with 28% to 53% long words, while every ordinary blog post scored 0.35 or
-// higher, so the formal cut sits in a wide gap. Emotion words under half a
-// percent of the text leave Emotional tone and Neuroticism with almost no
-// signal.
+// Fit thresholds. They were set on the 3,992-post reference corpus and the nine
+// samples after Cognitive Style moved to the function-word index and Authenticity
+// lost its long-word term: formal prose scored Authenticity 0.08 to 0.27 and
+// Cognitive Style 0.63 to 0.80 with 28% to 53% long words, while the diary entry
+// (0.86, 0.30), the angry review (0.66, 0.41) and the tweet thread (0.31, 0.55)
+// sit well clear. The three conditions together flag 1.9% of reference posts.
+// Emotion words under half a percent of the text leave Emotional tone and
+// Neuroticism with almost no signal.
 const (
-	formalMaxAuthenticity = 0.15
-	formalMinLongWordPct  = 25.0
-	sparseEmotionShare    = 0.005
+	formalMaxAuthenticity   = 0.30
+	formalMinCognitiveStyle = 0.60
+	formalMinLongWordPct    = 25.0
+	sparseEmotionShare      = 0.005
 )
 
 // formalKeys are the measures that mostly reflect register, not the writer,
@@ -21,9 +24,9 @@ var (
 
 var fitReasons = map[string]string{
 	"openness":        "Articles and prepositions, common in formal prose, mostly drive this score.",
-	"authenticity":    "Formal writing with many long words drives this score down. It says nothing about honesty.",
+	"authenticity":    "Formal wording, with few personal pronouns, drives this score down. It says nothing about honesty.",
 	"clout":           "Formal, impersonal wording mostly sets this score, not status or confidence.",
-	"cognitive_style": "Many long words push this up in formal writing, whatever the writer is like.",
+	"cognitive_style": "Articles and prepositions in formal writing push this up, whatever the writer is like.",
 	"neuroticism":     "Very few emotion words were found, so this score rests on other word types.",
 	"emotional_tone":  "Very few emotion words were found, so this score says little about this text.",
 }
@@ -54,17 +57,19 @@ func FitNotes(a *Analysis) (top []string, byKey map[string]string) {
 	return top, byKey
 }
 
-// isFormalProse needs a very low Authenticity score. When the recorded
-// long-word share is available it must also be high, which guards against
-// short or terse texts that score low on Authenticity for other reasons.
+// isFormalProse needs a low Authenticity score and a high Cognitive Style
+// score. When the recorded long-word share is available it must also be high,
+// which guards against terse, impersonal texts that score the same way for
+// other reasons.
 func isFormalProse(a *Analysis) bool {
 	if a.Summary.Authenticity > formalMaxAuthenticity {
 		return false
 	}
-	if a.CalculationDetails == nil {
+	if style, ok := a.Traits["cognitive_style"]; !ok || style.Score < formalMinCognitiveStyle {
+		return false
+	}
+	if a.CalculationDetails == nil || a.CalculationDetails.BigWordCount == 0 || a.WordCount == 0 {
 		return true
 	}
-	inputs := a.CalculationDetails.Summary["authenticity"].Inputs
-	pct, ok := inputs["long_word_ratio"]
-	return !ok || pct >= formalMinLongWordPct
+	return float64(a.CalculationDetails.BigWordCount)/float64(a.WordCount)*100 >= formalMinLongWordPct
 }
