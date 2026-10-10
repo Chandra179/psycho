@@ -28,7 +28,9 @@ Done later on 2026-10-10: each score row says "Another stretch of similar text
 would likely score N to M" from the recorded bounds and adds "Too close to call
 between X and Y" when they reach into another band; band chips carry an ⓘ cue;
 the mobile evidence blocks sit under an "Evidence by measure" heading; the PDF
-shows the same fit notes (opening list and per measure).
+shows the same fit notes (opening list and per measure). The range sentence ends
+"This shows repeatability, not accuracy", because the ranges are narrow and could
+read as precision.
 
 Still open:
 
@@ -82,8 +84,9 @@ Still open (any dictionary edit changes `dictionary_sha256` and needs
    judgement: no reference post lost a line.
 4. **Reference corpus.** 2004 blog posts are a poor comparison for essays,
    abstracts and book chapters. Consider genre-specific references.
-5. **Rename or demote** Authenticity and Clout (read as character verdicts), and
-   "high/low signal" (read as reliability).
+5. **Rename or demote.** Done on 2026-10-10: Clout is "Confident wording" and
+   Authenticity is "Personal wording" (display names; keys unchanged). Still
+   open: "high/low signal" (reads as reliability).
 6. **Weights vs the paper.** Checked on 2026-10-10 against Table 1 of Yarkoni
    (2010) (open manuscript PMC2885844): all 32 weights equal rho * 0.06; the two
    resting on non-significant correlations (pronouns with Extraversion and

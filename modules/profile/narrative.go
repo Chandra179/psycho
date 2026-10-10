@@ -76,7 +76,7 @@ func (g *TemplateNarrativeGenerator) GenerateSynthesis(p Profile) string {
 		score     float64
 	}{
 		{"analytical_thinking", "Analytical thinking", p.Summary.AnalyticalThinking}, {"clout", "Confident wording", p.Summary.Clout},
-		{"authenticity", "Authenticity", p.Summary.Authenticity}, {"emotional_tone", "Emotional tone", p.Summary.EmotionalTone},
+		{"authenticity", "Personal wording", p.Summary.Authenticity}, {"emotional_tone", "Emotional tone", p.Summary.EmotionalTone},
 	} {
 		fmt.Fprintf(&out, "- **%s:** Estimated text score: %.0f/100 (%s)\n", item.name, math.Round(item.score*100), analyze.SummarySignalLabel(item.key, item.score))
 	}

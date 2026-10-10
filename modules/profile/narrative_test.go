@@ -55,7 +55,7 @@ func TestTemplateNarrativeGenerator_GeneratesAllSections(t *testing.T) {
 		"Preference for certainty",
 		"Analytical thinking",
 		"Confident wording",
-		"Authenticity",
+		"Personal wording",
 		"Emotional tone",
 		"promotion_focus",
 		"high",

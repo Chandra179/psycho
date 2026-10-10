@@ -52,7 +52,7 @@ var fitReasons = map[string]string{
 func FitNotes(a *Analysis) (top []string, byKey map[string]string) {
 	byKey = map[string]string{}
 	if isFormalProse(a) {
-		top = append(top, "This reads like formal writing with many long words. Every score here is rough, and Openness, Extraversion, Confident wording, Cognitive Style and Authenticity especially so, because they mostly reflect wording and topic, not the writer.")
+		top = append(top, "This reads like formal writing with many long words. Every score here is rough, and Openness, Extraversion, Confident wording, Cognitive Style and Personal wording especially so, because they mostly reflect wording and topic, not the writer.")
 		for _, k := range formalKeys {
 			byKey[k] = fitReasons[k]
 		}

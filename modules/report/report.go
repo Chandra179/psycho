@@ -223,7 +223,7 @@ func BuildReport(a *Analysis) ReportView {
 	v.Summary = []SummaryCard{
 		newSummaryCard("analytical_thinking", "Analytical thinking", a.Summary.AnalyticalThinking),
 		newSummaryCard("clout", "Confident wording", a.Summary.Clout),
-		newSummaryCard("authenticity", "Authenticity", a.Summary.Authenticity),
+		newSummaryCard("authenticity", "Personal wording", a.Summary.Authenticity),
 		newSummaryCard("emotional_tone", "Emotional tone", a.Summary.EmotionalTone),
 	}
 
@@ -292,7 +292,7 @@ func BuildReport(a *Analysis) ReportView {
 // similar text, and flags a score whose range reaches into a neighbouring band.
 func rangeNote(key string, low, high float64) string {
 	lo, hi := int(math.Round(low*100)), int(math.Round(high*100))
-	note := fmt.Sprintf("Another stretch of similar text would likely score %d to %d.", lo, hi)
+	note := fmt.Sprintf("Another stretch of similar text would likely score %d to %d. This shows repeatability, not accuracy.", lo, hi)
 	if a, b := analyze.DimensionLabel(key, low), analyze.DimensionLabel(key, high); a != b {
 		note += fmt.Sprintf(" Too close to call between %s and %s.", a, b)
 	}
