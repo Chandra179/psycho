@@ -29,7 +29,7 @@ func modelSpecification() map[string]any {
 	}
 	baselines["cognitive_style"] = cognitiveStyleBaseline
 	return map[string]any{
-		"rules_version":      8,
+		"rules_version":      9,
 		"baselines":          baselines,
 		"big_five":           coefficients,
 		"regulatory_focus":   regFocusCoefficients,

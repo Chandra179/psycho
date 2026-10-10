@@ -14,7 +14,7 @@ package analyze
 //   Personality, 44(3), 363–373. https://doi.org/10.1016/j.jrp.2010.04.001
 //
 // Verified against Table 1 of the paper (PMC2885844, minimum N = 576) on
-// 2026-10-10: every weight below equals ρ × 0.06 in sign and size, and every
+// 2026-10-10: every weight below equalled ρ × 0.06 in sign and size (Openness weights are then scaled by opennessScale, see below), and every
 // weight rests on a correlation marked significant at p < .05.
 //
 // Only dictionary.json categories with a clear Yarkoni mapping are included.
@@ -55,6 +55,22 @@ var coefficients = map[string]TraitWeights{
 	// "sensation" is intentionally absent: its published correlation with
 	// Neuroticism (Sensory Processes, ρ = .05) is non-significant at the
 	// paper's sample size, leaving no empirical basis for a weight.
+}
+
+// opennessScale shrinks every Openness weight above. Its pre-shrink SD over the
+// 3,992 reference posts was 0.098, about four times the 0.015 to 0.03 that a
+// trait SD of 0.15 and category correlations of 0.1 to 0.2 allow, because its
+// weights (articles and prepositions up; pronouns, time and motion words down)
+// all track formal against casual writing and add up. The other traits sit at
+// 0.009 to 0.026. 0.3 brings Openness to about 0.03. The factor comes from the
+// reference SDs only, not from any label. Rank (AUC) does not depend on it.
+const opennessScale = 0.3
+
+func init() {
+	for cat, w := range coefficients {
+		w.Openness *= opennessScale
+		coefficients[cat] = w
+	}
 }
 
 // TraitWeights holds per-trait heuristic weights for a single category.

@@ -4,7 +4,7 @@
     <h3 class="text-sm font-medium">{{.Name}}</h3>
     <details class="report-band">
       <summary aria-label="{{.Name}}: {{.Label}} band explanation" aria-describedby="band-{{.Key}}" class="rounded-full px-2 py-1 text-xs font-medium {{.ChipClass}}">
-        {{.Label}}<span id="band-{{.Key}}" role="tooltip" class="report-tooltip">{{.SignalDescription}}</span>
+        {{.Label}}<span aria-hidden="true" class="ml-1 text-stone-500">ⓘ</span><span id="band-{{.Key}}" role="tooltip" class="report-tooltip">{{.SignalDescription}}</span>
       </summary>
     </details>
   </div>
@@ -12,6 +12,7 @@
   <div role="meter" aria-label="{{.Name}} estimated text score" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{.Score100}}" class="col-span-full h-1 rounded-full bg-stone-100 overflow-hidden">
     <div class="h-full rounded-full bg-teal-700" style="width:{{.Score100}}%"></div>
   </div>
+  {{if .RangeNote}}<p class="col-span-full text-xs leading-relaxed text-stone-600">{{.RangeNote}}</p>{{end}}
   {{if .Meaning}}<p class="col-span-full text-xs leading-relaxed text-stone-600">{{.Meaning}}</p>{{end}}
   {{if .Detail}}<p class="col-span-full text-xs leading-relaxed text-stone-600">{{.Detail}}</p>{{end}}
   {{if .FitNote}}<p class="col-span-full text-sm leading-relaxed text-stone-700"><strong class="font-medium text-amber-800">Low fit for this text.</strong> {{.FitNote}}</p>{{end}}
@@ -168,6 +169,7 @@
         </table>
       </div>
       <div class="md:hidden space-y-5" aria-label="Score evidence, one block per measure" role="group">
+        <h2 class="text-sm font-medium text-stone-700">Evidence by measure</h2>
         {{range .Traits}}{{$t := .}}
         <section class="border-t border-stone-200 pt-3">
           <h3 class="text-sm font-medium text-stone-800">{{.Name}}</h3>

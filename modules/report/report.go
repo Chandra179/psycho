@@ -89,9 +89,10 @@ func readingQuality(flag string) string {
 // CardNotes are the small text lines under a score bar, shared by trait and
 // summary cards through the common "report-score-row" template.
 type CardNotes struct {
-	Meaning string // what the measure counts
-	Detail  string // recorded counts behind the score, when available
-	FitNote string // why this measure fits this text poorly, when it does not
+	Meaning   string // what the measure counts
+	Detail    string // recorded counts behind the score, when available
+	RangeNote string // repeatability range in plain words; says "too close to call" when it crosses a band
+	FitNote   string // why this measure fits this text poorly, when it does not
 }
 
 type TraitView struct {
@@ -277,6 +278,7 @@ func BuildReport(a *Analysis) ReportView {
 			tv.HasScoreRange = true
 			tv.ScoreRangeLow = int(math.Round(t.ConfidenceInterval[0] * 100))
 			tv.ScoreRangeHigh = int(math.Round(t.ConfidenceInterval[1] * 100))
+			tv.CardNotes.RangeNote = rangeNote(k, t.ConfidenceInterval[0], t.ConfidenceInterval[1])
 		}
 		v.Traits = append(v.Traits, tv)
 		if slices.Contains(traitOrder[:5], k) {
@@ -284,6 +286,17 @@ func BuildReport(a *Analysis) ReportView {
 		}
 	}
 	return v
+}
+
+// rangeNote says how far the score would likely move on another stretch of
+// similar text, and flags a score whose range reaches into a neighbouring band.
+func rangeNote(key string, low, high float64) string {
+	lo, hi := int(math.Round(low*100)), int(math.Round(high*100))
+	note := fmt.Sprintf("Another stretch of similar text would likely score %d to %d.", lo, hi)
+	if a, b := analyze.DimensionLabel(key, low), analyze.DimensionLabel(key, high); a != b {
+		note += fmt.Sprintf(" Too close to call between %s and %s.", a, b)
+	}
+	return note
 }
 
 func round2(f float64) float64 {

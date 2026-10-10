@@ -24,20 +24,22 @@ ranks, the support-note trigger on its own, the emotion-count line wording
 (the Emotional tone card says "Based on N negative-feeling and M
 positive-feeling dictionary words").
 
+Done later on 2026-10-10: each score row says "Another stretch of similar text
+would likely score N to M" from the recorded bounds and adds "Too close to call
+between X and Y" when they reach into another band; band chips carry an ⓘ cue;
+the mobile evidence blocks sit under an "Evidence by measure" heading; the PDF
+shows the same fit notes (opening list and per measure).
+
 Still open:
 
-1. **Uncertainty on the page.** Show the bounds beside scores, or "can't tell"
-   when they cross bands; show the tie width for scores that sit on a tie
+1. **Tie width.** Show how wide a tie is for scores that sit on one
    (Regulatory Focus 50 spans the 37th to 77th percentile).
 2. **Jargon and labels.** Renamed on 2026-10-10 (display names only; keys are
    unchanged): Clout is "Confident wording", Regulatory Focus is "Goals: gain
    vs. safety", Need for Closure is "Preference for certainty". Still open:
    plain words for "signal" and a consistent band vocabulary.
-3. **Mobile and accessibility.** A tap cue on band chips; heading levels in the
-   evidence section.
-4. **Optional:** a personal headline for short or shareable reports, and a "not
+3. **Optional:** a personal headline for short or shareable reports, and a "not
    enough text" view for short samples instead of nine full-size scores.
-5. **PDF** does not show the per-measure fit notes.
 
 ## Phase 2: scoring layer
 
@@ -93,10 +95,14 @@ Still open (any dictionary edit changes `dictionary_sha256` and needs
    openness 0.098. With correlations of 0.1 to 0.2 and a trait SD of 0.15,
    about 0.015 to 0.03 is plausible, so four traits fit and Openness is about
    four times too wide (its weights all track formal against casual writing and
-   add up). Left unchanged: bands use fixed score cut-offs, so shrinking
-   Openness would move existing reports between bands, and rank (AUC) does not
-   depend on scale. If done, shrink its weights until the SD is near 0.03, then
-   recalibrate and bump `rules_version`.
+   add up). Done on 2026-10-10: every Openness weight is multiplied by
+   `opennessScale` = 0.3 (`rules_version` 9), which brings its reference SD to
+   0.029. The factor comes from the reference SDs only. Existing Openness
+   scores move toward 0.50; AUC moved from 0.5334 to 0.5320 (more tied scores
+   after rounding to two decimals), inside the interval. The weights no longer
+   equal rho * 0.06 for Openness (they equal rho * 0.018). The `pronoun`
+   mismatch is unverified: LIWC's total pronouns may include this/that too, so
+   no split was made.
 7. **Accuracy is near chance.** AUC 0.532 to 0.559 on 2,442 essays. The supervised
    model (`cmd/train`, rerun 2026-10-10) reaches 0.57 to 0.63 on 489 held-out
    authors, ahead of the heuristic on every trait, but no 99% paired interval
