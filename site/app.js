@@ -27,18 +27,36 @@
     return n >= 1048576 ? parseFloat((n / 1048576).toFixed(2)) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB';
   }
 
-  // Shows the size against the limit and blocks analysis when it is over.
+  var TEXTAREA_OK = ['border-stone-300', 'focus:border-teal-500', 'focus:ring-teal-500/20'];
+  var TEXTAREA_BAD = ['border-rose-500', 'focus:border-rose-500', 'focus:ring-rose-500/20'];
+
+  // Shows the size against the limit: a quiet amber note when close, a red
+  // alert, a red textarea and a blocked button when over.
   function checkLength() {
     var bytes = encoder.encode(textArea.value).length;
+    var ready = !!(window.psycho && window.psycho.ready);
     overLimit = bytes > MAX_BYTES;
+    lengthNote.replaceChildren();
     if (overLimit) {
-      lengthNote.textContent = 'This text is ' + formatBytes(bytes) + ', over the ' + formatBytes(MAX_BYTES) + ' limit. Please shorten it.';
-      lengthNote.className = 'mt-2 text-sm text-rose-700';
+      var title = document.createElement('strong');
+      title.textContent = 'Too long to analyze. ';
+      lengthNote.append(title, 'This text is ' + formatBytes(bytes) + ' and the limit is ' + formatBytes(MAX_BYTES) +
+        ' (about 170,000 words). Shorten it or analyze one part at a time.');
+      lengthNote.className = 'mt-3 rounded-xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-800';
+      lengthNote.setAttribute('role', 'alert');
+    } else if (bytes > MAX_BYTES * 0.8) {
+      lengthNote.textContent = 'Getting long: ' + formatBytes(bytes) + ' of ' + formatBytes(MAX_BYTES) + ' used.';
+      lengthNote.className = 'mt-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-800';
+      lengthNote.removeAttribute('role');
     } else {
-      lengthNote.textContent = bytes > MAX_BYTES * 0.8 ? formatBytes(bytes) + ' of ' + formatBytes(MAX_BYTES) + ' used.' : '';
-      lengthNote.className = 'mt-2 text-sm text-stone-500';
+      lengthNote.className = 'hidden';
+      lengthNote.removeAttribute('role');
     }
-    submit.disabled = overLimit || !(window.psycho && window.psycho.ready);
+    textArea.setAttribute('aria-invalid', overLimit ? 'true' : 'false');
+    textArea.classList.remove.apply(textArea.classList, overLimit ? TEXTAREA_OK : TEXTAREA_BAD);
+    textArea.classList.add.apply(textArea.classList, overLimit ? TEXTAREA_BAD : TEXTAREA_OK);
+    if (ready) submitLabel.textContent = overLimit ? 'Text is too long' : 'Analyze my writing';
+    submit.disabled = overLimit || !ready;
   }
 
   function showError(msg) {
