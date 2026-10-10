@@ -230,7 +230,7 @@ func BuildReport(a *Analysis) ReportView {
 	if pos, neg, ok := emotionCounts(a); ok {
 		for i := range v.Summary {
 			if v.Summary[i].Key == "emotional_tone" {
-				v.Summary[i].Detail = fmt.Sprintf("Based on %d negative-feeling and %d positive-feeling dictionary words.", neg, pos)
+				v.Summary[i].Detail = fmt.Sprintf("Based on %d negative and %d positive emotion words.", neg, pos)
 			}
 		}
 	}
@@ -288,15 +288,13 @@ func BuildReport(a *Analysis) ReportView {
 	return v
 }
 
-// rangeNote says how far the score would likely move on another stretch of
-// similar text, and flags a score whose range reaches into a neighbouring band.
+// rangeNote flags a score whose range reaches into a neighbouring band. It is
+// empty when the band is stable; the numeric range lives in Calculation details.
 func rangeNote(key string, low, high float64) string {
-	lo, hi := int(math.Round(low*100)), int(math.Round(high*100))
-	note := fmt.Sprintf("Another stretch of similar text would likely score %d to %d. This shows repeatability, not accuracy.", lo, hi)
 	if a, b := analyze.DimensionLabel(key, low), analyze.DimensionLabel(key, high); a != b {
-		note += fmt.Sprintf(" Too close to call between %s and %s.", a, b)
+		return fmt.Sprintf("Close call between %s and %s.", a, b)
 	}
-	return note
+	return ""
 }
 
 func round2(f float64) float64 {
@@ -309,24 +307,24 @@ func percentileText(percentile int, reference *ingest.PercentileReference) strin
 
 func percentileReferenceDescription(reference *ingest.PercentileReference) string {
 	if reference == nil {
-		return "Reference details were not recorded for this analysis."
+		return "Reference details were not saved for this analysis."
 	}
 	switch reference.Method {
 	case ingest.PercentileMethodEmpirical:
 		if reference.SampleSize > 0 {
 			if reference.Corpus != "" {
-				return fmt.Sprintf("Percentiles compare scores with %d texts in %s. This is a comparison within that text sample, not a general-population estimate.", reference.SampleSize, reference.Corpus)
+				return fmt.Sprintf("Percentiles compare your scores with %d texts from %s. They compare against that sample only, not against people in general.", reference.SampleSize, reference.Corpus)
 			}
-			return fmt.Sprintf("Percentiles compare scores with %d texts in the configured reference sample, not a general-population estimate.", reference.SampleSize)
+			return fmt.Sprintf("Percentiles compare your scores with %d reference texts. They compare against those texts only, not against people in general.", reference.SampleSize)
 		}
 		if reference.Corpus != "" {
-			return fmt.Sprintf("Percentiles compare scores with the configured reference texts (%s), not a general-population estimate.", reference.Corpus)
+			return fmt.Sprintf("Percentiles compare your scores with the reference texts (%s), not with people in general.", reference.Corpus)
 		}
-		return "Percentiles compare scores with the configured reference sample, not a general-population estimate."
+		return "Percentiles compare your scores with the reference texts, not with people in general."
 	case ingest.PercentileMethodNormalApproximation:
-		return "No empirical reference sample was configured. Percentiles use a normal approximation with a mean score of 50 and a standard deviation of 15."
+		return "No reference texts were set up, so percentiles use a rough bell-curve guess (average 50, spread 15)."
 	default:
-		return "Reference details were not recorded for this analysis."
+		return "Reference details were not saved for this analysis."
 	}
 }
 

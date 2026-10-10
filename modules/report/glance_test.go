@@ -76,7 +76,7 @@ func TestSummaryCardsCarryMeaningAndEmotionDetail(t *testing.T) {
 			tone = c
 		}
 	}
-	if tone.Detail != "Based on 11 negative-feeling and 4 positive-feeling dictionary words." {
+	if tone.Detail != "Based on 11 negative and 4 positive emotion words." {
 		t.Fatalf("emotional tone detail = %q", tone.Detail)
 	}
 	for _, c := range v.Summary {
@@ -160,11 +160,11 @@ func TestQualityReasonDoesNotMisstateCoverage(t *testing.T) {
 
 func TestRangeNoteFlagsScoresThatCrossABand(t *testing.T) {
 	stable := rangeNote("openness", 0.47, 0.53)
-	if !strings.Contains(stable, "47 to 53") || strings.Contains(stable, "Too close to call") {
+	if stable != "" {
 		t.Fatalf("stable range = %q", stable)
 	}
 	crossing := rangeNote("openness", 0.31, 0.40)
-	if !strings.Contains(crossing, "Too close to call between low and moderate") {
+	if !strings.Contains(crossing, "Close call between low and moderate") {
 		t.Fatalf("crossing range = %q", crossing)
 	}
 	if strings.ContainsRune(stable+crossing, '—') {
@@ -180,8 +180,8 @@ func TestReportShowsRangeNoteAndBandCue(t *testing.T) {
 		t.Fatal(err)
 	}
 	html := out.String()
-	if !strings.Contains(html, "would likely score 47 to 53") {
-		t.Error("score range sentence missing")
+	if strings.Contains(html, "would likely score") {
+		t.Error("per-card range sentence should be gone")
 	}
 	if !strings.Contains(html, "ⓘ") {
 		t.Error("band chips need a visible tap cue")

@@ -34,12 +34,12 @@ var (
 )
 
 var fitReasons = map[string]string{
-	"openness":        "Articles and prepositions, common in formal prose, mostly drive this score.",
-	"extraversion":    "Impersonal wording with few words about people pulls this score down, whatever the writer is like.",
-	"authenticity":    "Formal wording, with few personal pronouns, drives this score down. It says nothing about honesty.",
+	"openness":        "Words like \"the\" and \"of\", which are common in formal writing, mostly drive this score.",
+	"extraversion":    "Formal wording with few words about people pulls this score down, whatever the writer is like.",
+	"authenticity":    "Formal wording with few \"I\" words pulls this score down. It says nothing about honesty.",
 	"clout":           "Formal, impersonal wording mostly sets this score, not status or confidence.",
-	"cognitive_style": "Articles and prepositions in formal writing push this up, whatever the writer is like.",
-	"neuroticism":     "Very few emotion words were found, so this score rests on other word types.",
+	"cognitive_style": "Words like \"the\" and \"of\" in formal writing push this up, whatever the writer is like.",
+	"neuroticism":     "Very few emotion words were found, so this score relies on other kinds of words.",
 	"emotional_tone":  "Very few emotion words were found, so this score says little about this text.",
 }
 
@@ -52,7 +52,7 @@ var fitReasons = map[string]string{
 func FitNotes(a *Analysis) (top []string, byKey map[string]string) {
 	byKey = map[string]string{}
 	if isFormalProse(a) {
-		top = append(top, "This reads like formal writing with many long words. Every score here is rough, and Openness, Extraversion, Confident wording, Cognitive Style and Personal wording especially so, because they mostly reflect wording and topic, not the writer.")
+		top = append(top, "This reads like formal writing with many long words. Every score here is rough. Openness, Extraversion, Confident wording, Cognitive Style and Personal wording are the least reliable, because they mostly reflect wording and topic, not the writer.")
 		for _, k := range formalKeys {
 			byKey[k] = fitReasons[k]
 		}

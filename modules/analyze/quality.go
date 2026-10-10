@@ -59,7 +59,7 @@ func QualityReasonsWithNoise(wordCount int, coverage, noiseShare float64) []stri
 		reasons = append(reasons, "Under 60% of the words matched the dictionary, so part of the text was not scored.")
 	}
 	if noiseShare >= QualityNoisyShare {
-		reasons = append(reasons, fmt.Sprintf("About %d%% of the lines looked like page numbers, captions or running headers and were removed, so the text may have extraction leftovers.", int(math.Round(noiseShare*100))))
+		reasons = append(reasons, fmt.Sprintf("About %d%% of the lines looked like page numbers, captions or running headers and were removed, so some leftover junk may remain in the text.", int(math.Round(noiseShare*100))))
 	}
 	return reasons
 }
@@ -67,7 +67,7 @@ func QualityReasonsWithNoise(wordCount int, coverage, noiseShare float64) []stri
 // ReadingCaveat is the one plain sentence shown at the top of every report.
 // The accuracy figure comes from the offline evaluation described under
 // Calculation details; the wording lives here so no renderer restates it.
-const ReadingCaveat = "These are rough estimates from counting word patterns. In a test on 2,442 essays, these scores matched people's questionnaire answers only slightly better than a coin flip. They cannot tell you whether someone is honest, reliable or a good hire, and should not be used for hiring, clinical or other decisions about a person."
+const ReadingCaveat = "These are rough guesses made by counting word patterns. In a test on 2,442 essays, the scores matched people's own questionnaire answers only a little better than guessing. They cannot tell you if someone is honest or reliable, so please do not use them for hiring, health or other decisions about a person."
 
 // FormatCount formats 10785 as "10,785" for user-facing copy.
 func FormatCount(n int) string {

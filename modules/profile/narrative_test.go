@@ -60,8 +60,8 @@ func TestTemplateNarrativeGenerator_GeneratesAllSections(t *testing.T) {
 		"promotion_focus",
 		"high",
 		"98th percentile",
-		"Recorded heuristic bounds",
-		"not validated personality or clinical measures",
+		"Likely range",
+		"not proven personality or health measures",
 	}
 	for _, want := range checks {
 		if !strings.Contains(narrative, want) {
@@ -89,7 +89,7 @@ func TestTemplateNarrativeGenerator_LowConfidence(t *testing.T) {
 	}
 
 	narrative := g.GenerateSynthesis(prof)
-	if !strings.Contains(narrative, "not a direct measurement of personality") {
+	if !strings.Contains(narrative, "not a direct measure of personality") {
 		t.Error("narrative should explain the experimental text scores")
 	}
 }
@@ -147,10 +147,10 @@ func TestNarrativeSeparatesMainScoresFromRecordedDiagnostics(t *testing.T) {
 	}
 	narrative := NewTemplateNarrativeGenerator().GenerateSynthesis(p)
 	parts := strings.Split(narrative, "### Calculation details and limitations")
-	if len(parts) != 2 || strings.Contains(parts[0], "percentile") || strings.Contains(parts[0], "heuristic bounds") {
+	if len(parts) != 2 || strings.Contains(parts[0], "percentile") || strings.Contains(parts[0], "Likely range") {
 		t.Fatal("main narrative repeats diagnostics")
 	}
-	for _, want := range []string{"Estimated text score: 65/100", "8 of 497 words", "1.61% of all words", "We reject tradition.", "Approximate reference-text percentile: 78th.", "Recorded heuristic bounds: 40–90/100 (unvalidated)"} {
+	for _, want := range []string{"Estimated text score: 65/100", "8 of 497 words", "1.61% of all words", "We reject tradition.", "about the 78th percentile", "Likely range: 40 to 90 out of 100"} {
 		if !strings.Contains(narrative, want) {
 			t.Errorf("missing narrative content %q", want)
 		}

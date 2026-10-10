@@ -58,7 +58,7 @@ func TestReadingPreservesAllMeasuresAndCanonicalBoundaries(t *testing.T) {
 			if strings.Count(rendered, "Text-based measures") != 1 || strings.Contains(rendered, "Big Five text signals") || strings.Contains(rendered, "Additional text measures") {
 				t.Fatal("score sections were not combined under the single heading")
 			}
-			if !strings.Contains(rendered, `aria-label="Big Five bands"`) || !strings.Contains(rendered, "Measures beyond the Big Five are project-defined language proxies") {
+			if !strings.Contains(rendered, `aria-label="Big Five bands"`) || !strings.Contains(rendered, "The measures below the Big Five are simple word-pattern summaries") {
 				t.Fatal("combined section is missing its scoped legend or proxy note")
 			}
 			for _, row := range v.Traits {
@@ -116,7 +116,7 @@ func TestLegacyValuesDoNotInventExcerptsOrCounts(t *testing.T) {
 	if err := RenderAnalysis("../../templates", testAnalysis(), &out, false); err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"Counts not recorded", "Text excerpts were not recorded", "Sampled matching words: just, world", "0.88% of all words"} {
+	for _, want := range []string{"Counts not recorded", "Example sentences were not saved", "Example matching words: just, world", "0.88% of all words"} {
 		if !strings.Contains(out.String(), want) {
 			t.Errorf("missing legacy fallback %q", want)
 		}

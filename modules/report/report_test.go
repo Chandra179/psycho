@@ -134,7 +134,7 @@ func TestBuildReportSuperset(t *testing.T) {
 	if v.Traits[1].Score100 != 30 || v.Traits[1].SignalDescription != analyze.DimensionBandDescription("neuroticism", .3) {
 		t.Fatalf("low score should use a text-pattern description: %+v", v.Traits[1])
 	}
-	if v.PercentileReferenceDescription != "Percentiles compare scores with 2400 texts in Reference essay sample. This is a comparison within that text sample, not a general-population estimate." {
+	if v.PercentileReferenceDescription != "Percentiles compare your scores with 2400 texts from Reference essay sample. They compare against that sample only, not against people in general." {
 		t.Fatalf("unexpected empirical reference description: %q", v.PercentileReferenceDescription)
 	}
 	if v.Coverage != 67 {
@@ -197,19 +197,19 @@ func TestMainReadingHasOneScorePerMeasure(t *testing.T) {
 
 func TestPercentileReferenceDescriptions(t *testing.T) {
 	fallback := &ingest.PercentileReference{Method: ingest.PercentileMethodNormalApproximation}
-	if got := percentileText(61, fallback); got != "Model-estimated 61st percentile from a normal approximation." {
+	if got := percentileText(61, fallback); got != "Estimated 61st percentile, using a rough bell-curve guess." {
 		t.Fatalf("unexpected fallback percentile text: %q", got)
 	}
-	if got := percentileReferenceDescription(fallback); !strings.Contains(got, "mean score of 50") || !strings.Contains(got, "standard deviation of 15") {
+	if got := percentileReferenceDescription(fallback); !strings.Contains(got, "average 50") || !strings.Contains(got, "spread 15") {
 		t.Fatalf("fallback reference description omits model parameters: %q", got)
 	}
-	if got := percentileReferenceDescription(&ingest.PercentileReference{Method: ingest.PercentileMethodEmpirical, SampleSize: 321}); !strings.Contains(got, "321 texts") || strings.Contains(got, "texts in .") {
+	if got := percentileReferenceDescription(&ingest.PercentileReference{Method: ingest.PercentileMethodEmpirical, SampleSize: 321}); !strings.Contains(got, "321 reference texts") || strings.Contains(got, "texts from .") {
 		t.Fatalf("empirical metadata without a corpus name should remain readable: %q", got)
 	}
-	if got := percentileText(91, nil); got != "Percentile method not recorded (91st percentile)." {
+	if got := percentileText(91, nil); got != "Percentile method not saved (91st percentile)." {
 		t.Fatalf("missing metadata must not imply a method: %q", got)
 	}
-	if got := percentileReferenceDescription(nil); !strings.Contains(got, "not recorded") {
+	if got := percentileReferenceDescription(nil); !strings.Contains(got, "not saved") {
 		t.Fatalf("missing reference metadata must remain explicit: %q", got)
 	}
 }
@@ -224,11 +224,11 @@ func TestRenderFragmentAndPage(t *testing.T) {
 		t.Error("fragment render must not emit a full document")
 	}
 	for _, want := range []string{
-		"Your writing profile", "Approximate reference-text percentile: 91st.",
-		"Recorded heuristic bounds: 45–90/100 (unvalidated)", "Calculation details and limitations",
-		"not a percentile range or a statistically validated confidence interval", "not a validated individual personality measure",
-		"Percentiles compare scores with 2400 texts in Reference essay sample",
-		">the<", ">happy<", "Text-based measures", `aria-label="Big Five bands"`, `id="band-openness" role="tooltip"`, "Words longer than six bytes (legacy model proxy)",
+		"Your writing profile", "about the 91st percentile",
+		"Likely range: 45 to 90 out of 100", "Calculation details and limitations",
+		"not a statistical confidence interval", "not a proven personality test",
+		"Percentiles compare your scores with 2400 texts from Reference essay sample",
+		">the<", ">happy<", "Text-based measures", `aria-label="Big Five bands"`, `id="band-openness" role="tooltip"`, "Words longer than six letters (an older measure)",
 	} {
 		if !strings.Contains(frag.String(), want) {
 			t.Errorf("fragment missing %q", want)
@@ -323,7 +323,7 @@ func TestLegacyPayloadWithoutOptionalEvidenceFields(t *testing.T) {
 	if err := RenderAnalysis("../../templates", &a, &rendered, false); err != nil {
 		t.Fatalf("render legacy analysis: %v", err)
 	}
-	for _, want := range []string{"Percentile method not recorded", "Examples unavailable for this saved result", "article", "5.00%"} {
+	for _, want := range []string{"Percentile method not saved", "No examples for this saved result", "article", "5.00%"} {
 		if !strings.Contains(rendered.String(), want) {
 			t.Errorf("legacy report missing available information %q", want)
 		}

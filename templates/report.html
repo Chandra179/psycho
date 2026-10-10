@@ -30,7 +30,7 @@
         <span class="inline-flex items-center rounded-full bg-teal-50 text-teal-800 px-3 py-1 text-xs font-medium ring-1 ring-teal-600/20">Confidence in this reading: {{.Quality}}</span>
         <span class="text-sm text-stone-500">{{.GeneratedAt}} · {{.WordCountText}} words</span>
       </div>
-      <p class="mt-2 max-w-prose text-xs leading-relaxed text-stone-500">Confidence reflects how much text was read and how much of it matched the dictionary. It does not rate your writing.</p>
+      <p class="mt-2 max-w-prose text-xs leading-relaxed text-stone-500">Confidence shows how much text was read and how much of it matched the dictionary. It is not a rating of your writing.</p>
     </div>
     {{if not .StandaloneCSS}}
     <nav aria-label="Report actions" class="flex flex-wrap items-center gap-2">
@@ -62,7 +62,7 @@
   <section class="mt-10">
     <h2 class="font-serif text-xl mb-2">Text-based measures</h2>
     <div class="mb-4 flex flex-col gap-3">
-      <p class="w-full text-sm sm:text-[15px] leading-relaxed text-pretty text-stone-500">Measures beyond the Big Five are project-defined language proxies. Each score's band explanation follows its own scale.</p>
+      <p class="w-full text-sm sm:text-[15px] leading-relaxed text-pretty text-stone-500">The measures below the Big Five are simple word-pattern summaries made for this tool. Each one has its own scale.</p>
       {{if .HasBigFive}}
       <div class="report-legend mb-0 min-w-0 w-full" role="group" aria-label="Big Five bands">
         <span class="shrink-0 whitespace-nowrap text-xs text-stone-500">Big Five bands</span>
@@ -84,7 +84,7 @@
   {{if .Values}}
   <section class="mt-10">
     <h2 class="font-serif text-xl mb-2">Value-related language</h2>
-    <p class="w-full text-sm sm:text-[15px] leading-relaxed text-pretty text-stone-500 mb-4">Counts show how often dictionary words appear. Mentioning or rejecting a value both count. Open a category to see sampled examples in context; percentages use all matches.</p>
+    <p class="w-full text-sm sm:text-[15px] leading-relaxed text-pretty text-stone-500 mb-4">These counts show how often words from each group appear. A word counts whether the text agrees with the value or rejects it. Open a group to see example sentences. The percentages use all matches.</p>
     <div class="bg-white rounded-2xl border border-stone-200">
       {{range $i, $value := .Values}}
       <details class="report-value" {{if eq $i 0}}open{{end}}>
@@ -95,11 +95,11 @@
         </summary>
         <div class="px-4 sm:px-5 pb-4">
           {{if .Excerpts}}
-          <p class="text-xs text-stone-500 mb-2">Sampled text excerpts; highlighted words match this category's dictionary.</p>
+          <p class="text-xs text-stone-500 mb-2">Example sentences from your text. Highlighted words matched this group.</p>
           {{range .Excerpts}}<blockquote class="report-excerpt">{{range .Segments}}{{if .Matched}}<mark>{{.Text}}</mark>{{else}}{{.Text}}{{end}}{{end}}</blockquote>{{end}}
           {{else}}
-          <p class="text-xs text-stone-500">Text excerpts were not recorded for this analysis.</p>
-          {{if .Words}}<p class="mt-2 text-sm text-stone-700">Sampled matching words: {{range $i, $word := .Words}}{{if $i}}, {{end}}{{$word}}{{end}}</p>{{else}}<p class="mt-2 text-xs text-stone-500">Matching-word examples are unavailable.</p>{{end}}
+          <p class="text-xs text-stone-500">Example sentences were not saved for this analysis.</p>
+          {{if .Words}}<p class="mt-2 text-sm text-stone-700">Example matching words: {{range $i, $word := .Words}}{{if $i}}, {{end}}{{$word}}{{end}}</p>{{else}}<p class="mt-2 text-xs text-stone-500">No example words are available.</p>{{end}}
           {{end}}
         </div>
       </details>
@@ -110,7 +110,7 @@
 
   <section class="mt-10">
     <h2 class="font-serif text-xl mb-2">Language summaries</h2>
-    <p class="max-w-prose text-xs text-stone-500 mb-4">Project-defined word-pattern summaries, not official LIWC scores.</p>
+    <p class="max-w-prose text-xs text-stone-500 mb-4">Simple word-pattern summaries made for this tool, not official LIWC scores.</p>
     <div class="rounded-2xl border border-stone-200 bg-white">{{range .Summary}}{{template "report-score-row" .}}{{end}}</div>
   </section>
 
@@ -123,9 +123,9 @@
       <p class="w-full break-words text-xs leading-relaxed text-stone-600 mb-3">{{.PercentileReferenceDescription}}</p>
       <p class="text-xs text-stone-500 mb-3">{{.WordCountText}} words · {{.Coverage}}% dictionary coverage · analysis {{.AnalysisID}}</p>
       <div class="space-y-2 mb-5 text-xs text-stone-600">
-        {{range .Traits}}<p><strong class="font-medium text-stone-800">{{.Name}}</strong>: {{.PercentileText}}{{if .HasScoreRange}} Recorded heuristic bounds: {{.ScoreRangeLow}}–{{.ScoreRangeHigh}}/100 (unvalidated).{{end}}</p>{{end}}
+        {{range .Traits}}<p><strong class="font-medium text-stone-800">{{.Name}}</strong>: {{.PercentileText}}{{if .HasScoreRange}} Likely range: {{.ScoreRangeLow}} to {{.ScoreRangeHigh}} out of 100 (a rough guide only).{{end}}</p>{{end}}
       </div>
-      {{if not .CalculationJSON}}<p class="w-full break-words text-sm text-amber-800 mb-4">Complete calculation details were not recorded for this saved analysis. Its recorded scores and evidence are shown below; missing operands are not reconstructed using the current model.</p>{{end}}
+      {{if not .CalculationJSON}}<p class="w-full break-words text-sm text-amber-800 mb-4">The full calculation was not saved for this reading. The saved scores and evidence are shown below. Missing numbers are not filled in again.</p>{{end}}
       <div role="region" aria-label="Score evidence table, scroll horizontally to see all columns" tabindex="0" class="hidden md:block -mx-5 overflow-x-auto px-5 pb-1 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-teal-500">
         <table class="w-full min-w-[50rem] text-sm">
           <thead>
@@ -160,11 +160,11 @@
                   {{range .MatchedWords}}<span class="rounded bg-stone-100 px-1.5 py-0.5 text-xs">{{.}}</span>{{end}}
                 </div>
                 {{else if and $t.Calculation (eq .MatchedCount 0)}}
-                No matching words in this category
+                No matching words in this group
                 {{else if eq .Category "long_word_ratio"}}
-                Words longer than six bytes (legacy model proxy)
+                Words longer than six letters (an older measure)
                 {{else}}
-                <span class="text-stone-500">Examples unavailable for this saved result</span>
+                <span class="text-stone-500">No examples for this saved result</span>
                 {{end}}
               </td>
             </tr>
@@ -191,24 +191,24 @@
         {{end}}
       </div>
       <div class="w-full break-words text-xs leading-relaxed text-stone-600 mt-4 space-y-2">
-        <p>Table values are rounded for display. Scores use a 0–1 scale internally and are shown out of 100. The expanded recorded details below retain full floating-point precision, formulas and operation order. Calculations are limited to 0–1, then rounded half away from zero to two decimals before and after calibration. Calibration is a fixed adjustment so that the average text in the reference sample lands near 50.</p>
-        <p>Each row shows a category's share of all words, multiplied by the model's weight to produce its contribution. The score also includes a baseline and, when configured, a calibration adjustment. Matched words are normalized examples, capped at 10 per category; the percentage uses all matches.</p>
-        <p>Recorded heuristic bounds estimate how much each measure's score moves between different stretches of the same kind of text. They were checked by scoring the first and second halves of 375 blog posts, so they describe repeatability, not accuracy about a person. They are not a percentile range or a statistically validated confidence interval. Each measure has its own width.</p>
-        <p>The scorer counts individual dictionary words. It does not interpret sentence meaning, negation in context, sarcasm or quotations. Excerpts help you inspect the context; they do not alter the calculation.</p>
-        <p>Big Five scores use a correlation-weighted heuristic with assumed scaling. The other text measures and rough ranges are project-defined proxies. Research supports associations and constructs, not these particular prediction formulas. This is an experimental language-pattern estimate, not a validated individual personality measure. In a separate evaluation on 2,442 essays, trait-ranking AUC ranged from 0.532 to 0.559 across the five dimensions; 0.5 is chance.</p>
+        <p>The tables round numbers to make them easier to read. Scores are worked out between 0 and 1, then shown out of 100. The detailed lines below keep every digit. Calibration is a fixed adjustment so that an average text from the reference texts scores near 50.</p>
+        <p>Each row shows what share of all words a group makes up, multiplied by that group's weight. That gives its contribution to the score. The score also has a starting value and a calibration adjustment. Up to 10 example words are shown per group, but the percentage uses all matches.</p>
+        <p>The likely range shows how much a score may change on another piece of similar writing. We checked this by scoring the first and second halves of 375 blog posts. It shows how steady the score is, not whether it is true about you. It is a rough guide, not a statistical confidence interval. Each measure has its own range.</p>
+        <p>The tool counts single words from its dictionary. It does not understand meaning, \"not\" in context, sarcasm or quotes. Example sentences help you see the context, but they do not change the score.</p>
+        <p>Big Five scores use weights taken from research on how word use relates to personality. The other measures and the ranges were made for this tool. Research shows links between words and personality, but it does not prove these exact formulas. This is an experiment, not a proven personality test. In a separate test on 2,442 essays, the scores ranked people with an AUC of 0.53 to 0.56 across the five traits. An AUC of 0.5 is the same as guessing.</p>
       </div>
       {{if .CalculationJSON}}
       <p class="mt-5 border-t border-stone-200 pt-4 text-xs leading-relaxed text-stone-600">
         <a href="{{.CalculationDownload}}" download="psycho-calculation-{{.AnalysisID}}.json" class="inline-flex min-h-[44px] items-center rounded-full border border-stone-300 bg-white px-4 py-2 font-medium text-stone-700 hover:bg-stone-100 transition">Download calculation details (JSON)</a>
-        <span class="block mt-2">Every input, formula and result, at full precision.</span>
+        <span class="block mt-2">Every number and formula, with every digit.</span>
       </p>
       {{end}}
-      <p class="w-full break-words text-xs leading-relaxed text-stone-600 mt-4">References: <a class="underline" href="https://doi.org/10.1016/j.jrp.2010.04.001">Yarkoni (2010), language and Big Five associations</a>; <a class="underline" href="https://doi.org/10.1037/0003-066X.52.12.1280">Higgins (1997), regulatory focus</a>; <a class="underline" href="https://doi.org/10.1037/0022-3514.42.1.116">Cacioppo and Petty (1982), need for cognition</a>; <a class="underline" href="https://doi.org/10.1037/0022-3514.67.6.1049">Webster and Kruglanski (1994), need for closure</a>. These sources do not validate this project's weights or proxies.</p>
+      <p class="w-full break-words text-xs leading-relaxed text-stone-600 mt-4">References: <a class="underline" href="https://doi.org/10.1016/j.jrp.2010.04.001">Yarkoni (2010), language and Big Five associations</a>; <a class="underline" href="https://doi.org/10.1037/0003-066X.52.12.1280">Higgins (1997), regulatory focus</a>; <a class="underline" href="https://doi.org/10.1037/0022-3514.42.1.116">Cacioppo and Petty (1982), need for cognition</a>; <a class="underline" href="https://doi.org/10.1037/0022-3514.67.6.1049">Webster and Kruglanski (1994), need for closure</a>. These sources do not prove this tool's weights or measures.</p>
     </div>
   </details>
 
   <footer class="mt-10 pt-6 border-t border-stone-200 text-xs text-stone-500 flex flex-wrap justify-between gap-2">
-    <span>Experimental language-based estimates for self-reflection. Not a validated personality or clinical assessment.</span>
+    <span>An experiment for self-reflection. Not a proven personality test or a health check.</span>
     <span>{{.AnalysisID}}</span>
   </footer>
 

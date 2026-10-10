@@ -138,7 +138,7 @@ func TestReportShowsReadingCaveatAboveScores(t *testing.T) {
 		t.Fatal(err)
 	}
 	page := out.String()
-	caveat := strings.Index(page, "should not be used for hiring, clinical or other decisions about a person")
+	caveat := strings.Index(page, "please do not use them for hiring, health or other decisions about a person")
 	scores := strings.Index(page, "Text-based measures")
 	if caveat < 0 || scores < 0 || caveat > scores {
 		t.Fatalf("the hiring and clinical caveat must appear before the scores (caveat at %d, scores at %d)", caveat, scores)

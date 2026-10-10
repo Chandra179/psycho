@@ -73,9 +73,9 @@ type ScoreBand struct {
 
 func BigFiveBands() []ScoreBand {
 	return []ScoreBand{
-		{HighModerateLow(0), fmt.Sprintf("0–%d", int(lowLabelThreshold*100)-1), fmt.Sprintf("Low is below %d/100 on this tool's text-score scale. It does not establish a low personality trait.", int(lowLabelThreshold*100))},
-		{HighModerateLow(lowLabelThreshold), fmt.Sprintf("%d–%d", int(lowLabelThreshold*100), int(highLabelThreshold*100)-1), "Moderate means the word-pattern model found no strong high or low signal in this text."},
-		{HighModerateLow(highLabelThreshold), fmt.Sprintf("%d–100", int(highLabelThreshold*100)), fmt.Sprintf("High is %d/100 or above on this tool's text-score scale. It does not establish a high personality trait.", int(highLabelThreshold*100))},
+		{HighModerateLow(0), fmt.Sprintf("0–%d", int(lowLabelThreshold*100)-1), fmt.Sprintf("Low means under %d out of 100 for this text. It does not mean you are low in this trait.", int(lowLabelThreshold*100))},
+		{HighModerateLow(lowLabelThreshold), fmt.Sprintf("%d–%d", int(lowLabelThreshold*100), int(highLabelThreshold*100)-1), "Moderate means this text did not show a strong high or low pattern."},
+		{HighModerateLow(highLabelThreshold), fmt.Sprintf("%d–100", int(highLabelThreshold*100)), fmt.Sprintf("High means %d out of 100 or more for this text. It does not mean you are high in this trait.", int(highLabelThreshold*100))},
 	}
 }
 
@@ -95,17 +95,17 @@ func DimensionBandDescription(key string, score float64) string {
 		rangeText = fmt.Sprintf("%d/100 or above", int(highLabelThreshold*100))
 	}
 	meanings := map[string]string{
-		"promotion_focus":  "Promotion-related language outweighs prevention-related language in this bipolar proxy.",
-		"prevention_focus": "Prevention-related language outweighs promotion-related language in this bipolar proxy.",
-		"balanced":         "No strong promotion or prevention tilt in this proxy.",
-		"systematic":       "More formal, categorical word patterns (articles and prepositions) on this proxy.",
-		"intuitive":        "More narrative, dynamic word patterns (pronouns and auxiliary verbs) on this proxy.",
-		"mixed":            "No strong tilt toward categorical or dynamic wording in this proxy.",
-		"moderate":         "No strong high or low word-pattern signal in this proxy.",
-		"high":             "An upper-band word-pattern score in this proxy.",
-		"low":              "A lower-band word-pattern score in this proxy.",
+		"promotion_focus":  "This text uses more words about gains and goals than words about duty and avoiding loss.",
+		"prevention_focus": "This text uses more words about duty and avoiding loss than words about gains and goals.",
+		"balanced":         "This text leans neither toward gains nor toward avoiding loss.",
+		"systematic":       "This text uses more formal, organized wording (words like \"the\" and \"of\").",
+		"intuitive":        "This text reads more like a story (words like \"I\", \"was\" and \"and\").",
+		"mixed":            "This text leans neither toward formal nor toward story-like wording.",
+		"moderate":         "No strong high or low pattern in this text.",
+		"high":             "A high word-pattern score.",
+		"low":              "A low word-pattern score.",
 	}
-	return fmt.Sprintf("%s: %s. %s Labels describe word patterns, not a validated personality assessment.", label, rangeText, meanings[label])
+	return fmt.Sprintf("%s: %s. %s These labels describe word patterns, not a proven personality test.", label, rangeText, meanings[label])
 }
 
 // MeasureSummary is the one visible line saying what a measure counts. It
@@ -114,19 +114,19 @@ func DimensionBandDescription(key string, score float64) string {
 // Keys cover the nine trait dimensions and the four summary variables.
 func MeasureSummary(key string) string {
 	summaries := map[string]string{
-		"openness":            "Higher with more articles, prepositions and inclusive words; lower with more pronouns, time, motion and past-tense words.",
-		"conscientiousness":   "Higher with achievement words; lower with negations, negative-emotion words and exclusion words such as \"but\".",
-		"extraversion":        "Higher with more social, positive-emotion and pronoun words.",
-		"agreeableness":       "Higher with inclusive, positive-emotion, space and motion words; lower with negative-emotion words.",
-		"neuroticism":         "Higher with negative-emotion, negation, reasoning, certainty and hedging words. It counts word patterns, not mood.",
-		"regulatory_focus":    "Compares gain and aspiration words (promotion) with duty and loss-avoidance words (prevention).",
-		"need_for_cognition":  "Compares analytic words with intuitive words, as a proxy for enjoying effortful thinking.",
-		"cognitive_style":     "Formal, categorical wording (many articles and prepositions) versus narrative, dynamic wording (many pronouns, auxiliary verbs, adverbs and conjunctions). It follows a published function-word index.",
-		"need_for_closure":    "Compares certainty words with hedging words, as a proxy for comfort with ambiguity.",
+		"openness":            "Goes up with words like \"the\", \"of\", \"and\" and \"with\". Goes down with more \"I\" and \"me\" words, time words, movement words and past-tense verbs.",
+		"conscientiousness":   "Goes up with words about achievement. Goes down with \"no\" and \"not\" words, negative-emotion words and words like \"but\".",
+		"extraversion":        "Goes up with more social words, positive-emotion words and pronouns like \"I\" and \"we\".",
+		"agreeableness":       "Goes up with words like \"and\" and \"with\", positive-emotion words, and place and movement words. Goes down with negative-emotion words.",
+		"neuroticism":         "Goes up with negative-emotion words, \"no\" and \"not\" words, thinking words, sure-sounding words and hedging words like \"maybe\". It counts words, not your mood.",
+		"regulatory_focus":    "Compares words about gains and goals with words about duty and avoiding loss.",
+		"need_for_cognition":  "Compares analytic words with gut-feeling words. It is a rough sign of how much you enjoy hard thinking.",
+		"cognitive_style":     "Formal, organized wording (many \"the\" and \"of\") versus story-like wording (many \"I\", \"was\" and \"and\"). It follows a published word list.",
+		"need_for_closure":    "Compares sure-sounding words with hedging words like \"maybe\". It is a rough sign of how comfortable you are with not knowing.",
 		"analytical_thinking": "Formal, reasoning-heavy wording versus personal, story-like wording.",
-		"clout":               "Certain, social and achievement wording versus hedging, personal-pronoun and negative-emotion wording. Low does not mean low status.",
-		"authenticity":        "Personal, informal wording versus formal, reasoning-heavy wording. Low means formal, not dishonest.",
-		"emotional_tone":      "Positive-emotion words minus negative-emotion words, with a negated word (\"not happy\") counted on the opposite side. It still counts words only, so sarcasm and context are missed.",
+		"clout":               "Sure, social and achievement wording versus hedging, \"I\" and negative-emotion wording. Low does not mean low status.",
+		"authenticity":        "Personal, casual wording versus formal, reasoning-heavy wording. Low means formal, not dishonest.",
+		"emotional_tone":      "Positive-emotion words minus negative-emotion words. A word after \"not\" (like \"not happy\") counts the other way. It only counts words, so it misses sarcasm and context.",
 	}
 	return summaries[key]
 }
@@ -147,22 +147,22 @@ func SummarySignalLabel(name string, score float64) string {
 func SummarySignalDescription(name string, score float64) string {
 	for _, band := range BigFiveBands() {
 		if band.Label == HighModerateLow(score) {
-			return fmt.Sprintf("%s (%s/100): a project-defined language summary, not an official LIWC score or a probability of accuracy.", SummarySignalLabel(name, score), band.Range)
+			return fmt.Sprintf("%s (%s out of 100). This is a simple summary made for this tool. It is not an official LIWC score.", SummarySignalLabel(name, score), band.Range)
 		}
 	}
-	return "Project-defined language summary."
+	return "A simple summary made for this tool."
 }
 
 func PercentileDescription(percentile int, reference *ingest.PercentileReference) string {
 	if reference != nil {
 		switch reference.Method {
 		case ingest.PercentileMethodEmpirical:
-			return fmt.Sprintf("Approximate reference-text percentile: %s.", Ordinal(percentile))
+			return fmt.Sprintf("Compared with the reference texts, this is about the %s percentile.", Ordinal(percentile))
 		case ingest.PercentileMethodNormalApproximation:
-			return fmt.Sprintf("Model-estimated %s percentile from a normal approximation.", Ordinal(percentile))
+			return fmt.Sprintf("Estimated %s percentile, using a rough bell-curve guess.", Ordinal(percentile))
 		}
 	}
-	return fmt.Sprintf("Percentile method not recorded (%s percentile).", Ordinal(percentile))
+	return fmt.Sprintf("Percentile method not saved (%s percentile).", Ordinal(percentile))
 }
 
 // Emotional tone is a net word count on a sigmoid with divisor 5, so the usual

@@ -6,9 +6,10 @@
   .report-score-row { @apply relative grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-3 px-4 py-4 sm:px-5 border-b border-stone-200 last:border-b-0; }
   .report-score-number { @apply flex items-baseline gap-4 text-right; }
   .report-legend { @apply relative flex flex-wrap items-center gap-2 mb-4; }
+  .report-band { @apply relative; }
   .report-band > summary { @apply list-none cursor-pointer select-none; }
   .report-band > summary::-webkit-details-marker, .report-value > summary::-webkit-details-marker { display: none; }
-  .report-tooltip { @apply absolute left-4 right-4 top-full z-20 rounded-lg border border-stone-200 bg-white p-3 text-xs font-normal normal-case tracking-normal text-stone-700 shadow-md; display: block; visibility: hidden; }
+  .report-tooltip { @apply absolute left-0 top-full mt-1 z-20 rounded-lg border border-stone-200 bg-white p-3 text-xs font-normal normal-case tracking-normal text-stone-700 shadow-md; display: block; visibility: hidden; width: min(18rem, calc(100vw - 3rem)); }
   .report-band[open] .report-tooltip, .report-band summary:focus-visible .report-tooltip { visibility: visible; }
   .report-value { @apply border-b border-stone-200 last:border-b-0; }
   .report-value-heading { @apply grid grid-cols-[minmax(0,1fr)_auto_0.75rem] items-center gap-3 px-4 py-4 sm:px-5 list-none cursor-pointer; }

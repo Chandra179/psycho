@@ -19,7 +19,7 @@ func NewTemplateNarrativeGenerator() *TemplateNarrativeGenerator {
 
 func (g *TemplateNarrativeGenerator) GenerateSynthesis(p Profile) string {
 	var out strings.Builder
-	out.WriteString("## Your writing profile\n\nAn experimental estimate from word patterns, not a direct measurement of personality.\n\n### Big Five text signals\n\n")
+	out.WriteString("## Your writing profile\n\nA rough estimate from word patterns, not a direct measure of personality.\n\n### Big Five text signals\n\n")
 	traitLine := func(key string) {
 		if t, ok := p.Traits[key]; ok {
 			fmt.Fprintf(&out, "**%s:** Estimated text score: %.0f/100 (%s)\n\n", analyze.DimensionDisplayName(key), math.Round(t.Score*100), analyze.DimensionLabel(key, t.Score))
@@ -29,13 +29,13 @@ func (g *TemplateNarrativeGenerator) GenerateSynthesis(p Profile) string {
 		traitLine(key)
 	}
 	bands := analyze.BigFiveBands()
-	fmt.Fprintf(&out, "Bands: %s %s; %s %s; %s %s. Labels describe this tool's text-score scale.\n\n", bands[0].Label, bands[0].Range, bands[1].Label, bands[1].Range, bands[2].Label, bands[2].Range)
-	out.WriteString("### Additional text measures\n\nProject-defined word-pattern proxies.\n\n")
+	fmt.Fprintf(&out, "Bands: %s %s; %s %s; %s %s. These labels describe scores for this text only.\n\n", bands[0].Label, bands[0].Range, bands[1].Label, bands[1].Range, bands[2].Label, bands[2].Range)
+	out.WriteString("### Additional text measures\n\nSimple word-pattern summaries made for this tool.\n\n")
 	for _, key := range []string{"regulatory_focus", "need_for_cognition", "cognitive_style", "need_for_closure"} {
 		traitLine(key)
 	}
 	if len(p.Values) > 0 {
-		out.WriteString("### Value-related language\n\nDictionary occurrences, including both mentioning and rejecting a value. Percentages use all matches; excerpts are sampled examples.\n\n")
+		out.WriteString("### Value-related language\n\nHow often words from each value group appear, whether the text agrees with the value or rejects it. Percentages use all matches. The sentences are examples.\n\n")
 		keys := make([]string, 0, len(p.Values))
 		for key, value := range p.Values {
 			if value > 0 {
@@ -50,7 +50,7 @@ func (g *TemplateNarrativeGenerator) GenerateSynthesis(p Profile) string {
 		})
 		for _, key := range keys {
 			name := analyze.ValueDisplayName(analyze.ValueCategory(key))
-			count := "counts not recorded"
+			count := "counts not saved"
 			if p.CalculationDetails != nil {
 				if c, ok := p.CalculationDetails.Values[key]; ok {
 					count = fmt.Sprintf("%d of %d words", c.MatchedCount, c.TotalWords)
@@ -59,18 +59,18 @@ func (g *TemplateNarrativeGenerator) GenerateSynthesis(p Profile) string {
 			fmt.Fprintf(&out, "- **%s:** %s; %.2f%% of all words. %s.\n", name, count, p.Values[key], analyze.ValueDescription(analyze.ValueCategory(key)))
 			if excerpts := p.ValueExcerpts[key]; len(excerpts) > 0 {
 				for _, excerpt := range excerpts {
-					fmt.Fprintf(&out, "  Sampled text excerpt: %s\n", excerpt.PlainText())
+					fmt.Fprintf(&out, "  Example sentence: %s\n", excerpt.PlainText())
 				}
 			} else {
-				out.WriteString("  Text excerpts were not recorded for this analysis.\n")
+				out.WriteString("  Example sentences were not saved for this analysis.\n")
 				if words := p.ValueEvidence[key]; len(words) > 0 {
-					fmt.Fprintf(&out, "  Sampled matching words: %s\n", strings.Join(words, ", "))
+					fmt.Fprintf(&out, "  Example matching words: %s\n", strings.Join(words, ", "))
 				}
 			}
 		}
 		out.WriteByte('\n')
 	}
-	out.WriteString("### Language summaries\n\nProject-defined language summaries, not official LIWC scores.\n\n")
+	out.WriteString("### Language summaries\n\nSimple summaries made for this tool, not official LIWC scores.\n\n")
 	for _, item := range []struct {
 		key, name string
 		score     float64
@@ -80,16 +80,16 @@ func (g *TemplateNarrativeGenerator) GenerateSynthesis(p Profile) string {
 	} {
 		fmt.Fprintf(&out, "- **%s:** Estimated text score: %.0f/100 (%s)\n", item.name, math.Round(item.score*100), analyze.SummarySignalLabel(item.key, item.score))
 	}
-	out.WriteString("\n### Calculation details and limitations\n\nPercentiles compare scores within reference texts, not people. Recorded heuristic bounds use assumed text-length and dictionary-coverage rules; they are unvalidated diagnostics.\n\n")
+	out.WriteString("\n### Calculation details and limitations\n\nPercentiles compare scores with reference texts, not with people. The likely ranges are rough guides only.\n\n")
 	for _, key := range []string{"openness", "conscientiousness", "extraversion", "agreeableness", "neuroticism", "regulatory_focus", "need_for_cognition", "cognitive_style", "need_for_closure"} {
 		if t, ok := p.Traits[key]; ok {
 			fmt.Fprintf(&out, "- **%s:** %s", analyze.DimensionDisplayName(key), analyze.PercentileDescription(t.Percentile, p.PercentileReference))
 			if len(t.ConfidenceInterval) == 2 {
-				fmt.Fprintf(&out, " Recorded heuristic bounds: %.0f–%.0f/100 (unvalidated).", math.Round(t.ConfidenceInterval[0]*100), math.Round(t.ConfidenceInterval[1]*100))
+				fmt.Fprintf(&out, " Likely range: %.0f to %.0f out of 100 (a rough guide only).", math.Round(t.ConfidenceInterval[0]*100), math.Round(t.ConfidenceInterval[1]*100))
 			}
 			out.WriteByte('\n')
 		}
 	}
-	out.WriteString("\nThe scorer counts dictionary words without interpreting sentence meaning, negation in context, sarcasm or quotations. Excerpts provide context and do not alter scores.\n\nGenerated by Psycho. Experimental word-pattern estimates, not validated personality or clinical measures.\n")
+	out.WriteString("\nThe tool counts words from its dictionary. It does not understand meaning, \"not\" in context, sarcasm or quotes. Example sentences give context but do not change scores.\n\nMade by Psycho. Rough word-pattern estimates, not proven personality or health measures.\n")
 	return out.String()
 }
