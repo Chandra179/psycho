@@ -13,7 +13,7 @@ GOOS=js GOARCH=wasm go build -ldflags="-s -w" -trimpath -o dist/a/psycho.wasm ./
 cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" dist/a/wasm_exec.js
 cp site/app.js site/index.html assets/app.css dist/a/ 2>/dev/null
 mv dist/a/index.html dist/index.html
-cp site/_headers site/og.png site/robots.txt site/sitemap.xml site/llms.txt dist/
+cp site/_headers site/og.png site/favicon.svg site/robots.txt site/sitemap.xml site/llms.txt dist/
 
 # hashed NAME: renames dist/a/NAME to NAME-<first 10 hex of sha256>.EXT and prints the new name.
 hashed() {
