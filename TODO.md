@@ -7,44 +7,37 @@ went from 3-5/10 to 3-7/10. The items below are what they still flagged.
 
 ## Round 2: report layer (no recalibration)
 
-1. **Lead with the finding and the warning.** The hiring/clinical warning is the
-   last line of a grey block and was skipped by a skimmer. Put the plain finding
-   first, make the warning bold and visible, and move the support note up.
-2. **Fix "moderate" next to a high or low rank.** The clustering clause did not
-   help. Either give each card a plainer headline that matches the rank, or drop
-   the bands for the narrow-spread measures.
-3. **Name the reference sample on the main page.** Say "2004 blog posts", not
-   "reference texts". Replace saturated ranks ("99 of 100", "1 of 100") with
-   "above/below every reference text" when the score is outside the reference range.
-4. **Tighten the support note.** It fires on a product review. Require a stronger
-   trigger, or soften the wording.
-5. **Reword the emotion-count line.** "Emotion words found" overclaims. Use "the
-   dictionary matched N negative-feeling and M positive-feeling words" and say the
-   list is limited.
-6. **Fix the formal-prose note.** It names four measures, so readers assume the rest
-   are trustworthy. Say all scores are rough and these are especially so.
-7. **Extend fit notes** to Agreeableness, Extraversion and Need for Cognition on
-   formal prose (driven by "space", "time", "group" and reasoning words).
-8. **Show uncertainty on the page.** Show the bounds beside scores, or "can't
-   tell" when they cross bands. Show the tie width for scores that sit on a tie
+Done on 2026-10-10: a "Read this first" notice under the header carries the
+hiring/clinical caveat, the reasons the confidence is not high, the formal-prose
+and sparse-emotion notes and the support note (items 1 and 4 of the old list);
+the formal-prose note says every score is rough and now covers Extraversion
+(the formal samples score 0.44 to 0.45 against 0.53 for the diary entry;
+Agreeableness and Need for Cognition showed no consistent shift, so they are
+not flagged); "Reading quality" is "Confidence in this reading" with a line
+saying it does not rate the writing; the calculation JSON is a download link
+instead of an inline block; scores use `role="meter"`; the low-fit
+note is 14px; the PDF shows the caveat and the capitalized confidence word;
+CI rebuilds the CSS and fails on a stale `assets/app.css`.
+
+Dropped because the rank sentences and "At a glance" were removed: saturated
+ranks, the support-note trigger on its own, the emotion-count line wording
+(the Emotional tone card says "Based on N negative-feeling and M
+positive-feeling dictionary words").
+
+Still open:
+
+1. **Uncertainty on the page.** Show the bounds beside scores, or "can't tell"
+   when they cross bands; show the tie width for scores that sit on a tie
    (Regulatory Focus 50 spans the 37th to 77th percentile).
-9. **Explain "Reading quality" beside the chip**, and consider renaming it ("Confidence
-   in this reading"). It was read as the quality of the writing or the English.
-10. **Jargon and labels.** Plain words for Clout, Regulatory Focus, Need for
-    Closure, "signal"; consistent band vocabulary.
-11. **Mobile and accessibility polish.**
-    - Replace the ~27,000px inline JSON block with a download or copy button.
-    - Larger caveat text (rank and "Low fit" are 12px).
-    - Show a tap cue on band chips.
-    - `role=meter` instead of `progressbar` for scores.
-    - Heading levels in the evidence section.
-    - Band chip `aria-label` overrides the visible word.
-12. **Optional: personal headline** for short or shareable reports, and a "not
-    enough text" view for short samples instead of nine full-size scores.
-13. **PDF** (`modules/profile/pdf_maroto.go`, `narrative.go`) does not get the glance
-    block or fit notes yet, and prints the raw lowercase quality flag.
-14. **CI:** add a step that rebuilds assets and runs `git diff --exit-code assets/`,
-    since nothing catches stale CSS.
+2. **Jargon and labels.** Renamed on 2026-10-10 (display names only; keys are
+   unchanged): Clout is "Confident wording", Regulatory Focus is "Goals: gain
+   vs. safety", Need for Closure is "Preference for certainty". Still open:
+   plain words for "signal" and a consistent band vocabulary.
+3. **Mobile and accessibility.** A tap cue on band chips; heading levels in the
+   evidence section.
+4. **Optional:** a personal headline for short or shareable reports, and a "not
+   enough text" view for short samples instead of nine full-size scores.
+5. **PDF** does not show the per-measure fit notes.
 
 ## Phase 2: scoring layer
 
@@ -78,17 +71,24 @@ Still open (any dictionary edit changes `dictionary_sha256` and needs
    words. Residual: occurrences are still counted without disambiguation. The
    production Big Five weights are `rho * 0.06`, not fitted, so a word-list change
    needs `cmd/calibrate`, not a `cmd/train` refit.
-2. **First-person pronoun category.** (`personal_pronoun` now exists; a first-person-singular-only list is still missing.) The single `pronoun` category mixes "that",
-   "which", "these" with "I" and "my". A real first-person share would give a
-   better genre signal.
-3. **Quality flag.** Add an extraction-noise component (share of removed lines).
+2. **First-person pronoun category.** Done on 2026-10-10: `first_person_singular`
+   (i, me, my, mine, myself and contractions) is counted but has no score
+   weight. It separates formal samples (0.0% to 0.04%) from personal ones (7.7%
+   to 12%) and now guards the formal-prose note. Scores and AUC are unchanged.
+3. **Quality flag.** Done on 2026-10-10: a noise share of 5% or more of lines
+   (page numbers, captions, headers) caps the flag at medium. The threshold is a
+   judgement: no reference post lost a line.
 4. **Reference corpus.** 2004 blog posts are a poor comparison for essays,
    abstracts and book chapters. Consider genre-specific references.
 5. **Rename or demote** Authenticity and Clout (read as character verdicts), and
    "high/low signal" (read as reliability).
-6. **Weights are unverified against the paper.** The Big Five weights are
-   consistent with `rho * 0.06` for every correlation quoted in
-   `coefficients.go`, but those correlations were not re-checked against
-   Yarkoni (2010) Table 1, and the SD assumptions are unvalidated.
-7. **Accuracy is near chance.** AUC 0.532 to 0.559 on 2,442 essays. Only a
-   discriminative vocabulary or the supervised model (`cmd/train`) can change that.
+6. **Weights vs the paper.** Checked on 2026-10-10 against Table 1 of Yarkoni
+   (2010) (open manuscript PMC2885844): all 32 weights equal rho * 0.06; the two
+   resting on non-significant correlations (pronouns with Extraversion and
+   Neuroticism) were removed. Still unvalidated: the 0.06 scale (assumed SDs
+   of 0.15 and 2.5 points), and the project's `pronoun` category includes
+   demonstratives that the paper's total-pronoun row does not.
+7. **Accuracy is near chance.** AUC 0.532 to 0.559 on 2,442 essays. The supervised
+   model (`cmd/train`, rerun 2026-10-10) reaches 0.57 to 0.63 on 489 held-out
+   authors, ahead of the heuristic on every trait, but no 99% paired interval
+   excludes zero and it is untested outside student essays.

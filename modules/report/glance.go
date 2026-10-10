@@ -28,7 +28,7 @@ type Glance struct {
 func BuildGlance(a *Analysis) Glance {
 	g := Glance{
 		Read:           fmt.Sprintf("This reading is based on %s words, and %d%% of them matched the dictionary.", analyze.FormatCount(a.WordCount), percentOf(a.DictionaryCoverage)),
-		QualityReasons: analyze.QualityReasons(a.WordCount, a.DictionaryCoverage),
+		QualityReasons: analyze.QualityReasonsWithNoise(a.WordCount, a.DictionaryCoverage, noiseShare(a)),
 		Caveat:         analyze.ReadingCaveat,
 	}
 	pos, neg, ok := emotionCounts(a)
@@ -59,4 +59,13 @@ func emotionCounts(a *Analysis) (pos, neg int, ok bool) {
 
 func percentOf(f float64) int {
 	return int(f*100 + 0.5)
+}
+
+// noiseShare reads the recorded extraction-noise share; saved analyses that
+// predate it count as clean.
+func noiseShare(a *Analysis) float64 {
+	if a.CalculationDetails == nil {
+		return 0
+	}
+	return a.CalculationDetails.NoiseShare
 }

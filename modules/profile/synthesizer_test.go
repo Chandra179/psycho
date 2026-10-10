@@ -32,17 +32,17 @@ func TestRangeAndNormalPercentileCalculationsReplay(t *testing.T) {
 }
 
 func TestComputeConfidenceFlag(t *testing.T) {
-	if got := computeConfidenceFlag(400, 0.8); got != "low" {
-		t.Errorf("computeConfidenceFlag(400, 0.8) = %q; want low", got)
+	if got := computeConfidenceFlag(400, 0.8, 0); got != "low" {
+		t.Errorf("computeConfidenceFlag(400, 0.8, 0) = %q; want low", got)
 	}
-	if got := computeConfidenceFlag(600, 0.5); got != "medium" {
-		t.Errorf("computeConfidenceFlag(600, 0.5) = %q; want medium", got)
+	if got := computeConfidenceFlag(600, 0.5, 0); got != "medium" {
+		t.Errorf("computeConfidenceFlag(600, 0.5, 0) = %q; want medium", got)
 	}
-	if got := computeConfidenceFlag(600, 0.8); got != "medium" {
-		t.Errorf("computeConfidenceFlag(600, 0.8) = %q; want medium", got)
+	if got := computeConfidenceFlag(600, 0.8, 0); got != "medium" {
+		t.Errorf("computeConfidenceFlag(600, 0.8, 0) = %q; want medium", got)
 	}
-	if got := computeConfidenceFlag(1500, 0.8); got != "high" {
-		t.Errorf("computeConfidenceFlag(1500, 0.8) = %q; want high", got)
+	if got := computeConfidenceFlag(1500, 0.8, 0); got != "high" {
+		t.Errorf("computeConfidenceFlag(1500, 0.8, 0) = %q; want high", got)
 	}
 }
 

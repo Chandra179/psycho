@@ -31,6 +31,9 @@ type FeatureVector struct {
 	// negator ("not happy", "not bad"); the emotional-tone summary flips them.
 	NegatedPositive int
 	NegatedNegative int
+	// NoiseShare is ingest.Document.NoiseShare, carried so the reading
+	// quality can account for extraction leftovers.
+	NoiseShare float64
 }
 
 // FeatureExtractor computes psycholinguistic features from a document.
@@ -116,6 +119,7 @@ func (fe *FeatureExtractor) Extract(doc ingest.Document) (FeatureVector, float64
 		ScoreSE:           acc.standardErrors(),
 		NegatedPositive:   negPos,
 		NegatedNegative:   negNeg,
+		NoiseShare:        doc.NoiseShare,
 	}
 	return fv, coverage
 }

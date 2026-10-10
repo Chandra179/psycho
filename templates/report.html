@@ -9,12 +9,12 @@
     </details>
   </div>
   <p class="report-score-number"><span class="text-xs text-stone-500">Estimated text score</span><strong class="text-2xl font-medium tabular-nums">{{.Score100}}<span class="text-xs font-normal text-stone-500">/100</span></strong></p>
-  <div role="progressbar" aria-label="{{.Name}} estimated text score" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{.Score100}}" class="col-span-full h-1 rounded-full bg-stone-100 overflow-hidden">
+  <div role="meter" aria-label="{{.Name}} estimated text score" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{.Score100}}" class="col-span-full h-1 rounded-full bg-stone-100 overflow-hidden">
     <div class="h-full rounded-full bg-teal-700" style="width:{{.Score100}}%"></div>
   </div>
   {{if .Meaning}}<p class="col-span-full text-xs leading-relaxed text-stone-600">{{.Meaning}}</p>{{end}}
   {{if .Detail}}<p class="col-span-full text-xs leading-relaxed text-stone-600">{{.Detail}}</p>{{end}}
-  {{if .FitNote}}<p class="col-span-full text-xs leading-relaxed text-stone-700"><strong class="font-medium text-amber-800">Low fit for this text.</strong> {{.FitNote}}</p>{{end}}
+  {{if .FitNote}}<p class="col-span-full text-sm leading-relaxed text-stone-700"><strong class="font-medium text-amber-800">Low fit for this text.</strong> {{.FitNote}}</p>{{end}}
 </div>
 {{end}}
 
@@ -26,9 +26,10 @@
       <p class="text-xs tracking-[0.25em] uppercase text-teal-700 font-semibold">Psycho · writing profile</p>
       <h1 class="font-serif text-4xl mt-2">Your writing profile</h1>
       <div class="flex flex-wrap items-center gap-3 mt-3">
-        <span class="inline-flex items-center rounded-full bg-teal-50 text-teal-800 px-3 py-1 text-xs font-medium ring-1 ring-teal-600/20">Reading quality: {{.Quality}}</span>
+        <span class="inline-flex items-center rounded-full bg-teal-50 text-teal-800 px-3 py-1 text-xs font-medium ring-1 ring-teal-600/20">Confidence in this reading: {{.Quality}}</span>
         <span class="text-sm text-stone-500">{{.GeneratedAt}} · {{.WordCountText}} words</span>
       </div>
+      <p class="mt-2 max-w-prose text-xs leading-relaxed text-stone-500">Confidence reflects how much text was read and how much of it matched the dictionary. It does not rate your writing.</p>
     </div>
     <nav aria-label="Report actions" class="flex items-center gap-2">
       <a href="/" class="inline-flex min-h-[44px] items-center rounded-full border border-stone-300 bg-white px-4 py-2 text-xs font-medium text-stone-700 hover:bg-stone-100 transition">
@@ -40,6 +41,17 @@
       </a>
     </nav>
   </header>
+
+  <aside aria-label="How to read this report" class="mt-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-relaxed text-stone-800">
+    <p><strong class="font-medium text-amber-900">Read this first.</strong> {{.Glance.Caveat}}</p>
+    {{if or .Glance.QualityReasons .Glance.FitNotes}}
+    <ul class="mt-2 list-disc space-y-1 pl-5 text-stone-700">
+      {{range .Glance.QualityReasons}}<li>{{.}}</li>{{end}}
+      {{range .Glance.FitNotes}}<li>{{.}}</li>{{end}}
+    </ul>
+    {{end}}
+    {{if .Glance.SupportNote}}<p class="mt-2 text-stone-700">{{.Glance.SupportNote}}</p>{{end}}
+  </aside>
 
   {{if .Traits}}
   <section class="mt-10">
@@ -180,10 +192,10 @@
         <p>Big Five scores use a correlation-weighted heuristic with assumed scaling. The other text measures and rough ranges are project-defined proxies. Research supports associations and constructs, not these particular prediction formulas. This is an experimental language-pattern estimate, not a validated individual personality measure. In a separate evaluation on 2,442 essays, trait-ranking AUC ranged from 0.532 to 0.559 across the five dimensions; 0.5 is chance.</p>
       </div>
       {{if .CalculationJSON}}
-      <details class="w-full min-w-0 mt-5 border-t border-stone-200 pt-4">
-        <summary class="cursor-pointer text-sm font-medium text-stone-700">Exact recorded inputs, formulas and results</summary>
-        <pre class="w-full max-w-full mt-3 rounded-xl bg-stone-50 p-4 text-xs leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{{.CalculationJSON}}</pre>
-      </details>
+      <p class="mt-5 border-t border-stone-200 pt-4 text-xs leading-relaxed text-stone-600">
+        <a href="{{.CalculationDownload}}" download="psycho-calculation-{{.AnalysisID}}.json" class="inline-flex min-h-[44px] items-center rounded-full border border-stone-300 bg-white px-4 py-2 font-medium text-stone-700 hover:bg-stone-100 transition">Download calculation details (JSON)</a>
+        <span class="block mt-2">Every input, formula and result, at full precision.</span>
+      </p>
       {{end}}
       <p class="w-full break-words text-xs leading-relaxed text-stone-600 mt-4">References: <a class="underline" href="https://doi.org/10.1016/j.jrp.2010.04.001">Yarkoni (2010), language and Big Five associations</a>; <a class="underline" href="https://doi.org/10.1037/0003-066X.52.12.1280">Higgins (1997), regulatory focus</a>; <a class="underline" href="https://doi.org/10.1037/0022-3514.42.1.116">Cacioppo and Petty (1982), need for cognition</a>; <a class="underline" href="https://doi.org/10.1037/0022-3514.67.6.1049">Webster and Kruglanski (1994), need for closure</a>. These sources do not validate this project's weights or proxies.</p>
     </div>

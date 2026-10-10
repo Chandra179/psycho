@@ -9,10 +9,10 @@ func TestDimensionDisplayName(t *testing.T) {
 		{"extraversion", "Extraversion"},
 		{"agreeableness", "Agreeableness"},
 		{"neuroticism", "Neuroticism"},
-		{"regulatory_focus", "Regulatory Focus"},
+		{"regulatory_focus", "Goals: gain vs. safety"},
 		{"need_for_cognition", "Need for Cognition"},
 		{"cognitive_style", "Cognitive Style"},
-		{"need_for_closure", "Need for Closure"},
+		{"need_for_closure", "Preference for certainty"},
 		{"unknown", "unknown"},
 	}
 	for _, c := range cases {

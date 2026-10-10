@@ -6,6 +6,7 @@
 package report
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"html/template"
@@ -141,6 +142,7 @@ type ReportView struct {
 	Coverage                       int
 	AnalysisID                     string
 	CalculationJSON                string
+	CalculationDownload            template.URL // data: link so the file works in saved offline reports too
 	StandaloneCSS                  template.CSS
 }
 
@@ -182,6 +184,7 @@ func BuildReport(a *Analysis) ReportView {
 		data, err := json.MarshalIndent(a.CalculationDetails, "", "  ")
 		if err == nil {
 			v.CalculationJSON = string(data)
+			v.CalculationDownload = template.URL("data:application/json;charset=utf-8;base64," + base64.StdEncoding.EncodeToString(data))
 		}
 	}
 
@@ -218,7 +221,7 @@ func BuildReport(a *Analysis) ReportView {
 
 	v.Summary = []SummaryCard{
 		newSummaryCard("analytical_thinking", "Analytical thinking", a.Summary.AnalyticalThinking),
-		newSummaryCard("clout", "Clout", a.Summary.Clout),
+		newSummaryCard("clout", "Confident wording", a.Summary.Clout),
 		newSummaryCard("authenticity", "Authenticity", a.Summary.Authenticity),
 		newSummaryCard("emotional_tone", "Emotional tone", a.Summary.EmotionalTone),
 	}

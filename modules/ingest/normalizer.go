@@ -15,6 +15,10 @@ type Document struct {
 	SentenceCount  int
 	ParagraphCount int
 	TypeTokenRatio float64
+	// NoiseShare is the share of non-blank lines dropped as page numbers,
+	// captions or running headers (see removeScanNoise). A high share means
+	// the text came from a scan or PDF whose leftovers are not the author's.
+	NoiseShare float64
 }
 
 // Normalizer cleans raw text into a standardized form.
@@ -29,7 +33,7 @@ func (n *Normalizer) Normalize(raw string) Document {
 	// Simple HTML stripping: remove tags
 	clean := stripHTMLTags(raw)
 	// Normalize whitespace
-	clean = normalizeWhitespace(clean)
+	clean, noise := normalizeWhitespace(clean)
 	// Compute stats
 	words := tokenizeWords(clean)
 	wordCount := len(words)
@@ -46,6 +50,7 @@ func (n *Normalizer) Normalize(raw string) Document {
 		SentenceCount:  sentences,
 		ParagraphCount: paragraphs,
 		TypeTokenRatio: ttr,
+		NoiseShare:     noise,
 	}
 }
 
@@ -69,12 +74,20 @@ func stripHTMLTags(s string) string {
 	return result.String()
 }
 
-func normalizeWhitespace(s string) string {
+func normalizeWhitespace(s string) (string, float64) {
 	lines := strings.Split(s, "\n")
+	nonBlank := 0
 	for i, line := range lines {
 		lines[i] = strings.Join(strings.Fields(line), " ")
+		if lines[i] != "" {
+			nonBlank++
+		}
 	}
-	lines = removeScanNoise(lines)
+	lines, removed := removeScanNoise(lines)
+	noise := 0.0
+	if nonBlank > 0 {
+		noise = float64(removed) / float64(nonBlank)
+	}
 	// Group consecutive non-blank lines into paragraphs separated by blank lines.
 	var paragraphs []string
 	var current strings.Builder
@@ -94,7 +107,7 @@ func normalizeWhitespace(s string) string {
 	if current.Len() > 0 {
 		paragraphs = append(paragraphs, current.String())
 	}
-	return strings.Join(paragraphs, "\n\n")
+	return strings.Join(paragraphs, "\n\n"), noise
 }
 
 func tokenizeWords(s string) []string {
@@ -227,7 +240,7 @@ const (
 // so it is not scored as the author's wording: bare page numbers, figure and
 // table captions, running page headers (a short unpunctuated line repeated
 // three or more times), and it rejoins words hyphenated across line breaks.
-func removeScanNoise(lines []string) []string {
+func removeScanNoise(lines []string) ([]string, int) {
 	repeats := make(map[string]int, len(lines))
 	for _, line := range lines {
 		if k := headerKey(line); k != "" {
@@ -235,15 +248,18 @@ func removeScanNoise(lines []string) []string {
 		}
 	}
 	out := make([]string, 0, len(lines))
+	removed := 0
 	for _, line := range lines {
 		if line == "" {
 			out = append(out, line)
 			continue
 		}
 		if pageNumberLine.MatchString(line) || captionLine.MatchString(line) {
+			removed++
 			continue
 		}
 		if k := headerKey(line); k != "" && repeats[k] >= headerMinRepeats {
+			removed++
 			continue
 		}
 		out = append(out, line)
@@ -263,7 +279,7 @@ func removeScanNoise(lines []string) []string {
 			i--
 		}
 	}
-	return out
+	return out, removed
 }
 
 // headerKey returns a comparison key for a line that could be a running page

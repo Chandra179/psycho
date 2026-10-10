@@ -2,6 +2,7 @@ package report
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -24,13 +25,30 @@ func TestRecordedCalculationsRenderedWithoutRecalculation(t *testing.T) {
 	if err := RenderAnalysis("../../templates", a, &out, false); err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"Baseline 0.4200", "calibration &#43;0.1600", "recorded_category", "7 / 570", "0.15105263157894738", "historical-model", `aria-valuenow="70"`} {
+	for _, want := range []string{"Baseline 0.4200", "calibration &#43;0.1600", "recorded_category", "7 / 570", `aria-valuenow="70"`, "Download calculation details"} {
 		if !strings.Contains(out.String(), want) {
 			t.Errorf("missing recorded value %q", want)
 		}
 	}
 	if strings.Contains(out.String(), ">article</td>") {
 		t.Fatal("used rounded legacy evidence instead of recorded operands")
+	}
+	if strings.Contains(out.String(), "<pre") {
+		t.Fatal("the raw JSON must be a download, not an inline block")
+	}
+	_, link, ok := strings.Cut(out.String(), "data:application/json;charset=utf-8;base64,")
+	if !ok {
+		t.Fatal("missing calculation download link")
+	}
+	link, _, _ = strings.Cut(link, `"`)
+	raw, err := base64.StdEncoding.DecodeString(link)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"0.15105263157894738", "historical-model"} {
+		if !strings.Contains(string(raw), want) {
+			t.Errorf("downloaded JSON is missing recorded value %q", want)
+		}
 	}
 }
 
@@ -177,7 +195,7 @@ func TestMainReadingHasOneScorePerMeasure(t *testing.T) {
 			t.Errorf("main reading still contains %q", removed)
 		}
 	}
-	if strings.Count(main, `role="progressbar"`) != 7 || strings.Count(main, "Estimated text score") != 7 {
+	if strings.Count(main, `role="meter"`) != 7 || strings.Count(main, "Estimated text score") != 7 {
 		t.Fatal("each available trait/summary must have exactly one score row")
 	}
 }

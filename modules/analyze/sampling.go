@@ -24,7 +24,12 @@ import (
 // divided by the predicted one gave 1.50 openness, 1.46 conscientiousness, 1.47
 // extraversion, 1.23 agreeableness, 1.74 neuroticism, 1.15 regulatory focus, 1.05
 // need for cognition and 1.29 need for closure; cognitive style was re-measured
-// at 1.68 after it moved to the function-word index. The values
+// at 1.68 after it moved to the function-word index. Re-measured on 2026-10-10
+// (389 posts) after the non-significant pronoun weights were dropped: 1.52
+// openness, 1.49 conscientiousness, 1.51 extraversion, 1.25 agreeableness, 1.53
+// neuroticism (was 1.74, so the value was lowered), 1.13 regulatory focus, 1.13
+// need for cognition, 1.69 cognitive style, 1.26 need for closure; the others
+// moved by under 10% and were kept. The values
 // below round up. They describe repeatability within one text, not accuracy
 // against a person's true trait.
 var seInflation = map[string]float64{
@@ -32,7 +37,7 @@ var seInflation = map[string]float64{
 	"conscientiousness":  1.5,
 	"extraversion":       1.5,
 	"agreeableness":      1.25,
-	"neuroticism":        1.75,
+	"neuroticism":        1.55,
 	"regulatory_focus":   1.15,
 	"need_for_cognition": 1.05,
 	"cognitive_style":    1.7,

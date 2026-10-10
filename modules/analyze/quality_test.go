@@ -63,3 +63,25 @@ func TestFormatCount(t *testing.T) {
 		t.Errorf("reason must use a grouped count: %v", got)
 	}
 }
+
+func TestNoiseShareCapsReadingQualityAtMedium(t *testing.T) {
+	if got := QualityFlagWithNoise(2000, 0.8, 0); got != "high" {
+		t.Fatalf("clean long text = %q, want high", got)
+	}
+	if got := QualityFlagWithNoise(2000, 0.8, QualityNoisyShare); got != "medium" {
+		t.Fatalf("noisy long text = %q, want medium", got)
+	}
+	if got := QualityFlagWithNoise(300, 0.8, 0.5); got != "low" {
+		t.Fatalf("noise must not raise a low flag, got %q", got)
+	}
+	if QualityFlag(2000, 0.8) != QualityFlagWithNoise(2000, 0.8, 0) {
+		t.Fatal("QualityFlag must equal the zero-noise flag")
+	}
+	reasons := QualityReasonsWithNoise(2000, 0.8, 0.063)
+	if len(reasons) != 1 || !strings.Contains(reasons[0], "6%") || strings.ContainsRune(reasons[0], '—') {
+		t.Fatalf("noise reason = %v", reasons)
+	}
+	if QualityReasonsWithNoise(2000, 0.8, 0.01) != nil {
+		t.Fatal("a small noise share must not add a reason")
+	}
+}

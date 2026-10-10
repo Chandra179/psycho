@@ -26,10 +26,10 @@ func DimensionDisplayName(key string) string {
 		"extraversion":       "Extraversion",
 		"agreeableness":      "Agreeableness",
 		"neuroticism":        "Neuroticism",
-		"regulatory_focus":   "Regulatory Focus",
+		"regulatory_focus":   "Goals: gain vs. safety",
 		"need_for_cognition": "Need for Cognition",
 		"cognitive_style":    "Cognitive Style",
-		"need_for_closure":   "Need for Closure",
+		"need_for_closure":   "Preference for certainty",
 	}
 	if n, ok := names[key]; ok {
 		return n

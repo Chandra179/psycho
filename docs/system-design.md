@@ -137,7 +137,7 @@ With calibration enabled, `cmd/calibrate` runs the production inference path ove
 
 ### Reading report and contextual evidence
 
-The HTML report no longer shows an "At a glance" section (removed on 2026-10-09); `report.BuildGlance` still builds the same recorded fields ( size and dictionary coverage, the reasons the reading
+The HTML report has no "At a glance" section (removed on 2026-10-09). Since 2026-10-10 a short "Read this first" notice under the header shows the caveat, the quality reasons, the top fit notes and the support note, so the hiring and clinical warning is visible at the top again. `report.BuildGlance` builds the recorded fields ( size and dictionary coverage, the reasons the reading
 quality is not high (`analyze.QualityReasons`, which shares its thresholds with
 `profile.computeConfidenceFlag` through `analyze.QualityFlag`), recorded
 emotion-word counts, fit notes, and one plain caveat (`analyze.ReadingCaveat`)) for the fit notes on the cards.
@@ -146,10 +146,11 @@ native disclosure tooltips, and a one-line meaning (`analyze.MeasureSummary`),
 with no rank sentence (removed on 2026-10-09; the percentile is still stored and shown in the calculation details). Calibrated scores for most dimensions cluster within
 about 0.44 to 0.56 in the reference sample, while the 35/65 bands are fixed on
 the score scale. `report.FitNotes` flags measures that mostly reflect register or
-topic (formal prose: Authenticity at or below 0.30, Cognitive Style at or above 0.60 and at least 25% long words; this flags 1.9% of reference posts)
+topic (formal prose: Authenticity at or below 0.30, Cognitive Style at or above 0.60, at least 25% long words and, when recorded, under 1% first-person singular words (`first_person_singular`, a counted category with no score weight); this flags 1.9% of reference posts or fewer. The note covers Openness, Extraversion, Authenticity, Clout and Cognitive Style; Agreeableness and Need for Cognition showed no consistent shift on the formal samples, so they are not flagged)
 or lack signal (emotion words under 0.5% of the text); thresholds were set from
 the nine samples plus 25 random corpus posts. Heuristic bounds and complete
-recorded calculations stay collapsed. Below 768px the evidence table is replaced
+recorded calculations stay collapsed; the full calculation JSON is a download link (a `data:` URI, so it also works in saved offline reports), not an inline block.
+The reading-quality flag also reads the extraction-noise share (`ingest.Document.NoiseShare`, the share of non-blank lines dropped as page numbers, captions or running headers): 5% or more caps the flag at medium and adds a reason. None of the 4,010 reference posts lost a line, so the reference corpus cannot set that threshold; 5% sits just under the two scan-style samples (5.9% and 6.3%). Below 768px the evidence table is replaced
 by a stacked list. All nine dimensions and four summary proxies remain available
 across full-page, HTMX and standalone HTML rendering. Narrative and PDF use the
 same simplified score wording but do not yet include the glance block.
@@ -169,9 +170,9 @@ missing counts or excerpts rather than rebuilding them with today's dictionary.
 
 | trait | Spearman ρ | AUC | AUC 95% CI (bootstrap) |
 |---|---|---|---|
-| neuroticism | 0.103 | 0.559 | 0.537 – 0.581 |
+| neuroticism | 0.099 | 0.556 | 0.533 – 0.578 |
 | agreeableness | 0.103 | 0.559 | 0.535 – 0.583 |
-| extraversion | 0.075 | 0.542 | 0.521 – 0.566 |
+| extraversion | 0.077 | 0.541 | 0.518 – 0.561 |
 | openness | 0.058 | 0.533 | 0.511 – 0.556 |
 | conscientiousness | 0.056 | 0.532 | 0.510 – 0.554 |
 
@@ -185,7 +186,11 @@ A second step was tried and reverted: the Schwartz et al. (2013) top-sense proba
 
 **Breadth experiment (2026-10-01):** growing the dictionary from 1,471 to 2,155 words raised sample coverage from 55.8% to 57.8% but left the AUCs unchanged (all deltas inside overlapping bootstrap CIs). The discriminating signal in this corpus sits in closed-class function words (articles, prepositions, pronouns), which were already near-complete; generic content-word additions add coverage and evidence richness but not rank accuracy. The next lever is *discriminative* vocabulary (words selected because their usage varies with the traits, as LIWC's lists were), not more breadth for its own sake.
 
+**Weights checked against the paper (2026-10-10).** Table 1 of Yarkoni (2010), from the open author manuscript (PMC2885844, minimum N = 576), was compared with every Big Five weight in `coefficients.go`: all 32 equal ρ × 0.06 in sign and size. Two rested on correlations that are not significant in the table (total pronouns with Extraversion and with Neuroticism, both ρ = .06), so they were removed, as the "sensation" weight was earlier. Extraversion and Neuroticism AUC moved by 0.002 and 0.003 (table above, inside the intervals), their reference spreads fell (extraversion 0.0216 to 0.0093, neuroticism 0.0389 to 0.0256), and neuroticism's error inflation was re-measured at 1.53 and lowered from 1.75. This verifies the correlations, not the scale factor 0.06, which still rests on assumed standard deviations (trait 0.15, category 2.5 points). The "pronoun" category also mixes demonstratives ("that", "which") with personal pronouns, unlike the paper's total-pronoun row.
+
 ### Offline supervised experiment (`cmd/train`)
+
+Rerun on 2026-10-10 with the current dictionary: calibrated AUC 0.574 extraversion, 0.631 neuroticism, 0.592 agreeableness, 0.581 conscientiousness, 0.626 openness, against 0.535, 0.583, 0.579, 0.525 and 0.559 for the heuristic on the same 489 test authors. Point estimates favour the fitted model for all five traits, but every 99% paired AUC interval still includes zero (lower bounds -0.016 to -0.036), so fitted weights are not shipped. The essays are student stream-of-consciousness texts and have not been checked on other genres.
 
 The Go-only experiment fits five regularized logistic classifiers with independent fitting, probability-calibration, and test authors. It preserves production scoring and records provenance as unverified. See [the fixed protocol and transition requirements](offline-supervised.md) and [the aggregate held-out findings](research/supervised-findings.md). Historical whole-corpus heuristic metrics above and the smaller supervised test sample must not be compared directly; the experiment measures both methods on identical test authors.
 

@@ -13,6 +13,10 @@ package analyze
 //   of personality and word use among bloggers. Journal of Research in
 //   Personality, 44(3), 363–373. https://doi.org/10.1016/j.jrp.2010.04.001
 //
+// Verified against Table 1 of the paper (PMC2885844, minimum N = 576) on
+// 2026-10-10: every weight below equals ρ × 0.06 in sign and size, and every
+// weight rests on a correlation marked significant at p < .05.
+//
 // Only dictionary.json categories with a clear Yarkoni mapping are included.
 // Categories with no Yarkoni basis (quantitative, present_focus,
 // future_focus) are kept as zero and should be updated when new research
@@ -27,7 +31,10 @@ var coefficients = map[string]TraitWeights{
 	"cognitive_process": {Neuroticism: 0.008, Conscientiousness: -0.007},
 	"tentative":         {Neuroticism: 0.007},
 	"certainty":         {Neuroticism: 0.008},
-	"pronoun":           {Openness: -0.013, Extraversion: 0.004, Neuroticism: 0.004},
+	// Total pronouns: only the Openness correlation (ρ = -.21) is significant in
+	// Table 1; the Extraversion and Neuroticism correlations (both .06) are not,
+	// so they carry no weight.
+	"pronoun": {Openness: -0.013},
 	// Prepositions are Yarkoni's second-strongest openness signal (ρ = .17).
 	"preposition": {Openness: 0.010},
 	"article":     {Openness: 0.012, Neuroticism: -0.007},

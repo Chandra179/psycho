@@ -14,7 +14,10 @@ type CalculationDetails struct {
 	DictionaryMatches int    `json:"dictionary_matches"`
 	// BigWordCount is the number of words longer than six letters. It is
 	// recorded for the formal-prose note only; no score uses it.
-	BigWordCount   int                               `json:"big_word_count,omitempty"`
+	BigWordCount int `json:"big_word_count,omitempty"`
+	// NoiseShare is the share of lines Normalize removed as page numbers,
+	// captions or running headers; it feeds the reading-quality flag.
+	NoiseShare     float64                           `json:"noise_share,omitempty"`
 	CategoryCounts map[Category]int                  `json:"category_counts"`
 	Traits         map[string]*ScoreCalculation      `json:"traits"`
 	Summary        map[string]SummaryCalculation     `json:"summary"`

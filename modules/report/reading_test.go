@@ -35,7 +35,7 @@ func TestReadingPreservesAllMeasuresAndCanonicalBoundaries(t *testing.T) {
 	if v.Bands[0].Range != "0–34" || v.Bands[1].Range != "35–64" || v.Bands[2].Range != "65–100" {
 		t.Fatalf("wrong legend: %+v", v.Bands)
 	}
-	wantNames := []string{"Openness", "Conscientiousness", "Extraversion", "Agreeableness", "Neuroticism", "Regulatory Focus", "Need for Cognition", "Cognitive Style", "Need for Closure"}
+	wantNames := []string{"Openness", "Conscientiousness", "Extraversion", "Agreeableness", "Neuroticism", "Goals: gain vs. safety", "Need for Cognition", "Cognitive Style", "Preference for certainty"}
 	for _, variant := range []string{"fragment", "full page", "standalone"} {
 		t.Run(variant, func(t *testing.T) {
 			var out strings.Builder
@@ -52,8 +52,8 @@ func TestReadingPreservesAllMeasuresAndCanonicalBoundaries(t *testing.T) {
 				t.Fatal(err)
 			}
 			rendered := out.String()
-			if strings.Count(rendered, `role="progressbar"`) != 13 {
-				t.Fatalf("got %d score rows, want 9 measures and 4 summaries", strings.Count(rendered, `role="progressbar"`))
+			if strings.Count(rendered, `role="meter"`) != 13 {
+				t.Fatalf("got %d score rows, want 9 measures and 4 summaries", strings.Count(rendered, `role="meter"`))
 			}
 			if strings.Count(rendered, "Text-based measures") != 1 || strings.Contains(rendered, "Big Five text signals") || strings.Contains(rendered, "Additional text measures") {
 				t.Fatal("score sections were not combined under the single heading")

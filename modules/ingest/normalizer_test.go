@@ -35,7 +35,7 @@ func TestStripHTMLTags(t *testing.T) {
 
 func TestNormalizeWhitespacePreservesParagraphs(t *testing.T) {
 	input := "Hello\nworld\n\nThis is a test\n\nGoodbye"
-	got := normalizeWhitespace(input)
+	got, _ := normalizeWhitespace(input)
 	// Paragraph breaks (blank lines) preserved as double newline
 	want := "Hello world\n\nThis is a test\n\nGoodbye"
 	if got != want {
@@ -108,5 +108,16 @@ func TestNormalizeKeepsChatRefrains(t *testing.T) {
 	got := NewNormalizer().Normalize(raw).RawText
 	if strings.Count(got, "haha so true") != 3 || !strings.Contains(got, "thinking- anyway") {
 		t.Errorf("short chat lines must be kept as written: %q", got)
+	}
+}
+
+func TestNormalizeReportsNoiseShare(t *testing.T) {
+	clean := NewNormalizer().Normalize("A plain paragraph about my day.\nIt went well.")
+	if clean.NoiseShare != 0 {
+		t.Fatalf("clean text noise = %v", clean.NoiseShare)
+	}
+	noisy := NewNormalizer().Normalize("The first paragraph has real words in it.\n12\nFigure 3. A caption line\nThe second paragraph has more real words.")
+	if noisy.NoiseShare < 0.4 || noisy.NoiseShare > 0.6 {
+		t.Fatalf("2 of 4 lines removed, got share %v", noisy.NoiseShare)
 	}
 }

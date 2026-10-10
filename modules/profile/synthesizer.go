@@ -51,7 +51,7 @@ func (sa *ScoreAggregator) UseCalibration(cal *analyze.Calibration) {
 
 // Aggregate records the actual score, summary, percentile and rough-range operations.
 func (sa *ScoreAggregator) Aggregate(scores analyze.BigFiveScores, fv analyze.FeatureVector, wordCount int, coverage float64) Profile {
-	confidence := computeConfidenceFlag(wordCount, coverage)
+	confidence := computeConfidenceFlag(wordCount, coverage, fv.NoiseShare)
 	sharedWidth, rangeDetails := computeRangeWithDetails(wordCount, coverage)
 	// Each measure gets its own half-width from the sampling error of its own
 	// category weights. The shared length rule is the fallback for features
@@ -64,7 +64,7 @@ func (sa *ScoreAggregator) Aggregate(scores analyze.BigFiveScores, fv analyze.Fe
 	}
 	summary, summaryDetails := analyze.ComputeSummaryVariablesWithDetails(fv)
 	details := &analyze.CalculationDetails{
-		ModelFingerprint: analyze.ModelFingerprint(), WordCount: fv.WordCount, DictionaryMatches: fv.DictionaryMatches, BigWordCount: fv.BigWordCount,
+		ModelFingerprint: analyze.ModelFingerprint(), WordCount: fv.WordCount, DictionaryMatches: fv.DictionaryMatches, BigWordCount: fv.BigWordCount, NoiseShare: fv.NoiseShare,
 		CategoryCounts: fv.CategoryCounts, Traits: scores.Calculations, Summary: summaryDetails,
 		Values: make(map[string]analyze.ValueCalculation), RangeBounds: make(map[string]analyze.RangeBoundsCalculation), Range: rangeDetails, Percentiles: make(map[string]analyze.PercentileCalculation),
 	}
@@ -182,8 +182,8 @@ func normalCDF(z float64) float64 {
 	return 0.5 * (1 + math.Erf(z/math.Sqrt2))
 }
 
-func computeConfidenceFlag(wordCount int, coverage float64) string {
-	return analyze.QualityFlag(wordCount, coverage)
+func computeConfidenceFlag(wordCount int, coverage, noiseShare float64) string {
+	return analyze.QualityFlagWithNoise(wordCount, coverage, noiseShare)
 }
 
 // computeCIWidth retains the legacy API name. This is a project-defined

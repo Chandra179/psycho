@@ -47,17 +47,17 @@ func TestFitNotesFlagsFormalProseAndSparseEmotion(t *testing.T) {
 		a    *Analysis
 		want string
 	}{
-		{"abstract: formal and no emotion words", fitAnalysis(1076, 0.10, 0.80, 52.5, 0, 0), "authenticity clout cognitive_style emotional_tone neuroticism openness"},
-		{"article with a few emotion words: formal only", fitAnalysis(1133, 0.21, 0.67, 28.2, 4, 4), "authenticity clout cognitive_style openness"},
-		{"formal at the edge of the gap", fitAnalysis(647, 0.28, 0.63, 30.0, 6, 6), "authenticity clout cognitive_style openness"},
+		{"abstract: formal and no emotion words", fitAnalysis(1076, 0.10, 0.80, 52.5, 0, 0), "authenticity clout cognitive_style emotional_tone extraversion neuroticism openness"},
+		{"article with a few emotion words: formal only", fitAnalysis(1133, 0.21, 0.67, 28.2, 4, 4), "authenticity clout cognitive_style extraversion openness"},
+		{"formal at the edge of the gap", fitAnalysis(647, 0.28, 0.63, 30.0, 6, 6), "authenticity clout cognitive_style extraversion openness"},
 		{"ordinary blog post", fitAnalysis(886, 0.84, 0.35, 14.4, 11, 10), ""},
 		{"diary entry", fitAnalysis(527, 0.84, 0.30, 14.8, 4, 11), ""},
 		{"terse text: low authenticity and high style but few long words", fitAnalysis(400, 0.20, 0.65, 10, 8, 8), ""},
 		{"sparse emotion only", fitAnalysis(1000, 0.7, 0.4, 15, 1, 3), "emotional_tone neuroticism"},
 		{"emotion share just above the cut", fitAnalysis(1000, 0.7, 0.4, 15, 3, 3), ""},
-		{"legacy analysis, formal by score alone", fitAnalysis(900, 0.10, 0.80, -1, -1, 0), "authenticity clout cognitive_style openness"},
+		{"legacy analysis, formal by score alone", fitAnalysis(900, 0.10, 0.80, -1, -1, 0), "authenticity clout cognitive_style extraversion openness"},
 		{"legacy analysis, ordinary", fitAnalysis(900, 0.6, 0.45, -1, -1, 0), ""},
-		{"long-word count not recorded", fitAnalysis(900, 0.10, 0.80, -1, 6, 6), "authenticity clout cognitive_style openness"},
+		{"long-word count not recorded", fitAnalysis(900, 0.10, 0.80, -1, 6, 6), "authenticity clout cognitive_style extraversion openness"},
 	}
 	for _, c := range cases {
 		got := strings.Join(fitKeys(c.a), " ")
@@ -69,7 +69,7 @@ func TestFitNotesFlagsFormalProseAndSparseEmotion(t *testing.T) {
 
 func TestFitNotesTopSentencesMatchFlags(t *testing.T) {
 	top, by := FitNotes(fitAnalysis(1076, 0.10, 0.80, 52.5, 0, 0))
-	if len(top) != 2 || len(by) != 6 {
+	if len(top) != 2 || len(by) != 7 {
 		t.Fatalf("top=%v by=%v", top, by)
 	}
 	if top, by := FitNotes(fitAnalysis(886, 0.84, 0.35, 14.4, 11, 10)); top != nil || by != nil {
@@ -91,6 +91,7 @@ func TestFitNotesReachCardsGlanceAndPage(t *testing.T) {
 	a := testAnalysis()
 	a.Summary.Authenticity = 0.10
 	a.Traits["cognitive_style"] = Trait{Score: 0.80}
+	a.Traits["extraversion"] = Trait{Score: 0.45}
 	a.CalculationDetails = fitAnalysis(570, 0.10, 0.80, 40, 0, 0).CalculationDetails
 	v := BuildReport(a)
 	flagged := map[string]bool{}
@@ -128,5 +129,33 @@ func TestFitNotesReachCardsGlanceAndPage(t *testing.T) {
 	}
 	if strings.Contains(plain.String(), "Low fit for this text.") {
 		t.Fatal("an ordinary text must not show low-fit notes")
+	}
+}
+
+func TestReportShowsReadingCaveatAboveScores(t *testing.T) {
+	var out strings.Builder
+	if err := RenderAnalysis("../../templates", testAnalysis(), &out, false); err != nil {
+		t.Fatal(err)
+	}
+	page := out.String()
+	caveat := strings.Index(page, "should not be used for hiring, clinical or other decisions about a person")
+	scores := strings.Index(page, "Text-based measures")
+	if caveat < 0 || scores < 0 || caveat > scores {
+		t.Fatalf("the hiring and clinical caveat must appear before the scores (caveat at %d, scores at %d)", caveat, scores)
+	}
+	if !strings.Contains(page, "Confidence in this reading") {
+		t.Fatal("quality chip should read \"Confidence in this reading\"")
+	}
+}
+
+func TestFormalProseNeedsFewFirstPersonWords(t *testing.T) {
+	a := fitAnalysis(1000, 0.10, 0.80, 40, 6, 6)
+	a.CalculationDetails.CategoryCounts["first_person_singular"] = 0
+	if got := strings.Join(fitKeys(a), " "); !strings.Contains(got, "openness") {
+		t.Fatalf("no first-person words, formal scores: want flagged, got %q", got)
+	}
+	a.CalculationDetails.CategoryCounts["first_person_singular"] = 40 // 4% of 1,000 words
+	if got := fitKeys(a); len(got) != 0 {
+		t.Fatalf("a personal text that scores like formal prose must not be flagged, got %v", got)
 	}
 }
