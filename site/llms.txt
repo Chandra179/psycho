@@ -5,6 +5,7 @@
 ## Key facts
 
 - URL: https://psycho.chan179.com/
+- Language: English text only. Other languages are rejected with a notice instead of scored.
 - Input: pasted text or a .txt / .md file. About 500 words or more gives the most meaningful results.
 - Output: nine score cards with ranges, matching words in context, and a Calculation details section. Export as one HTML file or as a PDF (browser print dialog).
 - Privacy: no upload, no account, no server-side analysis. Optional history is stored only in the visitor's own browser.

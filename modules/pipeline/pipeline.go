@@ -50,6 +50,9 @@ func (p *Pipeline) Run(ctx context.Context, text string) (ingest.AnalysisOutput,
 	if err := ingest.ValidateDocument(doc); err != nil {
 		return ingest.AnalysisOutput{}, err
 	}
+	if err := ingest.CheckEnglish(doc); err != nil {
+		return ingest.AnalysisOutput{}, err
+	}
 	features, coverage := p.extractor.Extract(doc)
 
 	scores := analyze.ScoreFeatures(p.model, features)

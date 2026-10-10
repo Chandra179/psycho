@@ -2,7 +2,7 @@
 
 The words you choose reveal patterns in how you think. Psycho turns published psycholinguistics research (Pennebaker & King 1999, Yarkoni 2010, Pennebaker et al. 2014) into a free tool that analyzes your writing.
 
-Paste your text or import a .txt or .md file, and try it at **psycho.chan179.com**.
+Paste your English text or import a .txt or .md file, and try it at **psycho.chan179.com**.
 
 - **Privacy first.** Everything runs locally in your browser. Nothing is uploaded.
 - **Export.** Save the report as HTML or PDF.

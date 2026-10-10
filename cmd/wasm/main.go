@@ -64,8 +64,8 @@ func analyzeText(pipe *pipeline.Pipeline, args []js.Value) (result any) {
 	}
 	out, err := pipe.Run(context.Background(), text)
 	if err != nil {
-		if errors.Is(err, ingest.ErrInvalidText) {
-			return failure(ingest.ErrInvalidText.Error())
+		if errors.Is(err, ingest.ErrInvalidText) || errors.Is(err, ingest.ErrNotEnglish) {
+			return failure(err.Error())
 		}
 		return failure("Something went wrong while analyzing; please try again.")
 	}

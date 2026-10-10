@@ -45,7 +45,7 @@ Writing -> Normalize -> Dictionary match -> Score (9 measures) -> Rank vs 2004 b
 
 - **Good:** analysis is fast and repeatable with the same model, dictionary and calibration.
 - **Weak:** AUC is only slightly above chance, and the score ranges describe repeatability between halves of a text, not accuracy about a person. Most Big Five scores read "moderate".
-- **Limit:** the 2004 blog sample is a poor reference for essays or formal prose. Sarcasm and word order are not read, and negation is handled only for value words and emotional tone, and ambiguous words are removed from trait lists, not read in context. Do not use scores for hiring, clinical or other decisions about a person. See the [offline supervised experiment](offline-supervised.md).
+- **Limit:** English only. Text that does not look English (under 18% common English function words, from 30 words up) is refused rather than scored. In a check it rejected none of 2,467 essays and 13 of 4,010 blog posts, which were in Tagalog. The 2004 blog sample is a poor reference for essays or formal prose. Sarcasm and word order are not read, and negation is handled only for value words and emotional tone, and ambiguous words are removed from trait lists, not read in context. Do not use scores for hiring, clinical or other decisions about a person. See the [offline supervised experiment](offline-supervised.md).
 
 ## Measured accuracy
 

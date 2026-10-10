@@ -36,6 +36,14 @@ func TestInvalidInputIsRejected(t *testing.T) {
 	}
 }
 
+func TestNonEnglishTextIsRejected(t *testing.T) {
+	pipe := testPipeline(t, false)
+	text := "Ayer caminé por el mercado con mi hermana y hablamos de nuestros planes para el futuro. Me siento feliz y curioso por todo lo que podemos aprender, porque las ideas nuevas me emocionan mucho. Hablamos de los libros, de la familia y de las tradiciones que nos hacen quienes somos."
+	if _, err := pipe.Run(t.Context(), text); !errors.Is(err, ingest.ErrNotEnglish) {
+		t.Fatalf("Spanish text: %v", err)
+	}
+}
+
 func TestCalculationDetailsAreCompleteAndScoresRepeat(t *testing.T) {
 	for _, calibrated := range []bool{false, true} {
 		t.Run(map[bool]string{false: "fallback", true: "empirical"}[calibrated], func(t *testing.T) {
