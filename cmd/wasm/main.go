@@ -23,7 +23,9 @@ import (
 	"psycho/templates"
 )
 
-// maxTextBytes caps pasted text at about 1 MiB.
+// maxTextBytes caps the text at 1 MiB of UTF-8 (roughly 170,000 words). The
+// page reads it from psycho.maxBytes to check input before calling analyze;
+// analyzeText checks again so the limit holds without the page.
 const maxTextBytes = 1 << 20
 
 func main() {
@@ -39,9 +41,10 @@ func main() {
 	pipe := pipeline.New(deps.Extractor, deps.Model, agg, profile.NewTemplateNarrativeGenerator(), deps.Calibration)
 
 	js.Global().Set("psycho", map[string]any{
-		"ready":   true,
-		"analyze": js.FuncOf(func(_ js.Value, args []js.Value) any { return analyzeText(pipe, args) }),
-		"render":  js.FuncOf(func(_ js.Value, args []js.Value) any { return renderJSON(args) }),
+		"ready":    true,
+		"maxBytes": maxTextBytes,
+		"analyze":  js.FuncOf(func(_ js.Value, args []js.Value) any { return analyzeText(pipe, args) }),
+		"render":   js.FuncOf(func(_ js.Value, args []js.Value) any { return renderJSON(args) }),
 	})
 
 	// Keep the Go runtime alive so the registered callbacks stay valid.
@@ -50,13 +53,14 @@ func main() {
 
 // analyzeText runs the pipeline on args[0] and returns
 // {ok, json, html} or {ok:false, error}.
-func analyzeText(pipe *pipeline.Pipeline, args []js.Value) any {
+func analyzeText(pipe *pipeline.Pipeline, args []js.Value) (result any) {
+	defer recoverFailure(&result)
 	if len(args) < 1 {
 		return failure("no text given")
 	}
 	text := args[0].String()
 	if len(text) > maxTextBytes {
-		return failure("Text exceeds the maximum size.")
+		return failure("The text is larger than the 1 MB limit. Please analyze a shorter piece.")
 	}
 	out, err := pipe.Run(context.Background(), text)
 	if err != nil {
@@ -79,7 +83,8 @@ func analyzeText(pipe *pipeline.Pipeline, args []js.Value) any {
 // renderJSON renders a saved analysis (args[0], the JSON analyze returned)
 // again. args[1] true asks for a complete standalone page with the stylesheet
 // embedded, for the "Save report" download; otherwise it returns the fragment.
-func renderJSON(args []js.Value) any {
+func renderJSON(args []js.Value) (result any) {
+	defer recoverFailure(&result)
 	if len(args) < 1 {
 		return failure("no analysis given")
 	}
@@ -103,6 +108,14 @@ func renderBlob(blob []byte, standalone bool) (string, error) {
 	}
 	err := report.RenderAnalysisFS(templates.FS, &a, &buf, false)
 	return buf.String(), err
+}
+
+// recoverFailure turns a panic into a failure result. An unrecovered panic in
+// a js.Func would stop the Go runtime and leave the page without an analyzer.
+func recoverFailure(result *any) {
+	if recover() != nil {
+		*result = failure("Something went wrong while analyzing; please try again.")
+	}
 }
 
 func failure(msg string) map[string]any {

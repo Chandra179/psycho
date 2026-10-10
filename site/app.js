@@ -15,8 +15,31 @@
   var historyBox = document.getElementById('history');
   var historyList = document.getElementById('history-list');
   var current = null; // {json} of the report on screen
+  var MAX_BYTES = 1 << 20; // replaced by psycho.maxBytes once the analyzer loads
+  var MAX_SAVED = 50; // saved readings kept on this device; the oldest are dropped
+  var encoder = new TextEncoder();
+  var lengthNote = document.getElementById('length-note');
+  var overLimit = false;
 
   function setStatus(msg) { status.textContent = msg; }
+
+  function formatBytes(n) {
+    return n >= 1048576 ? parseFloat((n / 1048576).toFixed(2)) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB';
+  }
+
+  // Shows the size against the limit and blocks analysis when it is over.
+  function checkLength() {
+    var bytes = encoder.encode(textArea.value).length;
+    overLimit = bytes > MAX_BYTES;
+    if (overLimit) {
+      lengthNote.textContent = 'This text is ' + formatBytes(bytes) + ', over the ' + formatBytes(MAX_BYTES) + ' limit. Please shorten it.';
+      lengthNote.className = 'mt-2 text-sm text-rose-700';
+    } else {
+      lengthNote.textContent = bytes > MAX_BYTES * 0.8 ? formatBytes(bytes) + ' of ' + formatBytes(MAX_BYTES) + ' used.' : '';
+      lengthNote.className = 'mt-2 text-sm text-stone-500';
+    }
+    submit.disabled = overLimit || !(window.psycho && window.psycho.ready);
+  }
 
   function showError(msg) {
     var box = document.createElement('div');
@@ -91,17 +114,36 @@
     });
   }
 
-  function saveReading(json) {
+  // A short label for a saved reading: the first line of the text, trimmed.
+  function titleFrom(text) {
+    var line = '';
+    text.split('\n').some(function (l) { line = l.replace(/^[#>*\-\s]+/, '').replace(/\s+/g, ' ').trim(); return line !== ''; });
+    if (line.length <= 60) return line;
+    var cut = line.slice(0, 60);
+    return cut.slice(0, Math.max(cut.lastIndexOf(' '), 30)).replace(/[\s.,;:]+$/, '') + '...';
+  }
+
+  function saveReading(json, title) {
     var data;
     try { data = JSON.parse(json); } catch (e) { return Promise.resolve(); }
     var rec = {
       id: data.analysis_id || String(Date.now()),
       savedAt: Date.now(),
+      title: title || '',
       wordCount: data.word_count || 0,
       json: json
     };
-    return tx('readwrite', function (s) { return s.put(rec); }).catch(function () {
+    return tx('readwrite', function (s) { return s.put(rec); }).then(pruneReadings).catch(function () {
       setStatus('The reading could not be saved on this device.');
+    });
+  }
+
+  // Keeps only the newest MAX_SAVED readings so history cannot grow without bound.
+  function pruneReadings() {
+    return listReadings().then(function (rows) {
+      var extra = rows.slice(MAX_SAVED);
+      if (!extra.length) return;
+      return tx('readwrite', function (s) { extra.forEach(function (r) { s.delete(r.id); }); });
     });
   }
 
@@ -119,8 +161,15 @@
         var li = document.createElement('li');
         li.className = 'flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm';
         var label = document.createElement('span');
-        label.textContent = new Date(r.savedAt).toLocaleString() + ' · ' +
+        label.className = 'min-w-0';
+        var name = document.createElement('span');
+        name.className = 'block font-medium truncate';
+        name.textContent = r.title || 'Untitled reading';
+        var meta = document.createElement('span');
+        meta.className = 'block text-stone-500';
+        meta.textContent = new Date(r.savedAt).toLocaleString() + ' \u00b7 ' +
           r.wordCount.toLocaleString() + ' words';
+        label.append(name, meta);
         var actions = document.createElement('span');
         actions.className = 'flex gap-3';
         var open = document.createElement('button');
@@ -128,6 +177,16 @@
         open.textContent = 'Open';
         open.className = 'underline hover:text-stone-900';
         open.addEventListener('click', function () { show(r.json, false); });
+        var rename = document.createElement('button');
+        rename.type = 'button';
+        rename.textContent = 'Rename';
+        rename.className = 'underline text-stone-600 hover:text-stone-900';
+        rename.addEventListener('click', function () {
+          var t = window.prompt('Title for this reading', r.title || '');
+          if (t === null) return;
+          r.title = t.trim().slice(0, 100);
+          tx('readwrite', function (s) { return s.put(r); }).then(renderHistory);
+        });
         var del = document.createElement('button');
         del.type = 'button';
         del.textContent = 'Delete';
@@ -135,7 +194,7 @@
         del.addEventListener('click', function () {
           tx('readwrite', function (s) { return s.delete(r.id); }).then(renderHistory);
         });
-        actions.append(open, del);
+        actions.append(open, rename, del);
         li.append(label, actions);
         historyList.append(li);
       });
@@ -198,16 +257,28 @@
   fileInput.addEventListener('change', function () {
     var f = fileInput.files && fileInput.files[0];
     if (!f) return;
-    if (f.size > 1000000) { setStatus('That file is larger than 1 MB.'); fileInput.value = ''; return; }
+    function reject(msg) { setStatus(msg); fileInput.value = ''; }
+    if (!/\.(txt|md|markdown)$/i.test(f.name)) { reject('Please choose a .txt or .md file.'); return; }
+    if (f.size > MAX_BYTES) { reject('That file is ' + formatBytes(f.size) + ', over the ' + formatBytes(MAX_BYTES) + ' limit.'); return; }
     var reader = new FileReader();
-    reader.onload = function () { textArea.value = String(reader.result); setStatus('Loaded ' + f.name + '.'); };
-    reader.onerror = function () { setStatus('That file could not be read.'); };
+    reader.onload = function () {
+      var text = String(reader.result);
+      if (text.indexOf('\u0000') !== -1) { reject('That file does not look like plain text.'); return; }
+      textArea.value = text;
+      setStatus('Loaded ' + f.name + '.');
+      checkLength();
+    };
+    reader.onerror = function () { reject('That file could not be read.'); };
     reader.readAsText(f);
   });
+
+  textArea.addEventListener('input', checkLength);
 
   form.addEventListener('submit', function (e) {
     e.preventDefault();
     if (!window.psycho || !window.psycho.ready) return;
+    checkLength();
+    if (overLimit) { setStatus(lengthNote.textContent); return; }
     submit.disabled = true;
     setStatus('Analyzing...');
     // Let the status paint before the synchronous analysis runs.
@@ -221,12 +292,13 @@
       intake.classList.add('print:hidden');
       result.scrollIntoView({ behavior: 'smooth', block: 'start' });
       result.focus({ preventScroll: true });
-      if (keep.checked) saveReading(out.json).then(renderHistory);
+      if (keep.checked) saveReading(out.json, titleFrom(textArea.value)).then(renderHistory);
     }, 30);
   });
 
   loadWasm().then(function () {
-    submit.disabled = false;
+    if (window.psycho.maxBytes) MAX_BYTES = window.psycho.maxBytes;
+    checkLength();
     submitLabel.textContent = 'Analyze my writing';
     renderHistory();
   }).catch(function (err) {
