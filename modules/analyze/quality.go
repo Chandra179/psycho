@@ -25,16 +25,11 @@ const (
 	QualityNoisyShare = 0.05
 )
 
-// QualityFlag classifies a sample as "low", "medium" or "high" reading
+// QualityFlagWithNoise classifies a sample as "low", "medium" or "high" reading
 // quality: under QualityLowWords or under QualityLowCoverage is low; coverage
 // under QualityMinCoverage or under QualityHighWords is medium; otherwise high.
-func QualityFlag(wordCount int, coverage float64) string {
-	return QualityFlagWithNoise(wordCount, coverage, 0)
-}
-
-// QualityFlagWithNoise is QualityFlag with the share of lines removed as
-// extraction noise; a share of QualityNoisyShare or more caps the flag at
-// "medium".
+// noiseShare is the share of lines removed as extraction noise; a share of
+// QualityNoisyShare or more caps the flag at "medium".
 func QualityFlagWithNoise(wordCount int, coverage, noiseShare float64) string {
 	if wordCount < QualityLowWords || coverage < QualityLowCoverage {
 		return "low"
@@ -48,13 +43,9 @@ func QualityFlagWithNoise(wordCount int, coverage, noiseShare float64) string {
 	return "high"
 }
 
-// QualityReasons returns one plain sentence per factor that held the flag
-// below "high". It returns nil when nothing limits the reading.
-func QualityReasons(wordCount int, coverage float64) []string {
-	return QualityReasonsWithNoise(wordCount, coverage, 0)
-}
-
-// QualityReasonsWithNoise is QualityReasons plus the extraction-noise reason.
+// QualityReasonsWithNoise returns one plain sentence per factor that held the
+// flag below "high", including the extraction-noise reason. It returns nil when
+// nothing limits the reading.
 func QualityReasonsWithNoise(wordCount int, coverage, noiseShare float64) []string {
 	var reasons []string
 	if wordCount < QualityLowWords {

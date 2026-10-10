@@ -47,12 +47,12 @@ func TestComputeConfidenceFlag(t *testing.T) {
 }
 
 func TestComputeCIWidth(t *testing.T) {
-	w := computeCIWidth(100, 0.8)
+	w, _ := computeRangeWithDetails(100, 0.8)
 	if w <= 0 || w > 0.3 {
 		t.Errorf("CI width = %f; want between 0 and 0.3", w)
 	}
 	// More words -> narrower CI
-	w2 := computeCIWidth(10000, 0.8)
+	w2, _ := computeRangeWithDetails(10000, 0.8)
 	if w2 >= w {
 		t.Errorf("CI width for 10000 words (%f) should be narrower than for 100 words (%f)", w2, w)
 	}

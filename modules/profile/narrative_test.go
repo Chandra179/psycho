@@ -125,19 +125,7 @@ func TestTemplateNarrativeGenerator_EdgeScores(t *testing.T) {
 	}
 }
 
-func TestSummaryBandFormal(t *testing.T) {
-	if got := analyze.SummaryBandFormal("clout", 0.70); got != "confident/dominant" {
-		t.Errorf("SummaryBandFormal(clout, 0.70) = %q; want confident/dominant", got)
-	}
-	if got := analyze.SummaryBandFormal("clout", 0.30); got != "submissive/uncertain" {
-		t.Errorf("SummaryBandFormal(clout, 0.30) = %q; want submissive/uncertain", got)
-	}
-	if got := analyze.SummaryBandFormal("clout", 0.50); got != "moderate" {
-		t.Errorf("SummaryBandFormal(clout, 0.50) = %q; want moderate", got)
-	}
-	if got := analyze.SummaryBandCompact("clout", 0.70); got != "confident" {
-		t.Errorf("SummaryBandCompact(clout, 0.70) = %q; want confident", got)
-	}
+func TestSummaryTone(t *testing.T) {
 	if got := analyze.SummaryTone(0.70); got != "positive" {
 		t.Errorf("SummaryTone(0.70) = %q; want positive", got)
 	}

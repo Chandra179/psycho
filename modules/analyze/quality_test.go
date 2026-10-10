@@ -20,25 +20,25 @@ func TestQualityFlagMatchesThresholds(t *testing.T) {
 		{1500, 0.45, "medium"},
 	}
 	for _, c := range cases {
-		if got := QualityFlag(c.words, c.coverage); got != c.want {
+		if got := QualityFlagWithNoise(c.words, c.coverage, 0); got != c.want {
 			t.Errorf("QualityFlag(%d, %.1f) = %q, want %q", c.words, c.coverage, got, c.want)
 		}
 	}
 }
 
 func TestQualityReasonsExplainEveryLimitingFactor(t *testing.T) {
-	if got := QualityReasons(1500, 0.8); got != nil {
+	if got := QualityReasonsWithNoise(1500, 0.8, 0); got != nil {
 		t.Fatalf("no limits expected, got %v", got)
 	}
-	short := QualityReasons(300, 0.8)
+	short := QualityReasonsWithNoise(300, 0.8, 0)
 	if len(short) != 1 || !strings.Contains(short[0], "short") {
 		t.Fatalf("short text reason = %v", short)
 	}
-	both := QualityReasons(800, 0.5)
+	both := QualityReasonsWithNoise(800, 0.5, 0)
 	if len(both) != 2 || !strings.Contains(both[1], "Under 60%") {
 		t.Fatalf("medium text with low coverage reasons = %v", both)
 	}
-	veryLow := QualityReasons(2000, 0.4)
+	veryLow := QualityReasonsWithNoise(2000, 0.4, 0)
 	if len(veryLow) != 1 || !strings.Contains(veryLow[0], "Under 45%") {
 		t.Fatalf("very low coverage reasons = %v", veryLow)
 	}
@@ -47,8 +47,8 @@ func TestQualityReasonsExplainEveryLimitingFactor(t *testing.T) {
 		words    int
 		coverage float64
 	}{{100, 0.9}, {700, 0.9}, {2000, 0.4}} {
-		if QualityFlag(c.words, c.coverage) != "high" && len(QualityReasons(c.words, c.coverage)) == 0 {
-			t.Errorf("flag %q for %d words at %.1f coverage has no reason", QualityFlag(c.words, c.coverage), c.words, c.coverage)
+		if QualityFlagWithNoise(c.words, c.coverage, 0) != "high" && len(QualityReasonsWithNoise(c.words, c.coverage, 0)) == 0 {
+			t.Errorf("flag %q for %d words at %.1f coverage has no reason", QualityFlagWithNoise(c.words, c.coverage, 0), c.words, c.coverage)
 		}
 	}
 }
@@ -59,7 +59,7 @@ func TestFormatCount(t *testing.T) {
 			t.Errorf("FormatCount(%d) = %q, want %q", in, got, want)
 		}
 	}
-	if got := QualityReasons(800, 0.8); len(got) != 1 || !strings.Contains(got[0], "1,000 words") {
+	if got := QualityReasonsWithNoise(800, 0.8, 0); len(got) != 1 || !strings.Contains(got[0], "1,000 words") {
 		t.Errorf("reason must use a grouped count: %v", got)
 	}
 }
@@ -73,9 +73,6 @@ func TestNoiseShareCapsReadingQualityAtMedium(t *testing.T) {
 	}
 	if got := QualityFlagWithNoise(300, 0.8, 0.5); got != "low" {
 		t.Fatalf("noise must not raise a low flag, got %q", got)
-	}
-	if QualityFlag(2000, 0.8) != QualityFlagWithNoise(2000, 0.8, 0) {
-		t.Fatal("QualityFlag must equal the zero-noise flag")
 	}
 	reasons := QualityReasonsWithNoise(2000, 0.8, 0.063)
 	if len(reasons) != 1 || !strings.Contains(reasons[0], "6%") || strings.ContainsRune(reasons[0], '—') {

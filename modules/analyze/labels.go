@@ -165,49 +165,6 @@ func PercentileDescription(percentile int, reference *ingest.PercentileReference
 	return fmt.Sprintf("Percentile method not recorded (%s percentile).", Ordinal(percentile))
 }
 
-// Summary variable band wording lives here so every renderer (HTML report,
-// narrative) draws from one table per register instead of carrying its
-// own copy. Names match SummaryVariables JSON keys minus the "value_" style
-// prefix: "analytical_thinking", "clout", "authenticity".
-
-var summaryBandFormal = map[string][2]string{
-	"analytical_thinking": {"highly analytical", "intuitive"},
-	"clout":               {"confident/dominant", "submissive/uncertain"},
-	"authenticity":        {"personal/honest", "guarded/distant"},
-}
-
-var summaryBandCompact = map[string][2]string{
-	"analytical_thinking": {"analytical", "intuitive"},
-	"clout":               {"confident", "reserved"},
-	"authenticity":        {"personal", "guarded"},
-}
-
-// SummaryBandFormal returns the band wording used in long-form output (the
-// narrative): high-word, low-word pairs like "confident/dominant".
-func SummaryBandFormal(name string, score float64) string {
-	return summaryBand(summaryBandFormal, name, score)
-}
-
-// SummaryBandCompact returns the short wording used in the HTML report's
-// summary cards.
-func SummaryBandCompact(name string, score float64) string {
-	return summaryBand(summaryBandCompact, name, score)
-}
-
-func summaryBand(table map[string][2]string, name string, score float64) string {
-	band, ok := table[name]
-	if !ok {
-		return "moderate"
-	}
-	switch HighModerateLow(score) {
-	case "high":
-		return band[0]
-	case "low":
-		return band[1]
-	}
-	return "moderate"
-}
-
 // Emotional tone is a net word count on a sigmoid with divisor 5, so the usual
 // 35/65 bands would call a text neutral until positive words outnumber negative
 // ones by about 1.9 points of all words. These tighter cutoffs (about 1 point)

@@ -118,11 +118,6 @@ func (sa *ScoreAggregator) Aggregate(scores analyze.BigFiveScores, fv analyze.Fe
 	}
 }
 
-func makeTraitResult(score, ciWidth float64, percentile int, evidence []analyze.Contribution) TraitResult {
-	result, _ := makeTraitResultWithDetails(score, ciWidth, percentile, evidence)
-	return result
-}
-
 func makeTraitResultWithDetails(score, ciWidth float64, percentile int, evidence []analyze.Contribution) (TraitResult, analyze.RangeBoundsCalculation) {
 	low := score - ciWidth
 	high := score + ciWidth
@@ -150,11 +145,6 @@ func (sa *ScoreAggregator) percentileForRecorded(dim string, score float64, deta
 	return p
 }
 
-func (sa *ScoreAggregator) percentileFor(dim string, score float64) int {
-	p, _ := sa.percentileWithDetails(dim, score)
-	return p
-}
-
 func (sa *ScoreAggregator) percentileWithDetails(dim string, score float64) (int, analyze.PercentileCalculation) {
 	if sa.calibration != nil {
 		if p, trace, ok := sa.calibration.PercentileWithDetails(dim, score); ok {
@@ -166,8 +156,6 @@ func (sa *ScoreAggregator) percentileWithDetails(dim string, score float64) (int
 
 // The fallback assumes a mean of 0.50 and SD of 0.15; these are project
 // assumptions, not a measured population distribution.
-func scoreToPercentile(score float64) int { p, _ := normalPercentileWithDetails(score); return p }
-
 func normalPercentileWithDetails(score float64) (int, analyze.PercentileCalculation) {
 	mean, sd := 0.50, 0.15
 	z := (score - mean) / sd
@@ -184,13 +172,6 @@ func normalCDF(z float64) float64 {
 
 func computeConfidenceFlag(wordCount int, coverage, noiseShare float64) string {
 	return analyze.QualityFlagWithNoise(wordCount, coverage, noiseShare)
-}
-
-// computeCIWidth retains the legacy API name. This is a project-defined
-// rough half-width, not a validated confidence interval.
-func computeCIWidth(wordCount int, coverage float64) float64 {
-	w, _ := computeRangeWithDetails(wordCount, coverage)
-	return w
 }
 
 // Half-width limits for per-measure bounds. The floor keeps a very long text

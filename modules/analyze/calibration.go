@@ -24,7 +24,7 @@ type DimensionCalibration struct {
 // into interpretable absolute numbers: corpus-mean-centered scores and
 // distribution-free percentiles. A nil *Calibration means "uncalibrated" —
 // callers fall back to the fixed 0.50 intercepts and the normal
-// approximation in profile.scoreToPercentile.
+// approximation in the profile package.
 //
 // DictionarySHA256 pins the calibration to the dictionary it was built
 // from; a test fails if the dictionary changes without recalibration.

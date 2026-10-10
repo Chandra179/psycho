@@ -21,7 +21,7 @@ Inference is dictionary-based (LIWC-style), no LLM in the core inference path. I
 Requires Go 1.27. Generated CSS is committed; building the site requires no Node runtime.
 
 ```sh
-make wasm          # writes dist/ (psycho.wasm, wasm_exec.js, index.html, app.js, app.css, _headers)
+make wasm          # runs scripts/build-site.sh: writes dist/ with index.html and content-hashed files under dist/a/
 make serve-wasm    # builds, then serves dist/ at http://localhost:8081
 make test          # go test ./... -v
 ```

@@ -36,14 +36,17 @@
   }
 
   // ---- WebAssembly loading ----
+  // scripts/build-site.sh rewrites this to the content-hashed file name.
+  var WASM_URL = 'psycho.wasm';
+
   function loadWasm() {
     var go = new Go();
     var load = WebAssembly.instantiateStreaming
-      ? WebAssembly.instantiateStreaming(fetch('psycho.wasm'), go.importObject)
+      ? WebAssembly.instantiateStreaming(fetch(WASM_URL), go.importObject)
       : Promise.reject(new Error('no streaming'));
     return load.catch(function () {
       // Hosts that do not serve .wasm as application/wasm need the slow path.
-      return fetch('psycho.wasm').then(function (r) { return r.arrayBuffer(); })
+      return fetch(WASM_URL).then(function (r) { return r.arrayBuffer(); })
         .then(function (b) { return WebAssembly.instantiate(b, go.importObject); });
     }).then(function (res) {
       go.run(res.instance); // runs for the page's lifetime

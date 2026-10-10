@@ -151,7 +151,7 @@ func TestWordCountFormattedTheSameEverywhere(t *testing.T) {
 
 func TestQualityReasonDoesNotMisstateCoverage(t *testing.T) {
 	// 58% coverage is most of the text, so the reason must not say "few".
-	for _, r := range analyze.QualityReasons(10785, 0.58) {
+	for _, r := range analyze.QualityReasonsWithNoise(10785, 0.58, 0) {
 		if strings.Contains(strings.ToLower(r), "few of") {
 			t.Errorf("reason misstates 58%% coverage: %q", r)
 		}
