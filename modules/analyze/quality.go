@@ -76,7 +76,7 @@ func QualityReasonsWithNoise(wordCount int, coverage, noiseShare float64) []stri
 // ReadingCaveat is the one plain sentence shown at the top of every report.
 // The accuracy figure comes from the offline evaluation described under
 // Calculation details; the wording lives here so no renderer restates it.
-const ReadingCaveat = "These are rough estimates from counting word patterns. In an offline test they ranked authors only slightly better than chance. They cannot tell you whether someone is honest, reliable or a good hire, and should not be used for hiring, clinical or other decisions about a person."
+const ReadingCaveat = "These are rough estimates from counting word patterns. In a test on 2,442 essays, these scores matched people's questionnaire answers only slightly better than a coin flip. They cannot tell you whether someone is honest, reliable or a good hire, and should not be used for hiring, clinical or other decisions about a person."
 
 // FormatCount formats 10785 as "10,785" for user-facing copy.
 func FormatCount(n int) string {

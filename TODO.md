@@ -87,7 +87,16 @@ Still open (any dictionary edit changes `dictionary_sha256` and needs
    resting on non-significant correlations (pronouns with Extraversion and
    Neuroticism) were removed. Still unvalidated: the 0.06 scale (assumed SDs
    of 0.15 and 2.5 points), and the project's `pronoun` category includes
-   demonstratives that the paper's total-pronoun row does not.
+   demonstratives that the paper's total-pronoun row does not. Scale check on
+   2026-10-10 (SD of each score over the 3,992 reference posts): extraversion
+   0.009, conscientiousness 0.020, agreeableness 0.025, neuroticism 0.026,
+   openness 0.098. With correlations of 0.1 to 0.2 and a trait SD of 0.15,
+   about 0.015 to 0.03 is plausible, so four traits fit and Openness is about
+   four times too wide (its weights all track formal against casual writing and
+   add up). Left unchanged: bands use fixed score cut-offs, so shrinking
+   Openness would move existing reports between bands, and rank (AUC) does not
+   depend on scale. If done, shrink its weights until the SD is near 0.03, then
+   recalibrate and bump `rules_version`.
 7. **Accuracy is near chance.** AUC 0.532 to 0.559 on 2,442 essays. The supervised
    model (`cmd/train`, rerun 2026-10-10) reaches 0.57 to 0.63 on 489 held-out
    authors, ahead of the heuristic on every trait, but no 99% paired interval
