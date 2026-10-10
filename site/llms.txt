@@ -1,0 +1,16 @@
+# Psycho
+
+> Psycho is a free web tool that estimates Big Five personality traits and related language measures from text you provide. It runs entirely in the browser (WebAssembly), uploads nothing, and shows the calculation behind every score. It is for curiosity and self-reflection, not for hiring, clinical or other decisions about a person.
+
+## Key facts
+
+- URL: https://psycho.chan179.com/
+- Input: pasted text or a .txt / .md file. About 500 words or more gives the most meaningful results.
+- Output: nine score cards with ranges, matching words in context, and a Calculation details section. Export as one HTML file or as a PDF (browser print dialog).
+- Privacy: no upload, no account, no server-side analysis. Optional history is stored only in the visitor's own browser.
+- Method: dictionary word counts (LIWC-style). Big Five weights from Yarkoni (2010); Cognitive Style from Pennebaker et al. (2014); scores ranked against 3,992 blog posts.
+- Accuracy: modest. On 2,442 essays, trait-ranking AUC was 0.53 to 0.56 (0.5 is chance).
+
+## Links
+
+- [Source code and method notes](https://github.com/Chandra179/psycho)

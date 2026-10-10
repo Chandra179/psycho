@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://psycho.chan179.com/sitemap.xml

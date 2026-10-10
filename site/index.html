@@ -3,7 +3,24 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Psycho: analyze your writing</title>
+<title>Psycho: Private Psycholinguistic Writing Analysis</title>
+<meta name="description" content="Free psycholinguistic analysis of your own writing. It runs in your browser, nothing is uploaded, and every score shows its calculation. Export as HTML or PDF.">
+<link rel="canonical" href="https://psycho.chan179.com/">
+<meta name="theme-color" content="#0f766e">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Psycho">
+<meta property="og:title" content="Psycho: Private Psycholinguistic Writing Analysis">
+<meta property="og:description" content="Free psycholinguistic analysis of your own writing. It runs in your browser, nothing is uploaded, and every score shows its calculation. Export as HTML or PDF.">
+<meta property="og:url" content="https://psycho.chan179.com/">
+<meta property="og:image" content="https://psycho.chan179.com/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Psycho: read your writing's mind. Runs in your browser, nothing uploaded, export HTML or PDF.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Psycho: Private Psycholinguistic Writing Analysis">
+<meta name="twitter:description" content="Free psycholinguistic analysis of your own writing. It runs in your browser, nothing is uploaded, and every score shows its calculation. Export as HTML or PDF.">
+<meta name="twitter:image" content="https://psycho.chan179.com/og.png">
+<script type="application/ld+json">[{"@context": "https://schema.org", "@type": "WebApplication", "name": "Psycho", "url": "https://psycho.chan179.com/", "description": "Free psycholinguistic analysis of your own writing. It runs in your browser, nothing is uploaded, and every score shows its calculation. Export as HTML or PDF.", "applicationCategory": "EducationalApplication", "operatingSystem": "Any (web browser)", "browserRequirements": "Requires WebAssembly", "isAccessibleForFree": true, "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "image": "https://psycho.chan179.com/og.png"}, {"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What is Psycho?", "acceptedAnswer": {"@type": "Answer", "text": "Psycho is a free tool that estimates Big Five personality traits and related language measures from text you provide. It counts word patterns against a category dictionary and shows which words and categories produced each score."}}, {"@type": "Question", "name": "Is my text uploaded or stored?", "acceptedAnswer": {"@type": "Answer", "text": "No. The analysis runs entirely in your browser using WebAssembly, and no text is sent anywhere. Nothing is stored unless you choose to keep a reading on your own device, and you can delete it at any time."}}, {"@type": "Question", "name": "How accurate is it?", "acceptedAnswer": {"@type": "Answer", "text": "Only modestly. In a test on 2,442 essays, the scores matched questionnaire answers only slightly better than chance (AUC 0.53 to 0.56, where 0.5 is chance). It is meant for curiosity and self-reflection, not for hiring, clinical or other decisions about a person."}}, {"@type": "Question", "name": "What research is it based on?", "acceptedAnswer": {"@type": "Answer", "text": "The Big Five weights come from Yarkoni (2010), Personality in 100,000 words. The Cognitive Style measure uses the function-word index from Pennebaker and colleagues (2014). The dictionary approach follows LIWC, and the work builds on Pennebaker and King (1999)."}}, {"@type": "Question", "name": "Can I see how a score was calculated?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Open Calculation details in the report to see each matched word category, the number of matching words, the weight applied and the steps from raw score to final score and ranking."}}, {"@type": "Question", "name": "Can I save the report?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Save the report as a single HTML file, or use Save as PDF, which opens your browser's print dialog."}}]}]</script>
 <link rel="preload" href="psycho.wasm" as="fetch" type="application/wasm" crossorigin>
 <link rel="stylesheet" href="app.css">
 <script src="wasm_exec.js"></script>
@@ -61,6 +78,36 @@
 </section>
 
 <div id="result" class="mt-10" tabindex="-1"></div>
+
+<section class="max-w-[60rem] mx-auto px-4 sm:px-6 lg:px-8 mt-4 print:hidden" aria-labelledby="faq-title">
+  <h2 id="faq-title" class="font-serif text-2xl">Questions and answers</h2>
+  <div class="mt-3 divide-y divide-stone-200">
+  <div class="py-4">
+    <h3 class="font-medium">What is Psycho?</h3>
+    <p class="mt-1 text-sm leading-relaxed text-stone-600">Psycho is a free tool that estimates Big Five personality traits and related language measures from text you provide. It counts word patterns against a category dictionary and shows which words and categories produced each score.</p>
+  </div>
+  <div class="py-4">
+    <h3 class="font-medium">Is my text uploaded or stored?</h3>
+    <p class="mt-1 text-sm leading-relaxed text-stone-600">No. The analysis runs entirely in your browser using WebAssembly, and no text is sent anywhere. Nothing is stored unless you choose to keep a reading on your own device, and you can delete it at any time.</p>
+  </div>
+  <div class="py-4">
+    <h3 class="font-medium">How accurate is it?</h3>
+    <p class="mt-1 text-sm leading-relaxed text-stone-600">Only modestly. In a test on 2,442 essays, the scores matched questionnaire answers only slightly better than chance (AUC 0.53 to 0.56, where 0.5 is chance). It is meant for curiosity and self-reflection, not for hiring, clinical or other decisions about a person.</p>
+  </div>
+  <div class="py-4">
+    <h3 class="font-medium">What research is it based on?</h3>
+    <p class="mt-1 text-sm leading-relaxed text-stone-600">The Big Five weights come from Yarkoni (2010), Personality in 100,000 words. The Cognitive Style measure uses the function-word index from Pennebaker and colleagues (2014). The dictionary approach follows LIWC, and the work builds on Pennebaker and King (1999).</p>
+  </div>
+  <div class="py-4">
+    <h3 class="font-medium">Can I see how a score was calculated?</h3>
+    <p class="mt-1 text-sm leading-relaxed text-stone-600">Yes. Open Calculation details in the report to see each matched word category, the number of matching words, the weight applied and the steps from raw score to final score and ranking.</p>
+  </div>
+  <div class="py-4">
+    <h3 class="font-medium">Can I save the report?</h3>
+    <p class="mt-1 text-sm leading-relaxed text-stone-600">Yes. Save the report as a single HTML file, or use Save as PDF, which opens your browser's print dialog.</p>
+  </div>
+  </div>
+</section>
 
 <p class="max-w-[60rem] mx-auto px-4 sm:px-6 lg:px-8 mt-8 mb-12 text-xs leading-relaxed text-stone-500 text-center print:hidden">Your text is processed only in this browser tab and is not uploaded.
 Expand the score calculation to see every weighted category and sampled matching-word examples.</p>
