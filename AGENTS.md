@@ -50,7 +50,7 @@ scripts/
 
 Server routes: `GET /` (upload page) → `POST /report` (analyze + return the report inline, HTMX fragment or full page) and the JSON API `POST /analyze`, `POST /analyze-dir`, `GET /analysis/{id}`, `GET /analysis/{id}/pdf`. `PSYCHO_CONFIG` overrides the config file path.
 
-See `docs/` for the PRD (`docs/prd.md`), the system design (`docs/system-design.md`), and a general-user overview (`docs/overview.md`).
+See `docs/` for the PRD (`docs/prd.md`), and a general-user overview with the measured accuracy and references (`docs/overview.md`).
 
 ## Architecture
 
@@ -66,7 +66,7 @@ Wiring happens in `modules/server/http_server.go`: `NewHandler` builds each modu
 
 **Middleware** (outermost-first): `Recovery` → `RequestID` → `Timeout`. Request bodies are bounded with `http.MaxBytesReader` before decoding; `DecodeAndValidate[T]` applies go-playground/validator tags.
 
-Every inference function is meant to be traceable to a cited source; check the References section in `docs/system-design.md` and the comment at the top of the relevant file (`coefficients.go`, `regfocus.go`, `needcog.go`, ...) before changing scoring logic.
+Every inference function is meant to be traceable to a cited source; check the References section in `docs/overview.md` and the comment at the top of the relevant file (`coefficients.go`, `regfocus.go`, `needcog.go`, ...) before changing scoring logic.
 
 ## Key conventions
 

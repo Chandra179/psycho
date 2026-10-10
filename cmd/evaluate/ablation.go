@@ -1,7 +1,7 @@
 package main
 
 // Dictionary-size ablation (the breadth experiment summarized in
-// docs/system-design.md, Measured accuracy): rescore the labeled corpus with
+// docs/overview.md, Measured accuracy): rescore the labeled corpus with
 // the dictionary thinned to a fraction of its categories and read the
 // AUC-vs-size curve. A rising curve says dictionary growth buys ranking
 // accuracy; a flat curve says the current levers are exhausted and the

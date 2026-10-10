@@ -10,7 +10,7 @@
 //
 // With -ablation, it instead thins the dictionary to fractions of its
 // categories and reports the AUC-vs-size curve — the breadth experiment
-// summarized in docs/system-design.md (Measured accuracy).
+// summarized in docs/overview.md (Measured accuracy).
 //
 // Essays are scored with the production inference path (normalize →
 // extract → Infer) using raw, uncalibrated scores: calibration offsets are

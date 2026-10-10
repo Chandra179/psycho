@@ -55,9 +55,9 @@ make down   # stop and remove the container
 
 ## Documentation
 
-* [docs/overview.md](docs/overview.md): plain-language tour of what Psycho does and how to read a report
+* [docs/overview.md](docs/overview.md): plain-language tour, measured accuracy and the research references
 * [docs/prd.md](docs/prd.md): product requirements (goal, non-goals, constraints, core features)
-* [docs/system-design.md](docs/system-design.md): architecture, storage, module boundaries, and the research references each inference is based on
+* [docs/offline-supervised.md](docs/offline-supervised.md): the fixed protocol for the offline supervised experiment
 
 ## Scoring and input contract
 
