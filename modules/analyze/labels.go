@@ -79,33 +79,25 @@ func BigFiveBands() []ScoreBand {
 	}
 }
 
-// DimensionBandDescription derives each label from its actual classification
-// function, including additional measures whose upper band starts above .65.
-func DimensionBandDescription(key string, score float64) string {
-	label := DimensionLabel(key, score)
-	for _, band := range BigFiveBands() {
-		if label == band.Label && key != "need_for_cognition" && key != "need_for_closure" {
-			return band.Description
-		}
-	}
-	rangeText := fmt.Sprintf("%d–%d/100", int(lowLabelThreshold*100), int(highLabelThreshold*100))
-	if score < lowLabelThreshold {
-		rangeText = fmt.Sprintf("below %d/100", int(lowLabelThreshold*100))
-	} else if score >= highLabelThreshold {
-		rangeText = fmt.Sprintf("%d/100 or above", int(highLabelThreshold*100))
-	}
+// MeasureMeaning says in one plain sentence what a measure is about. It is
+// the hover text on a score's name; MeasureSummary says what the tool counts.
+func MeasureMeaning(key string) string {
 	meanings := map[string]string{
-		"promotion_focus":  "This text uses more words about gains and goals than words about duty and avoiding loss.",
-		"prevention_focus": "This text uses more words about duty and avoiding loss than words about gains and goals.",
-		"balanced":         "This text leans neither toward gains nor toward avoiding loss.",
-		"systematic":       "This text uses more formal, organized wording (words like \"the\" and \"of\").",
-		"intuitive":        "This text reads more like a story (words like \"I\", \"was\" and \"and\").",
-		"mixed":            "This text leans neither toward formal nor toward story-like wording.",
-		"moderate":         "No strong high or low pattern in this text.",
-		"high":             "A high word-pattern score.",
-		"low":              "A low word-pattern score.",
+		"openness":            "How curious and open to new ideas and experiences a person tends to be.",
+		"conscientiousness":   "How organized, careful and goal-driven a person tends to be.",
+		"extraversion":        "How social, talkative and full of energy a person tends to be.",
+		"agreeableness":       "How kind, cooperative and trusting a person tends to be.",
+		"neuroticism":         "How easily a person tends to feel stress, worry or low mood.",
+		"regulatory_focus":    "Whether a person focuses more on reaching goals and gains, or on doing their duty and avoiding losses.",
+		"need_for_cognition":  "How much a person enjoys thinking hard about problems.",
+		"cognitive_style":     "Whether a person tends to write in a formal, organized way or in a story-like way.",
+		"need_for_closure":    "How much a person wants clear, firm answers instead of staying unsure.",
+		"analytical_thinking": "How formal and logical the writing sounds.",
+		"clout":               "How sure and confident the writing sounds.",
+		"authenticity":        "How personal and casual the writing sounds.",
+		"emotional_tone":      "Whether the writing sounds more positive or more negative.",
 	}
-	return fmt.Sprintf("%s: %s. %s These labels describe word patterns, not a proven personality test.", label, rangeText, meanings[label])
+	return meanings[key]
 }
 
 // MeasureSummary is the one visible line saying what a measure counts. It
@@ -142,15 +134,6 @@ func SummarySignalLabel(name string, score float64) string {
 		return SummaryTone(score) + " language"
 	}
 	return HighModerateLow(score) + " signal"
-}
-
-func SummarySignalDescription(name string, score float64) string {
-	for _, band := range BigFiveBands() {
-		if band.Label == HighModerateLow(score) {
-			return fmt.Sprintf("%s (%s out of 100). This is a simple summary made for this tool. It is not an official LIWC score.", SummarySignalLabel(name, score), band.Range)
-		}
-	}
-	return "A simple summary made for this tool."
 }
 
 func PercentileDescription(percentile int, reference *ingest.PercentileReference) string {

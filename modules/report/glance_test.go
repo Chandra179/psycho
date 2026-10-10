@@ -158,21 +158,7 @@ func TestQualityReasonDoesNotMisstateCoverage(t *testing.T) {
 	}
 }
 
-func TestRangeNoteFlagsScoresThatCrossABand(t *testing.T) {
-	stable := rangeNote("openness", 0.47, 0.53)
-	if stable != "" {
-		t.Fatalf("stable range = %q", stable)
-	}
-	crossing := rangeNote("openness", 0.31, 0.40)
-	if !strings.Contains(crossing, "Close call between low and moderate") {
-		t.Fatalf("crossing range = %q", crossing)
-	}
-	if strings.ContainsRune(stable+crossing, '—') {
-		t.Fatal("user-facing copy must not contain em-dashes")
-	}
-}
-
-func TestReportShowsRangeNoteAndBandCue(t *testing.T) {
+func TestReportShowsMeasureTooltipAndHeading(t *testing.T) {
 	a := testAnalysis()
 	a.Traits["conscientiousness"] = Trait{Score: 0.50, Percentile: 50, ConfidenceInterval: []float64{.47, .53}}
 	var out strings.Builder
@@ -183,8 +169,11 @@ func TestReportShowsRangeNoteAndBandCue(t *testing.T) {
 	if strings.Contains(html, "would likely score") {
 		t.Error("per-card range sentence should be gone")
 	}
-	if !strings.Contains(html, "ⓘ") {
-		t.Error("band chips need a visible tap cue")
+	if !strings.Contains(html, "ⓘ") || !strings.Contains(html, "How curious and open to new ideas") {
+		t.Error("measure names need a visible tap cue and a plain-language tooltip")
+	}
+	if strings.Contains(html, "band explanation") || strings.Contains(html, "Big Five bands") {
+		t.Error("moderate/high/low badges and the band legend should be gone")
 	}
 	if !strings.Contains(html, "<h2 class=\"text-sm font-medium text-stone-700\">Evidence by measure</h2>") {
 		t.Error("evidence blocks need a parent heading")

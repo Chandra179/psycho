@@ -1,10 +1,9 @@
 {{define "report-score-row"}}
 <div class="report-score-row">
   <div class="flex flex-wrap items-center gap-2 min-w-0">
-    <h3 class="text-sm font-medium">{{.Name}}</h3>
     <details class="report-band">
-      <summary aria-label="{{.Name}}: {{.Label}} band explanation" aria-describedby="band-{{.Key}}" class="rounded-full px-2 py-1 text-xs font-medium {{.ChipClass}}">
-        {{.Label}}<span aria-hidden="true" class="ml-1 text-stone-500">ⓘ</span><span id="band-{{.Key}}" role="tooltip" class="report-tooltip">{{.SignalDescription}}</span>
+      <summary aria-describedby="tip-{{.Key}}" class="rounded-md">
+        <h3 class="inline text-sm font-medium">{{.Name}}</h3><span aria-hidden="true" class="ml-1 text-xs text-stone-500">ⓘ</span><span id="tip-{{.Key}}" role="tooltip" class="report-tooltip">{{.Tooltip}}</span>
       </summary>
     </details>
   </div>
@@ -12,7 +11,6 @@
   <div role="meter" aria-label="{{.Name}} estimated text score" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{.Score100}}" class="col-span-full h-1 rounded-full bg-stone-100 overflow-hidden">
     <div class="h-full rounded-full bg-teal-700" style="width:{{.Score100}}%"></div>
   </div>
-  {{if .RangeNote}}<p class="col-span-full text-xs leading-relaxed text-stone-600">{{.RangeNote}}</p>{{end}}
   {{if .Meaning}}<p class="col-span-full text-xs leading-relaxed text-stone-600">{{.Meaning}}</p>{{end}}
   {{if .Detail}}<p class="col-span-full text-xs leading-relaxed text-stone-600">{{.Detail}}</p>{{end}}
   {{if .FitNote}}<p class="col-span-full text-sm leading-relaxed text-stone-700"><strong class="font-medium text-amber-800">Low fit for this text.</strong> {{.FitNote}}</p>{{end}}
@@ -62,20 +60,7 @@
   <section class="mt-10">
     <h2 class="font-serif text-xl mb-2">Text-based measures</h2>
     <div class="mb-4 flex flex-col gap-3">
-      <p class="w-full text-sm sm:text-[15px] leading-relaxed text-pretty text-stone-500">The measures below the Big Five are simple word-pattern summaries made for this tool. Each one has its own scale.</p>
-      {{if .HasBigFive}}
-      <div class="report-legend mb-0 min-w-0 w-full" role="group" aria-label="Big Five bands">
-        <span class="shrink-0 whitespace-nowrap text-xs text-stone-500">Big Five bands</span>
-        {{range .Bands}}
-        <details class="report-band">
-          <summary aria-label="{{.Label}} band: {{.Range}} out of 100" aria-describedby="legend-{{.Label}}" class="whitespace-nowrap rounded-lg border border-stone-200 bg-white px-2 py-1.5 text-xs text-stone-600">
-            <span class="capitalize">{{.Label}}</span> <span class="ml-1 tabular-nums text-stone-800">{{.Range}}</span>
-            <span id="legend-{{.Label}}" role="tooltip" class="report-tooltip">{{.Description}}</span>
-          </summary>
-        </details>
-        {{end}}
-      </div>
-      {{end}}
+      <p class="w-full text-sm sm:text-[15px] leading-relaxed text-pretty text-stone-500">The measures below the Big Five are simple word-pattern summaries made for this tool.</p>
     </div>
     <div class="rounded-2xl border border-stone-200 bg-white">{{range .Traits}}{{template "report-score-row" .}}{{end}}</div>
   </section>

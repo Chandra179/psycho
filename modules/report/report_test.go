@@ -116,14 +116,14 @@ func TestBuildReportSuperset(t *testing.T) {
 	if got := len(v.Traits); got != 3 {
 		t.Fatalf("expected 3 traits (missing key skipped), got %d", got)
 	}
-	if v.Traits[0].Name != "Openness" || v.Traits[0].Label != "high" {
+	if v.Traits[0].Name != "Openness" {
 		t.Fatalf("unexpected first trait: %+v", v.Traits[0])
 	}
 	if !v.Traits[0].HasScoreRange || v.Traits[0].ScoreRangeLow != 45 || v.Traits[0].ScoreRangeHigh != 90 {
 		t.Fatalf("rough score range not scaled to 0-100: %+v", v.Traits[0])
 	}
-	if v.Traits[0].Score100 != 70 || v.Traits[0].SignalDescription != analyze.DimensionBandDescription("openness", .7) {
-		t.Fatalf("high score should use a text-pattern description: %+v", v.Traits[0])
+	if v.Traits[0].Score100 != 70 || v.Traits[0].Tooltip != analyze.MeasureMeaning("openness") {
+		t.Fatalf("score or tooltip wrong: %+v", v.Traits[0])
 	}
 	if len(v.Traits[0].Evidence) != 4 {
 		t.Fatalf("all contribution rows should be retained, got %d", len(v.Traits[0].Evidence))
@@ -131,38 +131,14 @@ func TestBuildReportSuperset(t *testing.T) {
 	if v.Traits[1].Name != "Neuroticism" || v.Traits[1].HasScoreRange {
 		t.Fatalf("trait without range must set HasScoreRange=false: %+v", v.Traits[1])
 	}
-	if v.Traits[1].Score100 != 30 || v.Traits[1].SignalDescription != analyze.DimensionBandDescription("neuroticism", .3) {
-		t.Fatalf("low score should use a text-pattern description: %+v", v.Traits[1])
+	if v.Traits[1].Score100 != 30 || v.Traits[1].Tooltip != analyze.MeasureMeaning("neuroticism") {
+		t.Fatalf("score or tooltip wrong: %+v", v.Traits[1])
 	}
 	if v.PercentileReferenceDescription != "Percentiles compare your scores with 2400 texts from Reference essay sample. They compare against that sample only, not against people in general." {
 		t.Fatalf("unexpected empirical reference description: %q", v.PercentileReferenceDescription)
 	}
 	if v.Coverage != 67 {
 		t.Fatalf("coverage should be a 0-100 integer, got %d", v.Coverage)
-	}
-}
-
-func TestBuildReportScoreBandWording(t *testing.T) {
-	cases := []struct {
-		name, label, description string
-		score                    float64
-	}{
-		{"low", "low", analyze.DimensionBandDescription("openness", .349), 0.349},
-		{"moderate threshold", "moderate", analyze.DimensionBandDescription("openness", .35), 0.35},
-		{"moderate middle", "moderate", analyze.DimensionBandDescription("openness", .5), 0.5},
-		{"high", "high", analyze.DimensionBandDescription("openness", .65), 0.65},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			a := &Analysis{Traits: map[string]Trait{"openness": {Score: tc.score}}}
-			got := BuildReport(a).Traits[0]
-			if got.Label != tc.label || got.SignalDescription != tc.description {
-				t.Fatalf("score %.3f produced label/description %q / %q", tc.score, got.Label, got.SignalDescription)
-			}
-			if tc.name == "moderate" && strings.Contains(strings.ToLower(got.SignalDescription), "curious") {
-				t.Fatal("moderate band must not make a directional personality claim")
-			}
-		})
 	}
 }
 
@@ -228,7 +204,7 @@ func TestRenderFragmentAndPage(t *testing.T) {
 		"Likely range: 45 to 90 out of 100", "Calculation details and limitations",
 		"not a statistical confidence interval", "not a proven personality test",
 		"Percentiles compare your scores with 2400 texts from Reference essay sample",
-		">the<", ">happy<", "Text-based measures", `aria-label="Big Five bands"`, `id="band-openness" role="tooltip"`, "Words longer than six letters (an older measure)",
+		">the<", ">happy<", "Text-based measures", `id="tip-openness" role="tooltip"`, "Words longer than six letters (an older measure)",
 	} {
 		if !strings.Contains(frag.String(), want) {
 			t.Errorf("fragment missing %q", want)
@@ -326,6 +302,16 @@ func TestLegacyPayloadWithoutOptionalEvidenceFields(t *testing.T) {
 	for _, want := range []string{"Percentile method not saved", "No examples for this saved result", "article", "5.00%"} {
 		if !strings.Contains(rendered.String(), want) {
 			t.Errorf("legacy report missing available information %q", want)
+		}
+	}
+}
+
+func TestEveryMeasureHasAPlainMeaning(t *testing.T) {
+	keys := []string{"openness", "conscientiousness", "extraversion", "agreeableness", "neuroticism", "regulatory_focus", "need_for_cognition", "cognitive_style", "need_for_closure", "analytical_thinking", "clout", "authenticity", "emotional_tone"}
+	for _, k := range keys {
+		m := analyze.MeasureMeaning(k)
+		if m == "" || strings.ContainsRune(m, '—') {
+			t.Errorf("measure %q has no usable meaning: %q", k, m)
 		}
 	}
 }

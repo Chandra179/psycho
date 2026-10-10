@@ -89,20 +89,18 @@ func readingQuality(flag string) string {
 // CardNotes are the small text lines under a score bar, shared by trait and
 // summary cards through the common "report-score-row" template.
 type CardNotes struct {
-	Meaning   string // what the measure counts
-	Detail    string // recorded counts behind the score, when available
-	RangeNote string // repeatability range in plain words; says "too close to call" when it crosses a band
-	FitNote   string // why this measure fits this text poorly, when it does not
+	Meaning string // what the measure counts
+	Detail  string // recorded counts behind the score, when available
+	Tooltip string // plain meaning of the measure, shown when hovering its name
+	FitNote string // why this measure fits this text poorly, when it does not
 }
 
 type TraitView struct {
-	Key               string
-	Name              string
-	Label             string
-	ChipClass         string
-	Score100          int
-	PercentileText    string
-	SignalDescription string
+	Key            string
+	Name           string
+	Label          string
+	Score100       int
+	PercentileText string
 	CardNotes
 	HasScoreRange  bool
 	ScoreRangeLow  int
@@ -121,10 +119,9 @@ type ValueView struct {
 }
 
 type SummaryCard struct {
-	Key                                 string
-	Name                                string
-	Score100                            int
-	Label, ChipClass, SignalDescription string
+	Key      string
+	Name     string
+	Score100 int
 	CardNotes
 }
 
@@ -134,7 +131,6 @@ type ReportView struct {
 	Glance                         Glance
 	Traits                         []TraitView
 	HasBigFive                     bool
-	Bands                          []analyze.ScoreBand
 	Values                         []ValueView
 	Summary                        []SummaryCard
 	PercentileReferenceDescription string
@@ -147,25 +143,6 @@ type ReportView struct {
 	StandaloneCSS                  template.CSS
 }
 
-// chipClasses maps a trait's band label to Tailwind chip colors.
-var chipClasses = map[string]string{
-	"high":              "bg-teal-50 text-teal-700",
-	"promotion_focus":   "bg-teal-50 text-teal-700",
-	"systematic":        "bg-teal-50 text-teal-700",
-	"moderate":          "bg-stone-100 text-stone-600",
-	"balanced":          "bg-stone-100 text-stone-600",
-	"mixed":             "bg-stone-100 text-stone-600",
-	"high signal":       "bg-teal-50 text-teal-700",
-	"moderate signal":   "bg-stone-100 text-stone-600",
-	"low signal":        "bg-stone-100 text-stone-700",
-	"positive language": "bg-teal-50 text-teal-700",
-	"neutral language":  "bg-stone-100 text-stone-600",
-	"negative language": "bg-stone-100 text-stone-700",
-	"low":               "bg-stone-100 text-stone-700",
-	"prevention_focus":  "bg-stone-100 text-stone-700",
-	"intuitive":         "bg-stone-100 text-stone-700",
-}
-
 // BuildReport assembles the single report view from a normalized analysis.
 // Traits missing from the map are skipped; all visible numbers come from
 // the recorded analysis rather than rerunning a model.
@@ -173,7 +150,6 @@ func BuildReport(a *Analysis) ReportView {
 	v := ReportView{
 		Quality:                        readingQuality(a.ConfidenceFlag),
 		Glance:                         BuildGlance(a),
-		Bands:                          analyze.BigFiveBands(),
 		WordCount:                      a.WordCount,
 		WordCountText:                  analyze.FormatCount(a.WordCount),
 		Coverage:                       int(math.Round(a.DictionaryCoverage * 100)),
@@ -245,17 +221,14 @@ func BuildReport(a *Analysis) ReportView {
 		if !ok {
 			continue
 		}
-		label := analyze.DimensionLabel(k, t.Score)
 		tv := TraitView{
-			Key:               k,
-			Name:              analyze.DimensionDisplayName(k),
-			Label:             label,
-			ChipClass:         chipClasses[label],
-			Score100:          int(math.Round(t.Score * 100)),
-			PercentileText:    percentileText(t.Percentile, a.PercentileReference),
-			SignalDescription: analyze.DimensionBandDescription(k, t.Score),
+			Key:            k,
+			Name:           analyze.DimensionDisplayName(k),
+			Score100:       int(math.Round(t.Score * 100)),
+			PercentileText: percentileText(t.Percentile, a.PercentileReference),
 			CardNotes: CardNotes{
 				Meaning: analyze.MeasureSummary(k),
+				Tooltip: analyze.MeasureMeaning(k),
 				FitNote: fit[k],
 			},
 			Evidence: t.Evidence,
@@ -278,7 +251,6 @@ func BuildReport(a *Analysis) ReportView {
 			tv.HasScoreRange = true
 			tv.ScoreRangeLow = int(math.Round(t.ConfidenceInterval[0] * 100))
 			tv.ScoreRangeHigh = int(math.Round(t.ConfidenceInterval[1] * 100))
-			tv.CardNotes.RangeNote = rangeNote(k, t.ConfidenceInterval[0], t.ConfidenceInterval[1])
 		}
 		v.Traits = append(v.Traits, tv)
 		if slices.Contains(traitOrder[:5], k) {
@@ -286,15 +258,6 @@ func BuildReport(a *Analysis) ReportView {
 		}
 	}
 	return v
-}
-
-// rangeNote flags a score whose range reaches into a neighbouring band. It is
-// empty when the band is stable; the numeric range lives in Calculation details.
-func rangeNote(key string, low, high float64) string {
-	if a, b := analyze.DimensionLabel(key, low), analyze.DimensionLabel(key, high); a != b {
-		return fmt.Sprintf("Close call between %s and %s.", a, b)
-	}
-	return ""
 }
 
 func round2(f float64) float64 {
@@ -329,14 +292,11 @@ func percentileReferenceDescription(reference *ingest.PercentileReference) strin
 }
 
 func newSummaryCard(key, name string, score float64) SummaryCard {
-	band := analyze.SummarySignalLabel(key, score)
 	return SummaryCard{
-		Key:      key,
-		Name:     name,
-		Score100: int(math.Round(score * 100)),
-		Label:    band, ChipClass: chipClasses[band],
-		SignalDescription: analyze.SummarySignalDescription(key, score),
-		CardNotes:         CardNotes{Meaning: analyze.MeasureSummary(key)},
+		Key:       key,
+		Name:      name,
+		Score100:  int(math.Round(score * 100)),
+		CardNotes: CardNotes{Meaning: analyze.MeasureSummary(key), Tooltip: analyze.MeasureMeaning(key)},
 	}
 }
 

@@ -21,19 +21,9 @@ func TestReadingPreservesAllMeasuresAndCanonicalBoundaries(t *testing.T) {
 		t.Fatalf("missing measures: %+v", v)
 	}
 	for _, row := range v.Traits {
-		if row.Label != analyze.DimensionLabel(row.Key, .65) || row.Score100 != 65 {
-			t.Fatalf("changed score/band: %+v", row)
+		if row.Score100 != 65 {
+			t.Fatalf("changed score: %+v", row)
 		}
-	}
-	// Every measure uses the shared rule: exactly 65/100 is the top band, as the legend says.
-	if v.Traits[0].Label != "high" || v.Traits[5].Label != "promotion_focus" || v.Traits[6].Label != "high" || v.Traits[7].Label != "systematic" || v.Traits[8].Label != "high" {
-		t.Fatalf("65/100 boundary rules drifted: %+v", v.Traits)
-	}
-	if !strings.Contains(v.Traits[6].SignalDescription, "65/100 or above") {
-		t.Fatalf("top-band wording drifted: %q", v.Traits[6].SignalDescription)
-	}
-	if v.Bands[0].Range != "0–34" || v.Bands[1].Range != "35–64" || v.Bands[2].Range != "65–100" {
-		t.Fatalf("wrong legend: %+v", v.Bands)
 	}
 	wantNames := []string{"Openness", "Conscientiousness", "Extraversion", "Agreeableness", "Neuroticism", "Goals: gain vs. safety", "Need for Cognition", "Cognitive Style", "Preference for certainty"}
 	for _, variant := range []string{"fragment", "full page", "standalone"} {
@@ -58,13 +48,13 @@ func TestReadingPreservesAllMeasuresAndCanonicalBoundaries(t *testing.T) {
 			if strings.Count(rendered, "Text-based measures") != 1 || strings.Contains(rendered, "Big Five text signals") || strings.Contains(rendered, "Additional text measures") {
 				t.Fatal("score sections were not combined under the single heading")
 			}
-			if !strings.Contains(rendered, `aria-label="Big Five bands"`) || !strings.Contains(rendered, "The measures below the Big Five are simple word-pattern summaries") {
-				t.Fatal("combined section is missing its scoped legend or proxy note")
+			if strings.Contains(rendered, "Big Five bands") || !strings.Contains(rendered, "The measures below the Big Five are simple word-pattern summaries") {
+				t.Fatal("combined section is missing its note or still has the band legend")
 			}
 			for _, row := range v.Traits {
-				tooltip := `id="band-` + row.Key + `" role="tooltip"`
-				if !strings.Contains(rendered, tooltip) || !strings.Contains(rendered, html.EscapeString(row.SignalDescription)) {
-					t.Errorf("measure %q is missing its own band explanation", row.Key)
+				tooltip := `id="tip-` + row.Key + `" role="tooltip"`
+				if !strings.Contains(rendered, tooltip) || !strings.Contains(rendered, html.EscapeString(analyze.MeasureMeaning(row.Key))) {
+					t.Errorf("measure %q is missing its tooltip", row.Key)
 				}
 			}
 			lastPosition := -1
