@@ -1,0 +1,9 @@
+{
+  // Static site: Cloudflare Workers serves dist/ (built by `make wasm`) and runs no Worker code.
+  "name": "psycho",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist"
+  },
+  "routes": [{ "pattern": "psycho.chan179.com", "custom_domain": true }]
+}

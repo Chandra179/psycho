@@ -5,11 +5,24 @@ assets:
 vendor:
 	go mod tidy && go mod vendor
 
+.PHONY: wasm serve-wasm deploy
+# Browser-only build: dist/ is a static site (psycho.wasm plus its page) that
+# analyzes text on the visitor's device. Serve it over http, e.g. `make serve-wasm`.
+wasm:
+	mkdir -p dist
+	GOOS=js GOARCH=wasm go build -ldflags="-s -w" -trimpath -o dist/psycho.wasm ./cmd/wasm
+	cp "$$(go env GOROOT)/lib/wasm/wasm_exec.js" dist/wasm_exec.js
+	cp site/index.html site/app.js site/_headers assets/app.css dist/
+
+serve-wasm: wasm
+	cd dist && python3 -m http.server 8081
+
+# Publishes dist/ to Cloudflare Workers (static assets; see wrangler.jsonc). Needs `npx wrangler login` once.
+deploy: wasm
+	npx wrangler deploy
+
 build:
 	go build ./...
-
-run:
-	go run ./cmd/psycho/
 
 test:
 	go test ./... -v
@@ -17,50 +30,3 @@ test:
 # Offline experiment; corpus and model artifacts stay local and gitignored.
 train:
 	go run ./cmd/train -csv corpus-eval/essays.csv -out testresults/supervised
-
-test-curl:
-	@TMP=$$(mktemp); \
-	curl -s -X POST http://localhost:8080/analyze-dir \
-		-H "Content-Type: application/json" \
-		-d '{}' > $$TMP; \
-	jq . $$TMP; \
-	ID=$$(jq -r .analysis_id $$TMP); \
-	rm $$TMP; \
-	echo ""; \
-	echo "--> analysis_id: $$ID"; \
-	echo "--> make pdf ID=$$ID"
-
-# Usage: make pdf ID=<analysis_id>
-pdf:
-	@[ -n "$(ID)" ] || { echo "Usage: make pdf ID=<analysis_id>"; exit 1; }
-	curl -s -o "profile-$(ID).pdf" \
-		-X GET http://localhost:8080/analysis/$(ID)/pdf
-
-# Runs test-curl, downloads the resulting PDF, and renders the single HTML
-# report (profile-report.html) from the same analysis.
-test-pdf:
-	@TMP=$$(mktemp); \
-	curl -s -X POST http://localhost:8080/analyze-dir \
-		-H "Content-Type: application/json" \
-		-d '{}' > $$TMP; \
-	jq . $$TMP; \
-	ID=$$(jq -r .analysis_id $$TMP); \
-	if [ -z "$$ID" ] || [ "$$ID" = "null" ]; then \
-		echo "--> analyze-dir failed, no analysis_id"; rm $$TMP; exit 1; \
-	fi; \
-	echo "--> analysis_id: $$ID"; \
-	curl -s -o "profile-$$ID.pdf" -X GET http://localhost:8080/analysis/$$ID/pdf; \
-	echo "--> wrote profile-$$ID.pdf"; \
-	go run ./cmd/rendertemplates < $$TMP; \
-	rm $$TMP; \
-	echo "--> wrote profile-report.html"
-
-image:
-	podman build -t psycho .
-
-up: image
-	podman run -d --name psycho -p 8080:8080 psycho
-
-down:
-	-podman stop psycho
-	-podman rm psycho

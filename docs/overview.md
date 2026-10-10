@@ -15,7 +15,7 @@ updated: 2026-10-10
 
 Psycho estimates Big Five traits and related language measures from text and shows the evidence behind each score.
 
-It runs as one process, needs no account, and makes no external calls during analysis. It is not a clinical or diagnostic tool.
+It runs entirely in your browser, needs no account and no server, and makes no network calls during analysis. It is not a clinical or diagnostic tool.
 
 ## Algorithms and approach
 
@@ -30,14 +30,14 @@ Writing -> Normalize -> Dictionary match -> Score (9 measures) -> Rank vs 2004 b
 3. **Score:** the Big Five use a correlation-weighted heuristic (Yarkoni, 2010), checked against the paper's Table 1; the Openness weights are scaled down so its spread matches the other traits. Cognitive Style is a function-word index (Pennebaker et al., 2014). Regulatory Focus, Need for Cognition and Need for Closure are project-defined proxies. Schwartz values are category counts with excerpts.
 4. **Rank:** each score is ranked against 3,992 blog texts from 2004, with ties at the midpoint. This is not a percentage of people.
 5. **Check quality:** under 500 words or under 45% coverage is low; under 1,000 words or under 60% coverage is medium. A share of lines that look like page numbers, captions or headers caps the flag at medium. Fit notes flag measures that mostly reflect style or topic.
-6. **Report:** a notice under the header says the scores are rough and not for hiring or clinical use. Nine score cards each show a range ("another stretch of similar text would likely score N to M") and say "too close to call" when it crosses a band. Value excerpts, expandable calculation details and a PDF with the same notes follow.
+6. **Report:** a notice under the header says the scores are rough and not for hiring or clinical use. Nine score cards each show a range ("another stretch of similar text would likely score N to M") and say "too close to call" when it crosses a band. Value excerpts and expandable calculation details follow, and the report can be saved as a PDF (through the browser's print dialog) or as one HTML file.
 
 ## Evidence
 
 | Area | Result |
 |---|---|
-| Speed | 5,000 words in a median of 5 ms (p95 11 ms), one development machine |
-| Storage | about 10 MB per subject |
+| Speed | 5,000 words in a median of 5 ms (p95 11 ms), one development machine, native build |
+| Download | about 2.2 MB compressed, once |
 | Coverage | about 61% of words scored in typical test samples |
 | Accuracy | trait-ranking AUC 0.532 to 0.559 on 2,442 essays (0.5 is chance) |
 
@@ -69,7 +69,7 @@ What did not help, tested on the same essays: more dictionary words (coverage ro
 
 ## Your data
 
-Each analysis stores its text, scores and evidence in one database file. Copy the file to back it up.
+Nothing is uploaded. By default nothing is stored either. If you tick "keep this reading on this device", the scores, evidence and short text excerpts are saved in your browser only, and you can delete them from the same page.
 
 ## References
 

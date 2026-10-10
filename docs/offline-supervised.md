@@ -1,8 +1,8 @@
 # Offline supervised Big Five experiment
 
 This milestone tests whether learned dictionary-category weights improve on
-the current heuristic. The server, JSON APIs, stored profiles, HTML reports,
-and PDF exports continue using their existing scoring path.
+the current heuristic. The browser app and its HTML reports continue using their existing scoring
+path.
 
 ## Reproduce
 
@@ -116,12 +116,10 @@ probabilities retain full precision without score rounding.
 
 A later release requires evidence review, practical quality requirements,
 verified target/provenance, applicable text domains and lengths, and permission
-to distribute the intended artifacts. Production integration must update all
-analysis endpoints, saved-profile decoding, narratives, PDF exports, browser
-reports and standalone HTML together. Bump the profile JSON version and use
-the existing `profile_version` column; legacy results retain their recorded
-heuristic meaning and are never rescored. Model availability needs explicit
-reasons, configured corrupt artifacts must fail startup, and every prediction
+to distribute the intended artifacts. Production integration must update the narrative, saved-reading decoding, browser reports and standalone HTML
+together. Version the saved analysis JSON; legacy readings retain their
+recorded heuristic meaning and are never rescored. Model availability needs explicit
+reasons, corrupt artifacts must fail to load, and every prediction
 must record its inputs and calculation trace.
 
 ## Verification requirements
@@ -138,7 +136,7 @@ must record its inputs and calculation trace.
 - id: production-compatibility
   type: invariant
   statement: Existing analysis and report contracts retain current behavior.
-  fitness_function: Existing pipeline, API, storage, PDF and report tests in go test ./....
+  fitness_function: Existing pipeline, calibration and report tests in go test ./....
 - id: supervised-local-data
   type: constraint
   statement: Committed findings contain no participant rows or trained artifact.

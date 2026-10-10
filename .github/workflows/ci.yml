@@ -35,5 +35,10 @@ jobs:
       - name: Build
         run: go build ./...
 
+      - name: Build browser bundle
+        run: |
+          GOOS=js GOARCH=wasm go vet ./cmd/wasm
+          make wasm
+
       - name: Test
         run: go test ./...

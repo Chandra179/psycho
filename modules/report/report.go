@@ -1,8 +1,8 @@
 // Package report renders Psycho's single HTML report (the Reading
 // design): compact score rows with the statistical receipts collapsed into
 // an expandable section. It serves two shapes from the same builder: an HTML
-// fragment for HTMX to swap into the upload page, and a full standalone
-// page for no-JS fallback and the CLI.
+// fragment the page inserts into itself, and a full standalone page for the
+// saved-report download.
 package report
 
 import (
@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"html/template"
 	"io"
+	"io/fs"
 	"math"
 	"os"
 	"path/filepath"
@@ -23,9 +24,8 @@ import (
 	"psycho/modules/ingest"
 )
 
-// Analysis is the normalized input. Its JSON shape matches the /analyze and
-// /analyze-dir responses, so an AnalysisOutput round-trips through JSON
-// into this struct.
+// Analysis is the normalized input. Its JSON shape matches ingest.AnalysisOutput,
+// so a pipeline result round-trips through JSON into this struct.
 type Analysis struct {
 	AnalysisID          string                          `json:"analysis_id"`
 	WordCount           int                             `json:"word_count"`
@@ -342,43 +342,56 @@ func newSummaryCard(key, name string, score float64) SummaryCard {
 	}
 }
 
-// Template sets are parsed once per templates directory and reused; a
-// running server holds exactly one process-lifetime directory.
-var tplCache sync.Map // templatesDir|mode -> *template.Template
+// Template sets are parsed once per source and reused; a running server holds
+// exactly one process-lifetime directory.
+var tplCache sync.Map // source|mode -> *template.Template
 
-// RenderAnalysis renders the report to w. With fullPage true it emits a
-// complete standalone HTML document (no-JS fallback, CLI); otherwise just
-// the report fragment for HTMX to swap into the upload page.
+// RenderAnalysis renders the report to w from a templates directory. With
+// fullPage true it emits a complete HTML document; otherwise just the report
+// fragment the page inserts into itself.
 func RenderAnalysis(templatesDir string, a *Analysis, w io.Writer, fullPage bool) error {
-	return renderAnalysis(templatesDir, a, w, fullPage, false)
+	return renderAnalysis("dir:"+templatesDir, os.DirFS(templatesDir), nil, a, w, fullPage)
 }
 
 // RenderStandaloneAnalysis embeds trusted, compiled local CSS for offline exports.
 func RenderStandaloneAnalysis(templatesDir string, a *Analysis, w io.Writer) error {
-	return renderAnalysis(templatesDir, a, w, true, true)
+	css, err := os.ReadFile(filepath.Join(templatesDir, "..", "assets", "app.css"))
+	if err != nil {
+		return fmt.Errorf("read standalone styles: %w", err)
+	}
+	return renderAnalysis("dir:"+templatesDir, os.DirFS(templatesDir), css, a, w, true)
 }
 
-func renderAnalysis(templatesDir string, a *Analysis, w io.Writer, fullPage, standalone bool) error {
+// RenderAnalysisFS is RenderAnalysis for templates held in a file system, such
+// as the embedded copy the browser build uses. The process must pass the same
+// file system every time: parsed templates are cached per source.
+func RenderAnalysisFS(templates fs.FS, a *Analysis, w io.Writer, fullPage bool) error {
+	return renderAnalysis("fs", templates, nil, a, w, fullPage)
+}
+
+// RenderStandaloneAnalysisFS is RenderStandaloneAnalysis with the templates and
+// the compiled CSS supplied by the caller. css is a project build artifact,
+// never user input.
+func RenderStandaloneAnalysisFS(templates fs.FS, css []byte, a *Analysis, w io.Writer) error {
+	return renderAnalysis("fs", templates, css, a, w, true)
+}
+
+func renderAnalysis(source string, templates fs.FS, css []byte, a *Analysis, w io.Writer, fullPage bool) error {
 	v := BuildReport(a)
-	if standalone {
-		css, err := os.ReadFile(filepath.Join(templatesDir, "..", "assets", "app.css"))
-		if err != nil {
-			return fmt.Errorf("read standalone styles: %w", err)
-		}
-		// This file is a build artifact controlled by the project, never user input.
+	if css != nil {
 		v.StandaloneCSS = template.CSS(css)
 	}
 	v.GeneratedAt = time.Now().Format("January 2, 2006")
 
-	name, files := "report-body", []string{filepath.Join(templatesDir, "report.html")}
+	name, files := "report-body", []string{"report.html"}
 	if fullPage {
 		name = "report-page"
-		files = []string{filepath.Join(templatesDir, "report-page.html"), files[0]}
+		files = []string{"report-page.html", "report.html"}
 	}
-	key := templatesDir + "|" + name
+	key := source + "|" + name
 	tplAny, ok := tplCache.Load(key)
 	if !ok {
-		tpl, err := template.ParseFiles(files...)
+		tpl, err := template.ParseFS(templates, files...)
 		if err != nil {
 			return fmt.Errorf("parse templates: %w", err)
 		}

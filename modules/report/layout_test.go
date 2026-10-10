@@ -44,7 +44,7 @@ func TestReportMarkupKeepsReadableSizesAndTapTargets(t *testing.T) {
 	if strings.Contains(body, "text-[11px]") {
 		t.Error("report text must be at least 12px (text-xs)")
 	}
-	if got := strings.Count(body, "min-h-[44px]"); got != 2 {
+	if got := strings.Count(body, "min-h-[44px]"); got != 3 {
 		t.Errorf("header actions need 44px tap targets, found %d", got)
 	}
 }

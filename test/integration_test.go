@@ -1,68 +1,43 @@
 package integration_test
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"net/http"
-	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
-	"psycho/middleware"
 	"psycho/modules/analyze"
 	"psycho/modules/ingest"
 	"psycho/modules/pipeline"
 	"psycho/modules/profile"
-	"psycho/zlogger"
 )
 
-// newTestPipeline wires the real modules against the real dictionary with an
-// in-memory database — the same composition the server performs. It returns
-// the profile dependencies too, for tests that assert on persisted state.
-func newTestPipeline(t *testing.T) (*pipeline.Pipeline, *profile.Dependencies) {
+// newTestPipeline wires the real modules against the real dictionary, the
+// same composition the browser build performs, with no calibration.
+func newTestPipeline(t *testing.T) *pipeline.Pipeline {
 	t.Helper()
-	logger := zlogger.New("dev")
-
-	profileDeps, err := profile.NewDependencies(profile.Config{DBPath: ":memory:"}, logger)
-	if err != nil {
-		t.Fatalf("init profile: %v", err)
-	}
-
-	analyzeDeps, err := analyze.NewDependencies(analyze.Config{DictionaryPath: "../modules/analyze/dictionary.json"}, logger)
+	analyzeDeps, err := analyze.NewDependencies(analyze.Config{DictionaryPath: "../modules/analyze/dictionary.json"})
 	if err != nil {
 		t.Fatalf("init analyze: %v", err)
 	}
-
-	pipe := pipeline.New(
+	return pipeline.New(
 		analyzeDeps.Extractor,
 		analyzeDeps.Model,
-		profileDeps.Aggregator,
-		profileDeps.NarrativeGenerator,
-		profileDeps.Storage,
+		profile.NewScoreAggregator(),
+		profile.NewTemplateNarrativeGenerator(),
 		analyzeDeps.Calibration,
 	)
-	return pipe, profileDeps
 }
 
 func hasMatchedWordSamples(traits map[string]any) bool {
 	for _, traitValue := range traits {
-		trait, ok := traitValue.(map[string]any)
+		trait, ok := traitValue.(profile.TraitResult)
 		if !ok {
 			continue
 		}
-		rows, ok := trait["evidence"].([]any)
-		if !ok {
-			continue
-		}
-		for _, rowValue := range rows {
-			row, ok := rowValue.(map[string]any)
-			if !ok {
-				continue
-			}
-			if words, ok := row["matched_words"].([]any); ok && len(words) > 0 {
+		for _, row := range trait.Evidence {
+			if len(row.MatchedWords) > 0 {
 				return true
 			}
 		}
@@ -71,66 +46,18 @@ func hasMatchedWordSamples(traits map[string]any) bool {
 }
 
 func TestFullPipeline(t *testing.T) {
-	logger := zlogger.New("dev")
+	pipe := newTestPipeline(t)
 
-	pipe, profileDeps := newTestPipeline(t)
-
-	handler := analyze.MakeHandleAnalyze(1_000_000, logger, pipe.Run)
-	mux := http.NewServeMux()
-	mux.HandleFunc("POST /analyze", handler)
-	chain := middleware.Chain(mux, middleware.RequestID)
-	server := httptest.NewServer(chain)
-	defer server.Close()
-
-	words := make([]string, 1000)
-	for i := range words {
-		switch i % 10 {
-		case 0:
-			words[i] = "happy"
-		case 1:
-			words[i] = "think"
-		case 2:
-			words[i] = "achieve"
-		case 3:
-			words[i] = "friend"
-		case 4:
-			words[i] = "sad"
-		case 5:
-			words[i] = "always"
-		case 6:
-			words[i] = "I"
-		case 7:
-			words[i] = "accommodate"
-		default:
-			words[i] = "the"
-		}
-	}
-	text := ""
-	for i := 0; i < len(words); i += 20 {
-		end := min(i+20, len(words))
-		for j := i; j < end; j++ {
-			text += words[j] + " "
-		}
+	pool := []string{"happy", "think", "achieve", "friend", "sad", "always", "I", "accommodate", "the", "the"}
+	var text strings.Builder
+	for i := 0; i < 1000; i++ {
+		text.WriteString(pool[i%len(pool)])
+		text.WriteString(" ")
 	}
 
-	payload := map[string]string{
-		"text": text,
-	}
-	body, _ := json.Marshal(payload)
-
-	resp, err := http.Post(fmt.Sprintf("%s/analyze", server.URL), "application/json", bytes.NewReader(body))
+	result, err := pipe.Run(t.Context(), text.String())
 	if err != nil {
-		t.Fatalf("POST /analyze: %v", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("expected 200, got %d", resp.StatusCode)
-	}
-
-	var result analyze.AnalyzeResponse
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		t.Fatalf("decode response: %v", err)
+		t.Fatalf("Run: %v", err)
 	}
 
 	if result.AnalysisID == "" {
@@ -149,189 +76,57 @@ func TestFullPipeline(t *testing.T) {
 		t.Errorf("len(Traits) = %d; want 9", len(result.Traits))
 	}
 	if result.PercentileReference == nil || result.PercentileReference.Method != ingest.PercentileMethodNormalApproximation {
-		t.Errorf("uncalibrated API response should describe normal-approximation percentiles: %+v", result.PercentileReference)
+		t.Errorf("uncalibrated response should describe normal-approximation percentiles: %+v", result.PercentileReference)
 	}
 	if !hasMatchedWordSamples(result.Traits) {
-		t.Error("/analyze response should include matched-word evidence samples")
+		t.Error("response should include matched-word evidence samples")
 	}
 
 	for traitName, traitAny := range result.Traits {
-		trait := traitAny.(map[string]any)
-		score := trait["score"].(float64)
-		percentile := int(trait["percentile"].(float64))
-		ci := trait["confidence_interval"].([]any)
-		if score < 0 || score > 1 {
-			t.Errorf("%s score = %f; out of range", traitName, score)
+		trait := traitAny.(profile.TraitResult)
+		if trait.Score < 0 || trait.Score > 1 {
+			t.Errorf("%s score = %f; out of range", traitName, trait.Score)
 		}
-		if percentile < 0 || percentile > 100 {
-			t.Errorf("%s percentile = %d; out of range", traitName, percentile)
+		if trait.Percentile < 0 || trait.Percentile > 100 {
+			t.Errorf("%s percentile = %d; out of range", traitName, trait.Percentile)
 		}
-		if len(ci) != 2 {
-			t.Errorf("%s CI length = %d; want 2", traitName, len(ci))
+		if len(trait.ConfidenceInterval) != 2 {
+			t.Errorf("%s CI length = %d; want 2", traitName, len(trait.ConfidenceInterval))
 		}
-	}
-
-	saved, err := profileDeps.Storage.GetAnalysis(result.AnalysisID)
-	if err != nil {
-		t.Fatalf("GetAnalysis: %v", err)
-	}
-	if saved.WordCount != result.WordCount {
-		t.Errorf("saved WordCount = %d; want %d", saved.WordCount, result.WordCount)
-	}
-	if saved.PercentileReference == nil || saved.PercentileReference.Method != ingest.PercentileMethodNormalApproximation {
-		t.Errorf("saved analysis lost percentile-reference metadata: %+v", saved.PercentileReference)
 	}
 }
 
-func TestFullPipelineAnalyzeDir(t *testing.T) {
-	logger := zlogger.New("dev")
-
-	pipe, _ := newTestPipeline(t)
-
-	// Create temp dir with .txt files
-	tmpDir := t.TempDir()
-	writeFile(t, filepath.Join(tmpDir, "sample1.txt"), "happy think achieve friend sad always I accommodate the")
-	writeFile(t, filepath.Join(tmpDir, "sample2.txt"), "happy think achieve friend sad always I accommodate the")
-	writeFile(t, filepath.Join(tmpDir, "notes.doc"), "should be ignored")
-	writeFile(t, filepath.Join(tmpDir, "README.md"), "should be ignored")
-
-	ingestCfg := ingest.Config{MaxTextSize: 1_000_000, DirPath: tmpDir}
-
-	handler := ingest.MakeHandleAnalyzeDir(ingestCfg, logger, pipe.Run)
-	mux := http.NewServeMux()
-	mux.HandleFunc("POST /analyze-dir", handler)
-	chain := middleware.Chain(mux, middleware.RequestID)
-	server := httptest.NewServer(chain)
-	defer server.Close()
-
-	payload := map[string]string{}
-	body, _ := json.Marshal(payload)
-
-	resp, err := http.Post(fmt.Sprintf("%s/analyze-dir", server.URL), "application/json", bytes.NewReader(body))
-	if err != nil {
-		t.Fatalf("POST /analyze-dir: %v", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("expected 200, got %d", resp.StatusCode)
-	}
-
-	var result ingest.AnalyzeDirResponse
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		t.Fatalf("decode response: %v", err)
-	}
-
-	if result.AnalysisID == "" {
-		t.Error("AnalysisID is empty")
-	}
-	if result.WordCount < 15 {
-		t.Errorf("WordCount = %d; expected >= 15 (9 words * 2 files)", result.WordCount)
-	}
-	if result.DictionaryCoverage <= 0 {
-		t.Errorf("DictionaryCoverage = %f; expected > 0", result.DictionaryCoverage)
-	}
-	if result.FilesRead != 2 {
-		t.Errorf("FilesRead = %d; want 2", result.FilesRead)
-	}
-	if len(result.Traits) != 9 {
-		t.Errorf("len(Traits) = %d; want 9", len(result.Traits))
-	}
-	if result.PercentileReference == nil || result.PercentileReference.Method != ingest.PercentileMethodNormalApproximation {
-		t.Errorf("/analyze-dir response should describe normal-approximation percentiles: %+v", result.PercentileReference)
-	}
-	if !hasMatchedWordSamples(result.Traits) {
-		t.Error("/analyze-dir response should include matched-word evidence samples")
-	}
-
-	if len(result.Values) != 10 {
-		t.Errorf("len(Values) = %d; want 10", len(result.Values))
-	}
-}
-
-func TestAnalyzeDirWithDataSamples(t *testing.T) {
-	logger := zlogger.New("dev")
-
-	pipe, _ := newTestPipeline(t)
-
-	samplesDir := "../samples"
-	ingestCfg := ingest.Config{MaxTextSize: 1_000_000, DirPath: samplesDir}
-
-	handler := ingest.MakeHandleAnalyzeDir(ingestCfg, logger, pipe.Run)
-	mux := http.NewServeMux()
-	mux.HandleFunc("POST /analyze-dir", handler)
-	chain := middleware.Chain(mux, middleware.RequestID)
-	server := httptest.NewServer(chain)
-	defer server.Close()
-
-	payload := map[string]string{}
-	body, _ := json.Marshal(payload)
-
-	resp, err := http.Post(fmt.Sprintf("%s/analyze-dir", server.URL), "application/json", bytes.NewReader(body))
-	if err != nil {
-		t.Fatalf("POST /analyze-dir: %v", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("expected 200, got %d", resp.StatusCode)
-	}
-
-	var result ingest.AnalyzeDirResponse
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		t.Fatalf("decode response: %v", err)
-	}
-
-	if result.AnalysisID == "" {
-		t.Error("AnalysisID is empty")
-	}
-	if result.WordCount < 3000 {
-		t.Errorf("WordCount = %d; expected >= 3000 for 4 articles", result.WordCount)
-	}
-	if result.DictionaryCoverage <= 0 {
-		t.Errorf("DictionaryCoverage = %f; expected > 0", result.DictionaryCoverage)
-	}
-	samples, err := filepath.Glob(filepath.Join(samplesDir, "*.txt"))
+// TestAllSamplesAnalyze counts the files in samples/ so adding or removing a
+// sample cannot silently skip analysis.
+func TestAllSamplesAnalyze(t *testing.T) {
+	pipe := newTestPipeline(t)
+	samples, err := filepath.Glob("../samples/*.txt")
 	if err != nil || len(samples) == 0 {
 		t.Fatalf("no sample files found: %v", err)
 	}
-	if result.FilesRead != len(samples) {
-		t.Errorf("FilesRead = %d; want %d (one per sample file)", result.FilesRead, len(samples))
+	var all strings.Builder
+	for _, path := range samples {
+		text, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatalf("read %s: %v", path, err)
+		}
+		all.Write(text)
+		all.WriteString("\n\n")
+	}
+	result, err := pipe.Run(t.Context(), all.String())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.WordCount < 3000 {
+		t.Errorf("WordCount = %d; expected >= 3000 for the combined samples", result.WordCount)
 	}
 	if len(result.Traits) != 9 {
 		t.Errorf("len(Traits) = %d; want 9", len(result.Traits))
-	}
-
-	outPath := "../testresults/genz-job-struggles/integration-output.json"
-	outDir := filepath.Dir(outPath)
-	if err := os.MkdirAll(outDir, 0755); err != nil {
-		t.Fatalf("mkdir: %v", err)
-	}
-	out, _ := json.MarshalIndent(result, "", "  ")
-	if err := os.WriteFile(outPath, out, 0644); err != nil {
-		t.Fatalf("write output: %v", err)
-	}
-	t.Logf("output written to %s", outPath)
-}
-
-func writeFile(t *testing.T, path, content string) {
-	t.Helper()
-	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
-		t.Fatalf("writeFile %s: %v", path, err)
 	}
 }
 
 func TestIndividualSamples(t *testing.T) {
-	logger := zlogger.New("dev")
-
-	pipe, _ := newTestPipeline(t)
-
-	handler := analyze.MakeHandleAnalyze(1_000_000, logger, pipe.Run)
-	mux := http.NewServeMux()
-	mux.HandleFunc("POST /analyze", handler)
-	chain := middleware.Chain(mux, middleware.RequestID)
-	server := httptest.NewServer(chain)
-	defer server.Close()
+	pipe := newTestPipeline(t)
 
 	samples := map[string]struct {
 		desc            string
@@ -385,22 +180,16 @@ func TestIndividualSamples(t *testing.T) {
 			t.Fatalf("read %s: %v", name, err)
 		}
 
-		payload := map[string]string{"text": string(text)}
-		body, _ := json.Marshal(payload)
-		resp, err := http.Post(fmt.Sprintf("%s/analyze", server.URL), "application/json", bytes.NewReader(body))
+		out, err := pipe.Run(t.Context(), string(text))
 		if err != nil {
-			t.Fatalf("POST /analyze %s: %v", name, err)
+			t.Fatalf("analyze %s: %v", name, err)
 		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode != http.StatusOK {
-			t.Fatalf("%s: expected 200, got %d", name, resp.StatusCode)
-		}
-
-		var result analyze.AnalyzeResponse
-		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-			t.Fatalf("decode %s: %v", name, err)
-		}
+		result := struct {
+			WordCount          int
+			DictionaryCoverage float64
+			ConfidenceFlag     string
+			Summary            analyze.SummaryVariables
+		}{out.WordCount, out.DictionaryCoverage, out.ConfidenceFlag, out.Summary.(analyze.SummaryVariables)}
 
 		s := result.Summary
 		expect, hasExpect := samples[name]
@@ -435,80 +224,5 @@ func TestIndividualSamples(t *testing.T) {
 
 	if len(failures) > 0 {
 		t.Errorf("%d assertion failures:\n%s", len(failures), strings.Join(failures, "\n"))
-	}
-}
-
-// TestGetAnalysisEndpoint covers GET /analysis/{id}: the stored analysis
-// round-trips as JSON (scores, values, narrative), and unknown ids 404.
-func TestGetAnalysisEndpoint(t *testing.T) {
-	logger := zlogger.New("dev")
-
-	pipe, profileDeps := newTestPipeline(t)
-
-	mux := http.NewServeMux()
-	mux.HandleFunc("POST /analyze", analyze.MakeHandleAnalyze(1_000_000, logger, pipe.Run))
-	mux.HandleFunc("GET /analysis/{id}", profile.MakeHandleGetAnalysis(profileDeps.Storage, logger))
-	chain := middleware.Chain(mux, middleware.RequestID)
-	server := httptest.NewServer(chain)
-	defer server.Close()
-
-	text := strings.Repeat("I think the article explains the theory about cities. ", 30)
-	payload := map[string]string{"text": text}
-	body, _ := json.Marshal(payload)
-	resp, err := http.Post(fmt.Sprintf("%s/analyze", server.URL), "application/json", bytes.NewReader(body))
-	if err != nil {
-		t.Fatalf("POST /analyze: %v", err)
-	}
-	var posted analyze.AnalyzeResponse
-	if err := json.NewDecoder(resp.Body).Decode(&posted); err != nil {
-		t.Fatalf("decode analyze response: %v", err)
-	}
-	resp.Body.Close()
-	if posted.AnalysisID == "" {
-		t.Fatal("empty AnalysisID from /analyze")
-	}
-
-	got, err := http.Get(fmt.Sprintf("%s/analysis/%s", server.URL, posted.AnalysisID))
-	if err != nil {
-		t.Fatalf("GET /analysis: %v", err)
-	}
-	defer got.Body.Close()
-	if got.StatusCode != http.StatusOK {
-		t.Fatalf("expected 200, got %d", got.StatusCode)
-	}
-
-	var saved profile.SavedAnalysis
-	if err := json.NewDecoder(got.Body).Decode(&saved); err != nil {
-		t.Fatalf("decode saved analysis: %v", err)
-	}
-	if saved.ID != posted.AnalysisID {
-		t.Errorf("saved.ID = %s; want %s", saved.ID, posted.AnalysisID)
-	}
-	if saved.WordCount == 0 {
-		t.Error("saved.WordCount = 0")
-	}
-	if len(saved.Scores) != 9 {
-		t.Errorf("len(saved.Scores) = %d; want 9", len(saved.Scores))
-	}
-	if len(saved.Values) == 0 {
-		t.Error("saved.Values is empty")
-	}
-	if saved.Narrative == "" {
-		t.Error("saved.Narrative is empty")
-	}
-	if saved.PercentileReference == nil || saved.PercentileReference.Method != ingest.PercentileMethodNormalApproximation {
-		t.Errorf("saved API result lost percentile-reference metadata: %+v", saved.PercentileReference)
-	}
-	if saved.CreatedAt == "" {
-		t.Error("saved.CreatedAt is empty")
-	}
-
-	missing, err := http.Get(fmt.Sprintf("%s/analysis/does-not-exist", server.URL))
-	if err != nil {
-		t.Fatalf("GET missing analysis: %v", err)
-	}
-	missing.Body.Close()
-	if missing.StatusCode != http.StatusNotFound {
-		t.Errorf("unknown id: expected 404, got %d", missing.StatusCode)
 	}
 }

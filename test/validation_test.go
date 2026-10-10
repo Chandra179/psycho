@@ -12,29 +12,23 @@ import (
 	"psycho/modules/analyze"
 	"psycho/modules/ingest"
 	"psycho/modules/profile"
-	"psycho/zlogger"
 )
 
 // validationPipeline wires the real modules against the real dictionary.
 type validationPipeline struct {
 	extractor *analyze.FeatureExtractor
 	model     analyze.TraitModel
-	pd        *profile.Dependencies
+	agg       *profile.ScoreAggregator
+	narrative profile.NarrativeGenerator
 }
 
 func newValidationPipeline(t *testing.T) *validationPipeline {
 	t.Helper()
-	logger := zlogger.New("prod")
-
-	pd, err := profile.NewDependencies(profile.Config{DBPath: ":memory:"}, logger)
-	if err != nil {
-		t.Fatalf("init profile: %v", err)
-	}
-	ad, err := analyze.NewDependencies(analyze.Config{DictionaryPath: "../modules/analyze/dictionary.json"}, logger)
+	ad, err := analyze.NewDependencies(analyze.Config{DictionaryPath: "../modules/analyze/dictionary.json"})
 	if err != nil {
 		t.Fatalf("init analyze: %v", err)
 	}
-	return &validationPipeline{extractor: ad.Extractor, model: ad.Model, pd: pd}
+	return &validationPipeline{extractor: ad.Extractor, model: ad.Model, agg: profile.NewScoreAggregator(), narrative: profile.NewTemplateNarrativeGenerator()}
 }
 
 // runAnalysis runs a word pool through normalize -> extract -> infer and
@@ -373,11 +367,8 @@ func TestLatencyBenchmarks(t *testing.T) {
 			scores.CognitiveStyle = analyze.ComputeCognitiveStyle(fv)
 			scores.NeedForClosure = analyze.ComputeNeedForClosure(fv)
 			scores.Values = analyze.ComputeSchwartzValues(fv)
-			prof := vp.pd.Aggregator.Aggregate(scores, fv, doc.WordCount, coverage)
-			if _, err := vp.pd.Storage.SaveAnalysis(doc.WordCount, coverage, fv, prof); err != nil {
-				t.Fatalf("save analysis: %v", err)
-			}
-			_ = vp.pd.NarrativeGenerator.GenerateSynthesis(prof)
+			prof := vp.agg.Aggregate(scores, fv, doc.WordCount, coverage)
+			_ = vp.narrative.GenerateSynthesis(prof)
 
 			durations = append(durations, time.Since(start).Seconds()*1000)
 		}

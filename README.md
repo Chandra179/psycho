@@ -4,54 +4,51 @@
   <img src="docs/images/report.png" width="70%" alt="The Psycho report: score bars for each measure with a one-line meaning, value categories with matched words in context, and a collapsible calculation section">
 </p>
 
-A small Go service for exploring language patterns through a dictionary-based psychological profiling heuristic. Reports expose the formulas and matching-word evidence behind recorded scores.
+A small Go program for exploring language patterns through a dictionary-based psychological profiling heuristic. Reports expose the formulas and matching-word evidence behind recorded scores.
 
-Inference is dictionary-based (LIWC-style), no LLM in the core inference path. Single-user, no auth, everything runs in one process against an embedded SQLite database.
+Inference is dictionary-based (LIWC-style), no LLM in the core inference path. It is compiled to WebAssembly and runs entirely in the browser: there is no server, no account and no database, and the text never leaves the visitor's device.
 
 ## Features
 
-* Text ingestion from a directory, with normalisation and segmentation
-* Psycholinguistic feature extraction against a bundled dictionary
+* Psycholinguistic feature extraction against a bundled dictionary, with normalisation and segmentation
 * Trait inference: Big Five (OCEAN), Regulatory Focus, Need for Cognition, Need for Closure, cognitive style, and Schwartz value orientations
 * Project-defined rough score ranges, not validated confidence intervals
-* Structured JSON output and PDF report export (`GET /analysis/{id}/pdf`)
-* Single-report browser flow (Tailwind + HTMX): paste text at the root URL, the report swaps in on the same page, download it as PDF. The report opens with an "At a glance" summary and flags measures that fit the text poorly. Every score ships with its evidence trail, and self-writing consent is required
-* Config file path overridable via `PSYCHO_CONFIG`
+* One HTML report with a "Read this first" caveat, each score's evidence trail, fit notes for text that suits the method poorly, and a downloadable calculation record (JSON). Self-writing consent is required
+* "Save as PDF" through the browser's print dialog, "Save report" as one self-contained HTML file, and an opt-in history kept in the browser's IndexedDB
 
 ## Getting started
 
-Requires Go 1.27. Generated browser assets are committed; serving and exporting reports requires no Node runtime.
+Requires Go 1.27. Generated CSS is committed; building the site requires no Node runtime.
 
-Rebuild browser assets after changing templates, report color mappings, CSS or JavaScript:
+```sh
+make wasm          # writes dist/ (psycho.wasm, wasm_exec.js, index.html, app.js, app.css, _headers)
+make serve-wasm    # builds, then serves dist/ at http://localhost:8081
+make test          # go test ./... -v
+```
+
+Open the site over `http://` or `https://`; browsers refuse to load the `.wasm` file from `file://`. The bundle is about 8.5 MB raw and roughly 2.2 MB gzipped. Scores match the earlier server build exactly (checked on a sample with identical scores and ranks).
+
+`make wasm` embeds the dictionary, `config/calibration.json`, the report templates and the compiled CSS into the bundle, so run it again after changing any of them.
+
+Rebuild the CSS after changing templates, report color mappings, `site/` or the Tailwind input:
 
 ```sh
 npm ci --ignore-scripts
 npm run build:assets
 ```
 
-Tailwind is pinned to 3.4.17 and HTMX to 2.0.4 in the lockfile. Scripts and styles are served locally with CSP; standalone CLI HTML exports embed the compiled CSS. Tailwind scans the Go report mappings as well as HTML/JavaScript.
+Tailwind is pinned to 3.4.17. It scans the report templates, the Go report mappings and `site/`. The pinned version depends on `braces` 3.0.3, which has a build-time stack-exhaustion advisory (GHSA-vfj7-8cjw-p6xm) and no patched compatible release, so build inputs must remain project-controlled. Node is a build-time tool only; nothing from `node_modules` is shipped.
 
-The pinned Tailwind version depends on `braces` 3.0.3, which has a build-time stack-exhaustion advisory (GHSA-vfj7-8cjw-p6xm) and no patched compatible release. Build inputs must remain project-controlled. Node dependencies are excluded from the production image; the deployed app serves only generated CSS and scripts.
+## Hosting on Cloudflare Workers
 
-```sh
-make build   # go build ./...
-make run     # go run ./cmd/psycho/ (serves on :8080)
-make test    # go test ./... -v
-```
-
-Config lives in `config/config.yaml` (port, dictionary path, DB path, sample dir). With the server running:
+`wrangler.jsonc` serves `dist/` as static assets, with no Worker code. `site/_headers` sets a Content-Security-Policy that lets the page load only its own files and blocks network requests to other hosts.
 
 ```sh
-make test-curl            # POSTs the configured samples dir to /analyze-dir
-make pdf ID=<analysis_id> # downloads the PDF report for a saved analysis
+npx wrangler login   # once
+make deploy          # builds dist/ and runs wrangler deploy
 ```
 
-## Container (Podman)
-
-```sh
-make up     # podman build + run on :8080
-make down   # stop and remove the container
-```
+The app is served at `https://psycho.chan179.com`, set by the `routes` entry in `wrangler.jsonc`. Cloudflare creates the DNS record, so `chan179.com` must be a zone in the same Cloudflare account.
 
 ## Documentation
 
@@ -61,9 +58,9 @@ make down   # stop and remove the container
 
 ## Scoring and input contract
 
-Inputs are normalized once in the pipeline: repeated Unicode whitespace becomes a single space within paragraphs, blank-line paragraph breaks are preserved, and markup tags are stripped. Fewer than 10 normalized Unicode characters or no letters/numbers returns HTTP 400 before scoring or saving. Transport byte limits still apply.
+Inputs are normalized once in the pipeline: repeated Unicode whitespace becomes a single space within paragraphs, blank-line paragraph breaks are preserved, and markup tags are stripped. Fewer than 10 normalized Unicode characters or no letters/numbers is rejected before scoring. Pasted text is capped at about 1 MiB.
 
-Big Five scores use a correlation-weighted heuristic with assumed scaling, not fitted regression coefficients. Other measures are project-defined proxies. The optional `calculation_details` object records exact counts, denominators, weights, baselines, contribution order, calibration, clamping/rounding, summary formulas, value percentages, rough ranges and percentile operations. Old records without it show recorded results with an explicit notice.
+Big Five scores use a correlation-weighted heuristic with assumed scaling, not fitted regression coefficients. Other measures are project-defined proxies. The optional `calculation_details` object records exact counts, denominators, weights, baselines, contribution order, calibration, clamping/rounding, summary formulas, value percentages, rough ranges and percentile operations. 
 
 Calibration requires the active dictionary hash and model fingerprint, all nine dimensions, and 99 finite sorted quantiles per dimension. Regenerate after a dictionary or model change:
 
@@ -79,6 +76,6 @@ Train and evaluate five regularized logistic classifiers using a local Essays CS
 go run ./cmd/train -csv corpus-eval/essays.csv -out testresults/supervised
 ```
 
-The Go-only workflow uses pinned Gonum 0.17.0, separate fitting/calibration/test authors, and 5,000 paired bootstrap samples. It writes aggregate JSON/Markdown reports and a local model artifact. The probability target is the CSV's positive questionnaire label, with local provenance marked unverified. This experiment does not change production inference or APIs.
+The Go-only workflow uses pinned Gonum 0.17.0, separate fitting/calibration/test authors, and 5,000 paired bootstrap samples. It writes aggregate JSON/Markdown reports and a local model artifact. The probability target is the CSV's positive questionnaire label, with local provenance marked unverified. This experiment does not change production inference.
 
-See [offline method and release considerations](docs/offline-supervised.md) and the [measured aggregate findings](docs/research/supervised-findings.md). Essays, author-level data, and model artifacts stay gitignored; only aggregate findings are committed.
+See [offline method and release considerations](docs/offline-supervised.md). Essays, author-level data, and model artifacts stay gitignored; only aggregate findings are committed.

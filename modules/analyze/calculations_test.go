@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"psycho/modules/ingest"
-	"psycho/zlogger"
 )
 
 func TestCalculationsReplayAndDeterminism(t *testing.T) {
@@ -130,7 +129,7 @@ func TestStartupRejectsFingerprintMismatches(t *testing.T) {
 			if err := os.WriteFile(path, data, 0600); err != nil {
 				t.Fatal(err)
 			}
-			if _, err := NewDependencies(Config{DictionaryPath: "dictionary.json", CalibrationPath: path}, zlogger.New("prod")); err == nil {
+			if _, err := NewDependencies(Config{DictionaryPath: "dictionary.json", CalibrationPath: path}); err == nil {
 				t.Fatal("accepted stale calibration")
 			}
 		})

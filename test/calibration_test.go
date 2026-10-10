@@ -11,7 +11,6 @@ import (
 	"psycho/modules/analyze"
 	"psycho/modules/pipeline"
 	"psycho/modules/profile"
-	"psycho/zlogger"
 )
 
 const calibrationPath = "../config/calibration.json"
@@ -140,30 +139,24 @@ func TestCalibrationLoaderRejectsMalformed(t *testing.T) {
 // come from the measured reference distribution (extreme texts stay inside
 // the clamped 1–99 band while a mid-range text sits near the middle).
 func TestCalibratedPipeline(t *testing.T) {
-	logger := zlogger.New("dev")
-
-	profileDeps, err := profile.NewDependencies(profile.Config{DBPath: ":memory:"}, logger)
-	if err != nil {
-		t.Fatalf("init profile: %v", err)
-	}
 	analyzeDeps, err := analyze.NewDependencies(analyze.Config{
 		DictionaryPath:  "../modules/analyze/dictionary.json",
 		CalibrationPath: calibrationPath,
-	}, logger)
+	})
 	if err != nil {
 		t.Fatalf("init analyze: %v", err)
 	}
 	if analyzeDeps.Calibration == nil {
 		t.Fatal("calibration not loaded")
 	}
-	profileDeps.Aggregator.UseCalibration(analyzeDeps.Calibration)
+	aggregator := profile.NewScoreAggregator()
+	aggregator.UseCalibration(analyzeDeps.Calibration)
 
 	pipe := pipeline.New(
 		analyzeDeps.Extractor,
 		analyzeDeps.Model,
-		profileDeps.Aggregator,
-		profileDeps.NarrativeGenerator,
-		profileDeps.Storage,
+		aggregator,
+		profile.NewTemplateNarrativeGenerator(),
 		analyzeDeps.Calibration,
 	)
 

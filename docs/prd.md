@@ -22,12 +22,12 @@ A self-contained system that extracts the psychological structure of a person fr
 
 ## Constraints
 
-* Only handle text input: direct paste, URL fetch, and directory import (.txt files from a local folder). Browser-style file upload is deferred to a later phase. No audio, video, or images.
+* Only handle text input: direct paste or a loaded .txt or .md file, entirely in the browser. No URL fetch, no server, no audio, video, or images.
 * Single user. No authentication, no multi‑tenancy, no role‑based access.
 * Only Big Five (OCEAN), Regulatory Focus (Higgins, 1997), Need for Cognition (Cacioppo & Petty, 1982), cognitive style, and Schwartz values. No MBTI, Enneagram, or custom frameworks in MVP.
 * Dictionary‑based feature extraction only. LLM used optionally for narrative prose synthesis, never for core trait inference.
 * Max 3 source types flagged per analysis (e.g., blog, chat, email). No unlimited source taxonomy.
-* No real‑time collaboration or sharing. Export profile as JSON/PDF only.
+* No real‑time collaboration or sharing. Export the report as one HTML file, the browser's print-to-PDF, or the calculation JSON.
 
 ***
 
@@ -35,11 +35,11 @@ A self-contained system that extracts the psychological structure of a person fr
 
 ### **Feature 1: Text Ingestion & Psychometric Analysis**
 
-**What it does:** User submits text via direct paste, URL, or directory import. System normalises, extracts psycholinguistic features, and outputs Big Five trait scores, Regulatory Focus, Need for Cognition, cognitive style labels, and value orientations with rough score ranges.
+**What it does:** User pastes text or loads a text file in the browser. System normalises, extracts psycholinguistic features, and outputs Big Five trait scores, Regulatory Focus, Need for Cognition, cognitive style labels, and value orientations with rough score ranges.
 
 **Risks we tolerate:**
 
-* No authentication on the ingestion endpoint. Anyone who can reach the server port can submit text.
+* No authentication and no server: anyone who opens the page can analyze text, and nothing is sent anywhere.
 * Analysis may be unreliable for texts <500 words. The report states the reason in plain words; fewer than 10 normalized Unicode characters or no letters/numbers are rejected.
 * Single‑threaded processing. Texts >50,000 words may take >30 seconds. No progress indicator in MVP.
 

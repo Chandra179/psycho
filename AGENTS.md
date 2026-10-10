@@ -15,79 +15,53 @@ Run `go test ./...` for the unit and integration tests (under `modules/` and `te
 ## Project layout
 
 ```
-cmd/psycho/main.go         # entrypoint, starts HTTP server
-cmd/rendertemplates/       # renders HTML report previews from an analysis JSON
+cmd/wasm/                  # browser entrypoint (js/wasm): registers psycho.analyze / psycho.render
 cmd/calibrate/             # derives config/calibration.json from a reference corpus
+cmd/evaluate/              # scores a labeled corpus and reports AUC and ablations
 cmd/train/                 # offline supervised fitting, calibration and held-out evaluation
-modules/<name>/            # one flat Go package per domain module
-  config.go                # YAML config structs
-  dependencies.go          # wire deps, load config, construct services
-  handler.go               # HTTP handlers (MakeHandleX factory functions)
-  <concern>.go             # one file per domain concern (bigfive.go, storage.go, ...)
-modules/pipeline/          # the analysis flow: normalize → extract → infer → persist
-modules/report/            # the single HTML report: view builder + templates, POST /report form handler
+modules/analyze/           # dictionary, feature extraction, scoring, calibration, quality, labels
+modules/ingest/            # normalizer and the shared AnalysisOutput types
+modules/profile/           # score aggregation, narrative and the Profile types
+modules/pipeline/          # the analysis flow: normalize → extract → infer → aggregate → narrate
+modules/report/            # the single HTML report: view builder, fit notes and rendering
 modules/supervised/        # offline corpus validation, logistic training, metrics and model artifacts
-modules/server/            # composes all modules, registers routes
-middleware/                # stdlib middleware stack (http.Handler adapter)
-  chain.go                 # middleware.Chain(handler, mw...)
-  request_id.go            # RequestID, GetRequestID
-  timeout.go               # Timeout(TimeoutConfig{Duration}) via http.TimeoutHandler, 503 on expiry
-  recovery.go              # d.Recovery() (depends on *zlogger.Logger)
-  request_validation.go    # DecodeAndValidate[T](r) (go-playground/validator tags)
-  dependencies.go          # Dependencies struct (holds logger)
-config/
-  config.go                # top-level Load(path string) (*Config, error)
-  config.yaml              # default config
-samples/                   # .txt demo corpus read by POST /analyze-dir
-templates/                 # index.html (Tailwind+HTMX upload page) + report.html / report-page.html
+site/                      # the static page (index.html, app.js, _headers); no server code
+templates/                 # report.html / report-page.html, embedded into the wasm (templates.FS)
+assets/                    # compiled app.css, embedded for the saved-report download (assets.CSS)
+config/                    # calibration.json, embedded into the wasm (config.EmbeddedCalibration)
+web/app.css                # Tailwind input
+samples/                   # .txt demo texts used by the tests
 test/                      # integration + known-profile validation tests
-zlogger/
-  zlogger.go               # wrapper around go.uber.org/zap
-scripts/
-  rename-module.sh         # renames Go module (old="brook" is hardcoded, update if used)
-  render-report.sh         # renders the single report for one .txt sample (session-day helper)
+scripts/rename-module.sh   # renames Go module (old="brook" is hardcoded, update if used)
+wrangler.jsonc             # Cloudflare Workers static-assets deployment of dist/
 ```
-
-Server routes: `GET /` (upload page) → `POST /report` (analyze + return the report inline, HTMX fragment or full page) and the JSON API `POST /analyze`, `POST /analyze-dir`, `GET /analysis/{id}`, `GET /analysis/{id}/pdf`. `PSYCHO_CONFIG` overrides the config file path.
 
 See `docs/` for the PRD (`docs/prd.md`), and a general-user overview with the measured accuracy and references (`docs/overview.md`).
 
+## Browser build
+
+The product is a static site. `cmd/wasm` (`//go:build js && wasm`) compiles the analysis, scoring and report code to WebAssembly and registers `psycho.analyze(text)` and `psycho.render(json, standalone)` on `globalThis`; `site/app.js` loads it, shows the report, keeps optional history in IndexedDB and handles the "Save report" and print actions. `make wasm` assembles `dist/` (gitignored); `make deploy` publishes it to Cloudflare Workers. The dictionary, calibration, templates and compiled CSS are embedded (`analyze.EmbeddedDictionary`, `config.EmbeddedCalibration`, `templates.FS`, `assets.CSS`), so a change to any of them needs `make wasm` to reach the browser. There is no server, database or PDF generator: keep it that way, and check the browser entry point with `GOOS=js GOARCH=wasm go vet ./cmd/wasm`.
+
 ## Architecture
 
-**Modular monolith.** Each module under `modules/<name>/` is a flat Go package (no `internal/`) with a consistent file shape:
-- `config.go`: YAML-tagged config struct for that module
-- `dependencies.go`: `NewDependencies(cfg, logger) (*Dependencies, error)`: wires the module's own services (loads dictionaries, opens DB, runs migrations)
-- `handler.go`: HTTP transport; handlers are closures via `MakeHandleX(...)` factories that take dependencies/callbacks as arguments, not a receiver struct
-- one file per domain concern (`bigfive.go`, `regfocus.go`, `storage.go`, ...)
+**Flat modules.** Each module under `modules/<name>/` is a flat Go package (no `internal/`) with one file per domain concern (`bigfive.go`, `regfocus.go`, `calibration.go`, ...). `analyze.NewDependencies(cfg)` loads the dictionary and calibration from files for the command-line tools and tests; `analyze.NewDependenciesFromData` takes them from memory, which is how the browser build gets them.
 
-Wiring happens in `modules/server/http_server.go`: `NewHandler` builds each module's `Dependencies`, composes them into a `modules/pipeline.Pipeline` (owns normalize→extract→infer→aggregate→narrate→persist, returns `ingest.AnalysisOutput`; its JSON tags are load-bearing: `modules/report` decodes it), and passes `pipe.Run` into the `MakeHandleX` factories as the `ingest.AnalyzeFunc` seam. When `analyze.calibration_path` is set, the server loads `config/calibration.json`; the pipeline applies score offsets and the aggregator does percentile lookup (`ScoreAggregator.UseCalibration`). The file is generated by `cmd/calibrate` and records the dictionary's SHA-256; `TestCalibrationMatchesDictionary` fails if the dictionary changes without recalibration.
-
-**Two user-facing paths off the same pipeline:** the browser flow (`GET /` upload page → `POST /report` returns the single HTML report inline: an HTMX fragment when `HX-Request` is set, a full standalone page otherwise) and the JSON API (`POST /analyze`, `POST /analyze-dir`). `modules/report` owns both the view builder and the form transport: it imports `analyze` for labels, so the form handler cannot live in `analyze` without an import cycle.
-
-**Middleware** (outermost-first): `Recovery` → `RequestID` → `Timeout`. Request bodies are bounded with `http.MaxBytesReader` before decoding; `DecodeAndValidate[T]` applies go-playground/validator tags.
+`modules/pipeline.Pipeline` owns normalize→extract→infer→aggregate→narrate and returns `ingest.AnalysisOutput`. Its JSON tags are load-bearing: `modules/report` decodes that shape, and the browser stores it as the saved reading. The pipeline applies calibration offsets and the aggregator does percentile lookup (`ScoreAggregator.UseCalibration`). `config/calibration.json` is generated by `cmd/calibrate` and records the dictionary's SHA-256 and the model fingerprint; `TestCalibrationMatchesDictionary` fails if the dictionary changes without recalibration.
 
 Every inference function is meant to be traceable to a cited source; check the References section in `docs/overview.md` and the comment at the top of the relevant file (`coefficients.go`, `regfocus.go`, `needcog.go`, ...) before changing scoring logic.
 
 ## Key conventions
 
 - **No `internal/` packages**: modules stay flat.
-- **No global state**: deps passed via closure or struct field.
-- **Config** is YAML (`gopkg.in/yaml.v3`), loaded once per module in `dependencies.go` or the entrypoint file.
-- **Logger**: `zlogger.New(level)`: `"dev"` = debug level, anything else = info. Console encoding. Usage: `logger.Info(ctx, msg, zlogger.Field{Key: "k", Value: "v"}, ...)`.
-- **Middleware order** (outermost first): Recovery → RequestID → Timeout (see `middleware/chain.go`). Logger, Auth, and RateLimit are not implemented.
-- **Validation**: `middleware.DecodeAndValidate[T](r)`: call inside handlers, uses `validate:"required,min=3"` struct tags. Bound request bodies with `http.MaxBytesReader` before decoding.
+- **No global state**: deps passed via struct field or argument.
 - **Labels and display names** come from `modules/analyze/labels.go` (`SummaryBandFormal`/`SummaryBandCompact`/`SummaryTone`/`Ordinal`); never restate band wording in a renderer.
 - **User-facing copy carries no em-dashes**; keep punctuation plain.
-
-## Container (Podman)
-
-Multi-stage `Containerfile`, `CGO_ENABLED=0`, Alpine runtime. Run: `make up` (podman build + run) or `podman build .`
 
 ## Infrastructure
 
 - `.env` is gitignored.
 - `vendor/` is gitignored. Use `make vendor` when adding deps.
-- Local, gitignored datasets and artifacts: `corpus/` (labeled essays for calibration and accuracy checks), `corpus-eval/` (label CSV), `testresults/` (outputs of `cmd/evaluate` / `cmd/calibrate`), `psycho.db` (runtime database). The tools work without them; `cmd/calibrate` and `cmd/evaluate` need the corpus.
+- Local, gitignored datasets and artifacts: `corpus/` (labeled essays for calibration and accuracy checks), `corpus-eval/` (label CSV), `testresults/` (outputs of `cmd/evaluate` / `cmd/calibrate`). The tools work without them; `cmd/calibrate` and `cmd/evaluate` need the corpus.
 
 `cmd/train` is an offline experiment, not production inference. Preserve its
 frozen author partitions: fitting selects regularization, calibration fits

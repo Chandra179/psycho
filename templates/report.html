@@ -32,15 +32,19 @@
       </div>
       <p class="mt-2 max-w-prose text-xs leading-relaxed text-stone-500">Confidence reflects how much text was read and how much of it matched the dictionary. It does not rate your writing.</p>
     </div>
-    <nav aria-label="Report actions" class="flex items-center gap-2">
-      <a href="/" class="inline-flex min-h-[44px] items-center rounded-full border border-stone-300 bg-white px-4 py-2 text-xs font-medium text-stone-700 hover:bg-stone-100 transition">
+    {{if not .StandaloneCSS}}
+    <nav aria-label="Report actions" class="flex flex-wrap items-center gap-2">
+      <button type="button" data-psycho-action="new" class="inline-flex min-h-[44px] items-center rounded-full border border-stone-300 bg-white px-4 py-2 text-xs font-medium text-stone-700 hover:bg-stone-100 transition">
         New reading
-      </a>
-      <a href="/analysis/{{.AnalysisID}}/pdf"
-         class="inline-flex min-h-[44px] items-center rounded-full bg-stone-900 text-white px-4 py-2 text-xs font-medium hover:bg-stone-700 transition">
-        Download PDF
-      </a>
+      </button>
+      <button type="button" data-psycho-action="download-html" class="inline-flex min-h-[44px] items-center rounded-full border border-stone-300 bg-white px-4 py-2 text-xs font-medium text-stone-700 hover:bg-stone-100 transition">
+        Save report
+      </button>
+      <button type="button" data-psycho-action="print" class="inline-flex min-h-[44px] items-center rounded-full bg-stone-900 text-white px-4 py-2 text-xs font-medium hover:bg-stone-700 transition">
+        Save as PDF
+      </button>
     </nav>
+    {{end}}
   </header>
 
   <aside aria-label="How to read this report" class="mt-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-relaxed text-stone-800">

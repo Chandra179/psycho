@@ -3,9 +3,6 @@
 @tailwind utilities;
 
 @layer components {
-  .htmx-indicator { opacity: 0; }
-  .htmx-request .htmx-indicator, .htmx-request.htmx-indicator { opacity: 1; }
-
   .report-score-row { @apply relative grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-3 px-4 py-4 sm:px-5 border-b border-stone-200 last:border-b-0; }
   .report-score-number { @apply flex items-baseline gap-4 text-right; }
   .report-legend { @apply relative flex flex-wrap items-center gap-2 mb-4; }

@@ -53,3 +53,6 @@ report-output/
 
 # Browser asset build dependencies
 node_modules/
+
+# Browser (WebAssembly) build output
+dist/

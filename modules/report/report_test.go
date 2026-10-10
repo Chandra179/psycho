@@ -4,16 +4,11 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"net/http"
-	"net/http/httptest"
-	"net/url"
-	"os"
 	"strings"
 	"testing"
 
 	"psycho/modules/analyze"
 	"psycho/modules/ingest"
-	"psycho/zlogger"
 )
 
 func TestRecordedCalculationsRenderedWithoutRecalculation(t *testing.T) {
@@ -233,7 +228,7 @@ func TestRenderFragmentAndPage(t *testing.T) {
 		"Recorded heuristic bounds: 45–90/100 (unvalidated)", "Calculation details and limitations",
 		"not a percentile range or a statistically validated confidence interval", "not a validated individual personality measure",
 		"Percentiles compare scores with 2400 texts in Reference essay sample",
-		">the<", ">happy<", "Words longer than six bytes (legacy model proxy)",
+		">the<", ">happy<", "Text-based measures", `aria-label="Big Five bands"`, `id="band-openness" role="tooltip"`, "Words longer than six bytes (legacy model proxy)",
 	} {
 		if !strings.Contains(frag.String(), want) {
 			t.Errorf("fragment missing %q", want)
@@ -257,25 +252,6 @@ func TestRenderFragmentAndPage(t *testing.T) {
 	}
 }
 
-func TestIndexUsesConversationWidthAndKeepsReportUnconstrained(t *testing.T) {
-	index, err := os.ReadFile("../../templates/index.html")
-	if err != nil {
-		t.Fatalf("read index template: %v", err)
-	}
-	markup := string(index)
-	formSectionEnd := strings.Index(markup, "</section>")
-	resultStart := strings.Index(markup, `<div id="result"`)
-	if formSectionEnd < 0 || resultStart < 0 || formSectionEnd > resultStart {
-		t.Fatal("inline report target must sit outside the narrow upload section")
-	}
-	if !strings.Contains(markup, `class="max-w-[60rem] mx-auto px-4 sm:px-6 lg:px-8 py-12"`) {
-		t.Fatal("upload page should align to the report conversation width")
-	}
-	if !strings.Contains(markup, `class="max-w-[60rem] mx-auto px-4 sm:px-6 lg:px-8 mt-8 mb-12`) {
-		t.Fatal("upload page footer should align to the same width")
-	}
-}
-
 func stubAnalyzeFn(id string) ingest.AnalyzeFunc {
 	return func(_ context.Context, text string) (ingest.AnalysisOutput, error) {
 		traits := map[string]any{
@@ -295,62 +271,6 @@ func stubAnalyzeFn(id string) ingest.AnalyzeFunc {
 			},
 			Summary: SummaryVariables{},
 		}, nil
-	}
-}
-
-func postForm(target string, fields url.Values, hx bool) *httptest.ResponseRecorder {
-	req := httptest.NewRequest(http.MethodPost, "/report", strings.NewReader(fields.Encode()))
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	if hx {
-		req.Header.Set("HX-Request", "true")
-	}
-	rec := httptest.NewRecorder()
-	MakeHandleReportForm(1_000_000, "../../templates", zlogger.New("prod"), stubAnalyzeFn("round-trip-id"))(rec, req)
-	return rec
-}
-
-func TestFormHandlerConsentRequired(t *testing.T) {
-	rec := postForm("", url.Values{"text": {"a perfectly fine sample of text"}}, true)
-	if rec.Code != http.StatusBadRequest {
-		t.Fatalf("missing consent must 400, got %d", rec.Code)
-	}
-}
-
-func TestFormHandlerRendersFragmentAndFullPage(t *testing.T) {
-	fields := url.Values{
-		"text":    {"a perfectly fine sample of text"},
-		"consent": {"on"},
-	}
-	rec := postForm("", fields, true)
-	if rec.Code != http.StatusOK {
-		t.Fatalf("htmx request must 200, got %d: %s", rec.Code, rec.Body.String())
-	}
-	if strings.Contains(rec.Body.String(), "<!DOCTYPE html>") {
-		t.Error("HX-Request must render the fragment, not the full page")
-	}
-	if !strings.Contains(rec.Body.String(), "Your writing profile") {
-		t.Error("fragment must contain the report body")
-	}
-	for _, want := range []string{"Text-based measures", `aria-label="Big Five bands"`, `id="band-openness" role="tooltip"`} {
-		if !strings.Contains(rec.Body.String(), want) {
-			t.Errorf("HTMX report is missing %q", want)
-		}
-	}
-
-	rec = postForm("", fields, false)
-	if rec.Code != http.StatusOK {
-		t.Fatalf("no-JS request must 200, got %d", rec.Code)
-	}
-	if !strings.Contains(rec.Body.String(), "<!DOCTYPE html>") {
-		t.Error("non-HTMX request must render the full page")
-	}
-	if !strings.Contains(rec.Body.String(), "Your writing profile") {
-		t.Error("full page must contain the report body")
-	}
-	for _, want := range []string{"Text-based measures", `aria-label="Big Five bands"`, `id="band-openness" role="tooltip"`} {
-		if !strings.Contains(rec.Body.String(), want) {
-			t.Errorf("full-page report is missing %q", want)
-		}
 	}
 }
 

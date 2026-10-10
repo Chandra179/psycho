@@ -8,7 +8,7 @@ import (
 )
 
 // Canonical display names and score labels for the trait dimensions.
-// Every rendered surface — narrative, PDF, HTML previews — goes through
+// Every rendered surface (narrative, HTML report) goes through
 // these so wording and the 0.65/0.35 cut-offs can never drift apart
 // between outputs (issue #14).
 
@@ -166,7 +166,7 @@ func PercentileDescription(percentile int, reference *ingest.PercentileReference
 }
 
 // Summary variable band wording lives here so every renderer (HTML report,
-// PDF, narrative) draws from one table per register instead of carrying its
+// narrative) draws from one table per register instead of carrying its
 // own copy. Names match SummaryVariables JSON keys minus the "value_" style
 // prefix: "analytical_thinking", "clout", "authenticity".
 
@@ -182,7 +182,7 @@ var summaryBandCompact = map[string][2]string{
 	"authenticity":        {"personal", "guarded"},
 }
 
-// SummaryBandFormal returns the band wording used in long-form output (PDF,
+// SummaryBandFormal returns the band wording used in long-form output (the
 // narrative): high-word, low-word pairs like "confident/dominant".
 func SummaryBandFormal(name string, score float64) string {
 	return summaryBand(summaryBandFormal, name, score)

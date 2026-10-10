@@ -1,6 +1,7 @@
 package report
 
 import (
+	"os"
 	"strings"
 	"testing"
 
@@ -187,5 +188,23 @@ func TestReportShowsRangeNoteAndBandCue(t *testing.T) {
 	}
 	if !strings.Contains(html, "<h2 class=\"text-sm font-medium text-stone-700\">Evidence by measure</h2>") {
 		t.Error("evidence blocks need a parent heading")
+	}
+}
+
+func TestReportOffersBrowserActionsAndNoServerLinks(t *testing.T) {
+	a := testAnalysis()
+	var frag strings.Builder
+	if err := RenderAnalysisFS(os.DirFS("../../templates"), a, &frag, false); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(frag.String(), `data-psycho-action="print"`) || strings.Contains(frag.String(), "/pdf") || strings.Contains(frag.String(), "/analysis/") {
+		t.Error("report must offer print and no server links")
+	}
+	var page strings.Builder
+	if err := RenderStandaloneAnalysisFS(os.DirFS("../../templates"), []byte("body{}"), a, &page); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(page.String(), "<style>body{}</style>") || strings.Contains(page.String(), "data-psycho-action") {
+		t.Error("saved report embeds CSS and has no dead buttons")
 	}
 }

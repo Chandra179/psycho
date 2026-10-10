@@ -1,7 +1,7 @@
-// Package pipeline composes the full analysis flow — normalize, extract
-// features, infer all dimensions, aggregate, narrate, and persist — into one
-// unit that the HTTP server and the tests wire up once instead of
-// duplicating the orchestration at every call site.
+// Package pipeline composes the full analysis flow (normalize, extract
+// features, infer all dimensions, aggregate, narrate) into one unit that the
+// browser build and the tests wire up once instead of duplicating the
+// orchestration at every call site.
 package pipeline
 
 import (
@@ -12,15 +12,13 @@ import (
 	"psycho/modules/profile"
 )
 
-// Pipeline runs text through every stage of the analysis and persists the
-// result. It is the single owner of stage ordering; the HTTP handlers only
-// deal with transport.
+// Pipeline runs text through every stage of the analysis. It is the single
+// owner of stage ordering.
 type Pipeline struct {
 	extractor   *analyze.FeatureExtractor
 	model       analyze.TraitModel
 	aggregator  *profile.ScoreAggregator
 	narrative   profile.NarrativeGenerator
-	storage     *profile.Storage
 	calibration *analyze.Calibration
 }
 
@@ -29,7 +27,6 @@ func New(
 	model analyze.TraitModel,
 	aggregator *profile.ScoreAggregator,
 	narrative profile.NarrativeGenerator,
-	storage *profile.Storage,
 	calibration *analyze.Calibration,
 ) *Pipeline {
 	return &Pipeline{
@@ -37,14 +34,13 @@ func New(
 		model:       model,
 		aggregator:  aggregator,
 		narrative:   narrative,
-		storage:     storage,
 		calibration: calibration,
 	}
 }
 
-// Run analyzes text end-to-end and persists the result. The context is
-// checked between stages so a request whose deadline has expired
-// (middleware.Timeout) stops before doing more work.
+// Run analyzes text end-to-end. Nothing is stored; the caller keeps the
+// result. The context is checked between stages so a cancelled caller stops
+// before more work is done.
 func (p *Pipeline) Run(ctx context.Context, text string) (ingest.AnalysisOutput, error) {
 	if err := ctx.Err(); err != nil {
 		return ingest.AnalysisOutput{}, err
@@ -73,18 +69,13 @@ func (p *Pipeline) Run(ctx context.Context, text string) (ingest.AnalysisOutput,
 		return ingest.AnalysisOutput{}, err
 	}
 
-	analysisID, err := p.storage.SaveAnalysis(doc.WordCount, coverage, features, prof)
-	if err != nil {
-		return ingest.AnalysisOutput{}, err
-	}
-
 	traits := make(map[string]any, len(prof.Traits))
 	for k, v := range prof.Traits {
 		traits[k] = v
 	}
 
 	return ingest.AnalysisOutput{
-		AnalysisID:          analysisID,
+		AnalysisID:          prof.AnalysisID,
 		WordCount:           doc.WordCount,
 		DictionaryCoverage:  coverage,
 		ConfidenceFlag:      prof.ConfidenceFlag,
