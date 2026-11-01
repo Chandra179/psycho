@@ -27,7 +27,7 @@
     return n >= 1048576 ? parseFloat((n / 1048576).toFixed(2)) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB';
   }
 
-  var TEXTAREA_OK = ['border-stone-300', 'focus:border-brand-500', 'focus:ring-brand-500/20'];
+  var TEXTAREA_OK = ['border-stone-300', 'focus:border-teal-500', 'focus:ring-teal-500/20'];
   var TEXTAREA_BAD = ['border-rose-500', 'focus:border-rose-500', 'focus:ring-rose-500/20'];
 
   // Shows the size against the limit: a quiet amber note when close, a red
