@@ -11,7 +11,7 @@ mkdir -p dist/a
 
 GOOS=js GOARCH=wasm go build -ldflags="-s -w" -trimpath -o dist/a/psycho.wasm ./cmd/wasm
 cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" dist/a/wasm_exec.js
-cp site/app.js site/index.html assets/app.css dist/a/ 2>/dev/null
+cp site/app.js site/theme.js site/index.html assets/app.css dist/a/ 2>/dev/null
 mv dist/a/index.html dist/index.html
 cp site/_headers site/og.png site/favicon.svg site/robots.txt site/sitemap.xml site/llms.txt dist/
 
@@ -27,6 +27,7 @@ hashed() {
 wasm=$(hashed psycho.wasm)
 exec_js=$(hashed wasm_exec.js)
 css=$(hashed app.css)
+theme=$(hashed theme.js)
 
 # The wasm name goes into app.js before app.js itself is hashed.
 sed -i "s|var WASM_URL = 'psycho.wasm';|var WASM_URL = 'a/$wasm';|" dist/a/app.js
@@ -36,6 +37,7 @@ sed -i \
 	-e "s|href=\"app.css\"|href=\"a/$css\"|" \
 	-e "s|src=\"wasm_exec.js\"|src=\"a/$exec_js\"|" \
 	-e "s|src=\"app.js\"|src=\"a/$app\"|" \
+	-e "s|src=\"theme.js\"|src=\"a/$theme\"|" \
 	-e "s|href=\"psycho.wasm\"|href=\"a/$wasm\"|" \
 	dist/index.html
 

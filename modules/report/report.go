@@ -17,6 +17,7 @@ import (
 	"path/filepath"
 	"slices"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -130,6 +131,7 @@ type ReportView struct {
 	Quality                        string
 	Glance                         Glance
 	Traits                         []TraitView
+	Radar                          *RadarView
 	HasBigFive                     bool
 	Values                         []ValueView
 	Summary                        []SummaryCard
@@ -257,6 +259,7 @@ func BuildReport(a *Analysis) ReportView {
 			v.HasBigFive = true
 		}
 	}
+	v.Radar = buildRadar(v.Traits)
 	return v
 }
 
@@ -356,4 +359,51 @@ func renderAnalysis(source string, templates fs.FS, css []byte, a *Analysis, w i
 		tplAny, _ = tplCache.LoadOrStore(key, tpl)
 	}
 	return tplAny.(*template.Template).ExecuteTemplate(w, name, v)
+}
+
+// RadarView is the outline chart: one spoke per trait, drawn in a fixed
+// 600 by 560 box centered on the origin. Positions are percentages so the
+// labels can be laid over the scaled SVG.
+type RadarView struct {
+	Outline string // polygon points for the scores
+	Spokes  string // polygon points for the 100 mark
+	Labels  []RadarLabel
+}
+
+type RadarLabel struct {
+	Name      string
+	Score100  int
+	Left, Top string
+}
+
+const radarRadius = 240.0
+
+// buildRadar returns nil when there are too few traits to form an outline.
+func buildRadar(traits []TraitView) *RadarView {
+	n := len(traits)
+	if n < 3 {
+		return nil
+	}
+	point := func(i int, r float64) (float64, float64) {
+		a := (-90 + 360/float64(n)*float64(i)) * math.Pi / 180
+		return r * math.Cos(a), r * math.Sin(a)
+	}
+	var outline, spokes []string
+	r := &RadarView{}
+	for i, t := range traits {
+		x, y := point(i, float64(t.Score100)/100*radarRadius)
+		outline = append(outline, fmt.Sprintf("%.1f,%.1f", x, y))
+		x, y = point(i, radarRadius)
+		spokes = append(spokes, fmt.Sprintf("%.1f,%.1f", x, y))
+		x, y = point(i, radarRadius+38)
+		r.Labels = append(r.Labels, RadarLabel{
+			Name:     t.Name,
+			Score100: t.Score100,
+			Left:     fmt.Sprintf("%.2f%%", (x+300)/600*100),
+			Top:      fmt.Sprintf("%.2f%%", (y+280)/560*100),
+		})
+	}
+	r.Outline = strings.Join(outline, " ")
+	r.Spokes = strings.Join(spokes, " ")
+	return r
 }

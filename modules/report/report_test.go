@@ -315,3 +315,19 @@ func TestEveryMeasureHasAPlainMeaning(t *testing.T) {
 		}
 	}
 }
+
+func TestBuildRadar(t *testing.T) {
+	if buildRadar([]TraitView{{Name: "A", Score100: 50}, {Name: "B", Score100: 50}}) != nil {
+		t.Fatal("two traits should not form an outline")
+	}
+	r := buildRadar([]TraitView{{Name: "A", Score100: 100}, {Name: "B", Score100: 0}, {Name: "C", Score100: 50}})
+	if r == nil || len(r.Labels) != 3 {
+		t.Fatalf("radar = %+v", r)
+	}
+	if !strings.HasPrefix(r.Outline, "0.0,-240.0 0.0,0.0 ") {
+		t.Errorf("outline = %q", r.Outline)
+	}
+	if r.Labels[0].Left != "50.00%" {
+		t.Errorf("first label left = %q", r.Labels[0].Left)
+	}
+}
